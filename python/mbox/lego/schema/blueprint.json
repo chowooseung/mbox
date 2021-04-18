@@ -1,0 +1,155 @@
+{
+  "$ref": "#/definitions/root",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "block": {
+      "description": "lego blocks component data",
+      "properties": {
+        "blockID": {
+          "description": "block ID",
+          "type": "string"
+        },
+        "blockVersion": {
+          "description": "block version",
+          "type": "string"
+        },
+        "children": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": [
+                {
+                  "description": "child block data",
+                  "$ref": "#/definitions/block"
+                }
+              ],
+              "minItems": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "type": "array",
+          "items": [
+            {
+              "description": "Center, Left, Right. ['C', 'L' 'R']",
+              "type": "string"
+            }
+          ],
+          "minItems": 3
+        },
+        "joint": {
+          "description": "output joint True/False",
+          "type": "boolean"
+        },
+        "jointAxis": {
+          "description": "output joint follow axis, up axis. ['x', 'y']",
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "meta": {
+          "description": "Specific Component Data",
+          "type": "object"
+        },
+        "mirror": {
+          "description": "axis mirror True/False",
+          "type": "boolean"
+        },
+        "transforms": {
+          "description": "guide transform and value",
+          "type": "array"
+        }
+      },
+      "required": [
+        "blockID",
+        "blockVersion",
+        "transforms",
+        "direction",
+        "children",
+        "mirror",
+        "meta",
+        "jointAxis",
+        "joint"
+      ],
+      "type": "object"
+    },
+    "root": {
+      "description": "lego block root data",
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/definitions/block"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "nameRule": {
+          "properties": {
+            "controllerExp": {
+              "type": "string"
+            },
+            "convention": {
+              "properties": {
+                "common": {
+                  "type": "string"
+                },
+                "joint": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "common",
+                "joint"
+              ],
+              "type": "object"
+            },
+            "jointExp": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "jointExp",
+            "controllerExp",
+            "convention"
+          ],
+          "type": "object"
+        },
+        "postScripts": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            }
+          ],
+          "minItems": 0
+        },
+        "preScripts": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            }
+          ],
+          "minItems": 0
+        },
+        "schemaVersion": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "nameRule",
+        "children",
+        "preScripts",
+        "postScripts"
+      ]
+    }
+  },
+  "title": "lego block dag data"
+}
