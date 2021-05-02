@@ -14,16 +14,11 @@
           "type": "string"
         },
         "children": {
-          "anyOf": [
+          "oneOf": [
             {
-              "type": "array",
-              "items": [
-                {
-                  "description": "child block data",
-                  "$ref": "#/definitions/block"
-                }
-              ],
-              "minItems": 1
+              "items": {"$ref": "#/definitions/block"},
+              "minItems": 1,
+              "type": "array"
             },
             {
               "type": "null"
@@ -31,14 +26,12 @@
           ]
         },
         "direction": {
-          "type": "array",
-          "items": [
-            {
-              "description": "Center, Left, Right. ['C', 'L' 'R']",
-              "type": "string"
-            }
-          ],
-          "minItems": 3
+          "items": {
+            "description": "Center, Left, Right. ['C', 'L' 'R']",
+            "type": "string"
+          },
+          "minItems": 3,
+          "type": "array"
         },
         "joint": {
           "description": "output joint True/False",
@@ -47,11 +40,8 @@
         "jointAxis": {
           "description": "output joint follow axis, up axis. ['x', 'y']",
           "type": "array",
-          "items": [
-            {
-              "type": "string"
-            }
-          ]
+          "items": {"type": "string"},
+          "minItems": 2
         },
         "meta": {
           "description": "Specific Component Data",
@@ -83,9 +73,7 @@
       "description": "lego block root data",
       "properties": {
         "children": {
-          "items": {
-            "$ref": "#/definitions/block"
-          },
+          "items": {"$ref": "#/definitions/block"},
           "minItems": 1,
           "type": "array"
         },
@@ -122,20 +110,12 @@
         },
         "postScripts": {
           "type": "array",
-          "items": [
-            {
-              "type": "string"
-            }
-          ],
+          "items": {"type": "string"},
           "minItems": 0
         },
         "preScripts": {
           "type": "array",
-          "items": [
-            {
-              "type": "string"
-            }
-          ],
+          "items": {"type": "string"},
           "minItems": 0
         },
         "schemaVersion": {

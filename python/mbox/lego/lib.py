@@ -18,10 +18,10 @@ def get_blueprint_graph(graph, data=None):
     :return:
     """
     if data is None:
-        root = graph.keys()[0]
+        root = list(graph.keys())[0]
         info = get_root_info(root)
         info["children"] = list()
-        get_blueprint_graph(graph[graph.keys()[0]], info["children"])
+        get_blueprint_graph(graph[root], info["children"])
         return info
     elif isinstance(data, list) and graph is not None:
         for key in graph.keys():
@@ -91,6 +91,7 @@ def get_root_info(node):
     # joint_convention = network.jointConvention.get()
 
     data = OrderedDict()
+    data["schemaVersion"] = "blueprint-1"
     data["preScripts"] = list()
     data["postScripts"] = list()
     data["nameRule"] = OrderedDict()
@@ -120,12 +121,12 @@ def get_block_info(node):
     # network.joint.get()
 
     data = OrderedDict()
-    data["blockID"] = str()
+    data["blockID"] = node.name()
     data["blockVersion"] = str()
     data["transforms"] = list()
     data["direction"] = ["", "", ""]
     data["mirror"] = True
-    data["jointAxis"] = list()
+    data["jointAxis"] = ["z", "y"]
     data["joint"] = True
     data["meta"] = dict()
 

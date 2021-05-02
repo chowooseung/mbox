@@ -4,16 +4,8 @@
 import pymel.core as pm
 
 
-def get_component():
+def blueprint(block, context):
     """
 
     :return:
     """
-
-
-def draw():
-    """
-
-    :return:
-    """
-

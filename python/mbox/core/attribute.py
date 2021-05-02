@@ -3,7 +3,6 @@
 # maya
 
 # mbox
-from mbox import log
 
 
 def add(node,
@@ -14,11 +13,11 @@ def add(node,
         shortName=None,
         minValue=None,
         maxValue=None,
-        keyable=None,
         multi=None,
-        readable=None,
-        storable=None,
-        writable=None,
+        keyable=True,
+        readable=True,
+        storable=True,
+        writable=True,
         channelBox=None):
     """
     add attribute
@@ -40,9 +39,9 @@ def add(node,
     :return: attribute
     """
 
-    if node.hasAttr(longName):
-        log.log("Attribute : {0} Already exists".format(longName), log.error)
-        return
+    # if node.hasAttr(longName):
+    #     log.log("Attribute : {0} Already exists".format(longName), log.error)
+    #     return
 
     data = dict()
 
@@ -166,13 +165,14 @@ def lock(nodes, attrs):
     :return:
     """
     if not isinstance(nodes, list):
-        nodes = list(nodes)
+        nodes = [nodes]
     if not isinstance(attrs, list):
-        attrs = list(attrs)
+        attrs = [attrs]
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, Keyable=True)
+            node.setAttr(attr, lock=False, keyable=True)
+
 
 def unlock(nodes, attrs):
     """
@@ -183,13 +183,14 @@ def unlock(nodes, attrs):
     :return:
     """
     if not isinstance(nodes, list):
-        nodes = list(nodes)
+        nodes = [nodes]
     if not isinstance(attrs, list):
-        attrs = list(attrs)
+        attrs = [attrs]
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, Keyable=True)
+            node.setAttr(attr, lock=False, keyable=True)
+
 
 def keyable(nodes, attrs):
     """
@@ -200,13 +201,14 @@ def keyable(nodes, attrs):
     :return:
     """
     if not isinstance(nodes, list):
-        nodes = list(nodes)
+        nodes = [nodes]
     if not isinstance(attrs, list):
-        attrs = list(attrs)
+        attrs = [attrs]
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, Keyable=True)
+            node.setAttr(attr, lock=False, keyable=True)
+
 
 def nonkeyable(nodes, attrs):
     """
@@ -217,13 +219,14 @@ def nonkeyable(nodes, attrs):
     :return:
     """
     if not isinstance(nodes, list):
-        nodes = list(nodes)
+        nodes = [nodes]
     if not isinstance(attrs, list):
-        attrs = list(attrs)
+        attrs = [attrs]
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, Keyable=False, channelBox=True)
+            node.setAttr(attr, lock=False, keyable=False, channelBox=True)
+
 
 def change_rotateorder(node, rotateOrder):
     """

@@ -1,14 +1,16 @@
 # -*- coding:utf-8 -*-
 
 # maya
-
-import math
-
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 import pymel.core as pm
 import pymel.util as pmu
-from mbox.core import curve, attribute
 from pymel.core import datatypes
+
+#
+import math
+
+# mbox
+from mbox.core import curve, attribute
 
 
 #############################################
@@ -177,7 +179,6 @@ def create(parent=None,
                    kwargs["ro"])
 
     else:
-        mgear.log("invalid type of ico", mgear.sev_error)
         return
 
     return ctl
@@ -225,13 +226,12 @@ def cube(parent=None,
     v_array = [ppp, ppN, NpN, NNN, NNp, Npp, NpN, Npp, ppp, pNp, NNp, pNp, pNN,
                ppN, pNN, NNN]
 
-    points = getPointArrayWithOffset(v_array,
-                                     pos_offset,
-                                     rot_offset)
+    points = get_point_array_with_offset(v_array,
+                                         pos_offset,
+                                         rot_offset)
 
-    node = curve.addCurve(parent, name, points, False, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, False, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -274,11 +274,10 @@ def pyramid(parent=None,
 
     v_array = [pp, top, pN, pp, Np, top, NN, Np, NN, pN]
 
-    points = getPointArrayWithOffset(v_array, pos_offset, rot_offset)
+    points = get_point_array_with_offset(v_array, pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, False, 1, m)
-
-    setcolor(node, color)
+    node = curve.addcurve(parent, name, points, False, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -314,11 +313,10 @@ def square(parent=None,
     v2 = datatypes.Vector(lenX * -1, 0, lenZ * -1)
     v3 = datatypes.Vector(lenX * -1, 0, lenZ)
 
-    points = getPointArrayWithOffset([v0, v1, v2, v3], pos_offset, rot_offset)
+    points = get_point_array_with_offset([v0, v1, v2, v3], pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, True, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, True, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -356,12 +354,11 @@ def flower(parent=None,
     v6 = datatypes.Vector(-dlen, 0, 0)
     v7 = datatypes.Vector(dlen * .4, dlen * .4, 0)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7], pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, True, degree, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, True, degree, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -399,12 +396,11 @@ def circle(parent=None,
     v6 = datatypes.Vector(-dlen * 1.108, 0, 0)
     v7 = datatypes.Vector(-dlen * .78, 0, -dlen * .78)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7], pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, True, degree, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, True, degree, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -472,32 +468,32 @@ def cylinder(parent=None,
     v22 = datatypes.Vector(-dlen * offsetMult, - dhei, 0)
     v23 = datatypes.Vector(-dlen * offsetMult, dhei, 0)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7], pos_offset, rot_offset)
-    node = curve.addCurve(parent, name, points, True, degree, m)
+    node = curve.add_curve(parent, name, points, True, degree, m)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v8, v9, v10, v11, v12, v13, v14, v15], pos_offset, rot_offset)
-    crv_0 = curve.addCurve(parent, node + "_0crv", points, True, degree, m)
+    crv_0 = curve.add_curve(parent, node + "_0crv", points, True, degree, m)
 
-    points = getPointArrayWithOffset([v16, v17], pos_offset, rot_offset)
-    crv_1 = curve.addCurve(parent, node + "_1crv", points, True, 1, m)
+    points = get_point_array_with_offset([v16, v17], pos_offset, rot_offset)
+    crv_1 = curve.add_curve(parent, node + "_1crv", points, True, 1, m)
 
-    points = getPointArrayWithOffset([v18, v19], pos_offset, rot_offset)
-    crv_2 = curve.addCurve(parent, node + "_2crv", points, True, 1, m)
+    points = get_point_array_with_offset([v18, v19], pos_offset, rot_offset)
+    crv_2 = curve.add_curve(parent, node + "_2crv", points, True, 1, m)
 
-    points = getPointArrayWithOffset([v20, v21], pos_offset, rot_offset)
-    crv_3 = curve.addCurve(parent, node + "_3crv", points, True, 1, m)
+    points = get_point_array_with_offset([v20, v21], pos_offset, rot_offset)
+    crv_3 = curve.add_curve(parent, node + "_3crv", points, True, 1, m)
 
-    points = getPointArrayWithOffset([v22, v23], pos_offset, rot_offset)
-    crv_4 = curve.addCurve(parent, node + "_4crv", points, True, 1, m)
+    points = get_point_array_with_offset([v22, v23], pos_offset, rot_offset)
+    crv_4 = curve.add_curve(parent, node + "_4crv", points, True, 1, m)
 
     for crv in [crv_0, crv_1, crv_2, crv_3, crv_4]:
         for shp in crv.listRelatives(shapes=True):
             node.addChild(shp, add=True, shape=True)
         pm.delete(crv)
 
-    setcolor(node, color)
+    curve.set_color(node, color)
 
     return node
 
@@ -539,10 +535,9 @@ def compas(parent=None,
         point_pos.append(w)
         v = v.rotateBy((0, (2 * pmu.math.pi) / (division + 0.0), 0))
 
-    points = getPointArrayWithOffset(point_pos, pos_offset, rot_offset)
-    node = curve.addCurve(parent, name, points, True, degree, m)
-
-    setcolor(node, color)
+    points = get_point_array_with_offset(point_pos, pos_offset, rot_offset)
+    node = curve.add_curve(parent, name, points, True, degree, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -582,11 +577,10 @@ def diamond(parent=None,
     v_array = [pp, top, pN, pp, Np, top, NN, Np, NN, pN, bottom, NN, bottom,
                Np, bottom, pp]
 
-    points = getPointArrayWithOffset(v_array, pos_offset, rot_offset)
+    points = get_point_array_with_offset(v_array, pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, False, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, False, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -627,11 +621,10 @@ def cubewithpeak(parent=None,
     v_array = [peak, ppp, ppN, peak, NpN, ppN, NpN, peak, Npp, NpN, NNN, NNp,
                Npp, NpN, Npp, ppp, pNp, NNp, pNp, pNN, ppN, pNN, NNN]
 
-    points = getPointArrayWithOffset(v_array, pos_offset, rot_offset)
+    points = get_point_array_with_offset(v_array, pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, False, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, False, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -671,34 +664,34 @@ def sphere(parent=None,
 
     ro = datatypes.Vector([1.5708, 0, 0])
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7], pos_offset, rot_offset)
-    node = curve.addCurve(parent, name, points, True, degree, m)
+    node = curve.add_curve(parent, name, points, True, degree, m)
 
     if rot_offset:
         rot_offset += ro
     else:
         rot_offset = ro
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7], pos_offset, rot_offset)
-    crv_0 = curve.addCurve(parent, node + "_0crv", points, True, degree, m)
+    crv_0 = curve.add_curve(parent, node + "_0crv", points, True, degree, m)
 
     ro = datatypes.Vector([1.5708, 0, 1.5708])
     if rot_offset:
         rot_offset += ro
     else:
         rot_offset = ro
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7], pos_offset, rot_offset + ro + ro)
 
-    crv_1 = curve.addCurve(parent, node + "_1crv", points, True, degree, m)
+    crv_1 = curve.add_curve(parent, node + "_1crv", points, True, degree, m)
 
     for crv in [crv_0, crv_1]:
         for shp in crv.listRelatives(shapes=True):
             node.addChild(shp, add=True, shape=True)
         pm.delete(crv)
 
-    setcolor(node, color)
+    curve.set_color(node, color)
 
     return node
 
@@ -734,12 +727,11 @@ def arrow(parent=None,
     v5 = datatypes.Vector(0, -0.3 * dlen, 0.3 * dlen)
     v6 = datatypes.Vector(0, -0.3 * dlen, -dlen)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6], pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, True, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, True, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -794,11 +786,10 @@ def crossarrow(parent=None,
 
     v_array = [v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14,
                v15, v16, v17, v18, v19, v20, v21, v22, v23]
-    points = getPointArrayWithOffset(v_array, pos_offset, rot_offset)
+    points = get_point_array_with_offset(v_array, pos_offset, rot_offset)
 
-    node = curve.addCurve(parent, name, points, True, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, True, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -844,14 +835,13 @@ def cross(parent=None,
     v10 = datatypes.Vector(-width, offset2, 0)
     v11 = datatypes.Vector(0, offset1, 0)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11],
         pos_offset,
         rot_offset)
 
-    node = curve.addCurve(parent, name, points, True, 1, m)
-
-    setcolor(node, color)
+    node = curve.add_curve(parent, name, points, True, 1, m)
+    curve.set_color(node, color)
 
     return node
 
@@ -886,21 +876,21 @@ def null(parent=None,
     v4 = datatypes.Vector(0, 0, dlen)
     v5 = datatypes.Vector(0, 0, -dlen)
 
-    points = getPointArrayWithOffset([v0, v1], pos_offset, rot_offset)
-    node = curve.addCurve(parent, name, points, False, 1, m)
+    points = get_point_array_with_offset([v0, v1], pos_offset, rot_offset)
+    node = curve.add_curve(parent, name, points, False, 1, m)
 
-    points = getPointArrayWithOffset([v2, v3], pos_offset, rot_offset)
-    crv_0 = curve.addCurve(parent, name, points, False, 1, m)
+    points = get_point_array_with_offset([v2, v3], pos_offset, rot_offset)
+    crv_0 = curve.add_curve(parent, name, points, False, 1, m)
 
-    points = getPointArrayWithOffset([v4, v5], pos_offset, rot_offset)
-    crv_1 = curve.addCurve(parent, name, points, False, 1, m)
+    points = get_point_array_with_offset([v4, v5], pos_offset, rot_offset)
+    crv_1 = curve.add_curve(parent, name, points, False, 1, m)
 
     for crv in [crv_0, crv_1]:
         for shp in crv.listRelatives(shapes=True):
             node.addChild(shp, add=True, shape=True)
         pm.delete(crv)
 
-    setcolor(node, color)
+    curve.set_color(node, color)
 
     return node
 
@@ -908,7 +898,6 @@ def null(parent=None,
 def axis(parent=None,
          name="axis",
          width=1,
-         color=[0, 0, 0],
          m=datatypes.Matrix(),
          pos_offset=None,
          rot_offset=None):
@@ -933,17 +922,17 @@ def axis(parent=None,
     v2 = datatypes.Vector(0, dlen, 0)
     v3 = datatypes.Vector(0, 0, dlen)
 
-    points = getPointArrayWithOffset([v0, v1], pos_offset, rot_offset)
-    node = curve.addCurve(parent, name, points, False, 1, m)
-    setcolor(node, 4)
+    points = get_point_array_with_offset([v0, v1], pos_offset, rot_offset)
+    node = curve.add_curve(parent, name, points, False, 1, m)
+    curve.set_color(node, 4)
 
-    points = getPointArrayWithOffset([v0, v2], pos_offset, rot_offset)
-    crv_0 = curve.addCurve(parent, name, points, False, 1, m)
-    setcolor(crv_0, 14)
+    points = get_point_array_with_offset([v0, v2], pos_offset, rot_offset)
+    crv_0 = curve.add_curve(parent, name, points, False, 1, m)
+    curve.set_color(crv_0, 14)
 
-    points = getPointArrayWithOffset([v0, v3], pos_offset, rot_offset)
-    crv_1 = curve.addCurve(parent, name, points, False, 1, m)
-    setcolor(crv_1, 6)
+    points = get_point_array_with_offset([v0, v3], pos_offset, rot_offset)
+    crv_1 = curve.add_curve(parent, name, points, False, 1, m)
+    curve.set_color(crv_1, 6)
 
     for crv in [crv_0, crv_1]:
         for shp in crv.listRelatives(shapes=True):
@@ -952,30 +941,30 @@ def axis(parent=None,
 
     return node
 
-def connection_display_curve(name, centers=[], degree=1):
-    """Visual reference curves connectiong points.
-    Display curve object is a simple curve to show the connection between
-    different guide element..
-    Args:
-        name (str): Local name of the element.
-        centers (list of dagNode):  List of object to define the curve.
-        degree (int): Curve degree. Default 1 = lineal.
-    Returns:
-        dagNode: The newly creted curve.
+
+def connection_display_curve(parent, name, centers=list(), degree=1):
     """
-    crv = curve.addCnsCurve(centers[0], name, centers, degree)
-    crv.attr("overrideEnabled").set(1)
-    crv.attr("overrideDisplayType").set(1)
+
+    :param parent:
+    :param name:
+    :param centers:
+    :param degree:
+    :return:
+    """
+    crv = curve.add_cns_curve(parent, name, centers, degree)
+    crv.attr("overrideEnabled").set(True)
+    crv.attr("overrideDisplayType").set(True)
 
     return crv
 
-def guideRootIcon(parent=None,
-                  name="root",
-                  width=.5,
-                  color=[0, 0, 0],
-                  m=datatypes.Matrix(),
-                  pos_offset=None,
-                  rot_offset=None):
+
+def guide_root_icon(parent=None,
+                    name="root",
+                    width=.5,
+                    color=[1, 0, 0],
+                    m=datatypes.Matrix(),
+                    pos_offset=None,
+                    rot_offset=None):
     """Create a curve with a ROOT GUIDE shape.
     Note:
         This icon is specially design for **Shifter** root guides
@@ -1008,8 +997,12 @@ def guideRootIcon(parent=None,
         rootIco.addChild(shp, add=True, shape=True)
     pm.delete(cubeIco)
 
-    attribute.setNotKeyableAttributes(rootIco)
-    rootIco.addAttr("isGearGuide", at="bool", dv=True)
+    attribute.nonkeyable(rootIco, attrs=["tx", "ty", "tz",
+                                         "rx", "ry", "rz",
+                                         "sx", "sy", "sz",
+                                         "v", "ro"])
+    attribute.add(rootIco, "isGuide", "bool", keyable=False)
+    attribute.add(rootIco, "guides", "message", multi=True)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -1017,13 +1010,13 @@ def guideRootIcon(parent=None,
     return rootIco
 
 
-def guideRootIcon2D(parent=None,
-                    name="root",
-                    width=.5,
-                    color=[0, 0, 0],
-                    m=datatypes.Matrix(),
-                    pos_offset=None,
-                    rot_offset=None):
+def guide_root_icon_2d(parent=None,
+                       name="root",
+                       width=.5,
+                       color=[0, 0, 0],
+                       m=datatypes.Matrix(),
+                       pos_offset=None,
+                       rot_offset=None):
     """Create a curve with a 2D ROOT GUIDE shape.
     Note:
         This icon is specially design for **Shifter** root guides
@@ -1061,8 +1054,12 @@ def guideRootIcon2D(parent=None,
         rootIco.addChild(shp, add=True, shape=True)
     pm.delete(squareIco)
 
-    attribute.setNotKeyableAttributes(rootIco)
-    rootIco.addAttr("isGearGuide", at="bool", dv=True)
+    attribute.nonkeyable(rootIco, attrs=["tx", "ty", "tz",
+                                         "rx", "ry", "rz",
+                                         "sx", "sy", "sz",
+                                         "v", "ro"])
+    attribute.add(rootIco, "isGuide", "bool", keyable=False)
+    attribute.add(rootIco, "guides", "message", multi=True)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -1070,13 +1067,13 @@ def guideRootIcon2D(parent=None,
     return rootIco
 
 
-def guideLocatorIcon(parent=None,
-                     name="locator",
-                     width=.5,
-                     color=[0, 0, 0],
-                     m=datatypes.Matrix(),
-                     pos_offset=None,
-                     rot_offset=None):
+def guide_locator_icon(parent=None,
+                       name="locator",
+                       width=.5,
+                       color=[0, 0, 0],
+                       m=datatypes.Matrix(),
+                       pos_offset=None,
+                       rot_offset=None):
     """Create a curve with a LOCATOR GUIDE shape.
     Note:
         This icon is specially design for **Shifter** locator guides
@@ -1103,8 +1100,10 @@ def guideLocatorIcon(parent=None,
         rootIco.addChild(shp, add=True, shape=True)
     pm.delete(sphereIco)
 
-    attribute.setNotKeyableAttributes(rootIco)
-    rootIco.addAttr("isGearGuide", at="bool", dv=True)
+    attribute.nonkeyable(rootIco, attrs=["tx", "ty", "tz",
+                                         "rx", "ry", "rz",
+                                         "sx", "sy", "sz",
+                                         "v", "ro"])
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -1112,13 +1111,13 @@ def guideLocatorIcon(parent=None,
     return rootIco
 
 
-def guideBladeIcon(parent=None,
-                   name="blade",
-                   lenX=1.0,
-                   color=[0, 0, 0],
-                   m=datatypes.Matrix(),
-                   pos_offset=None,
-                   rot_offset=None):
+def guide_blade_icon(parent=None,
+                     name="blade",
+                     lenX=1.0,
+                     color=[0, 0, 0],
+                     m=datatypes.Matrix(),
+                     pos_offset=None,
+                     rot_offset=None):
     """Create a curve with a BLADE GUIDE shape.
     Note:
         This icon is specially design for **Shifter** blade guides
@@ -1139,18 +1138,20 @@ def guideBladeIcon(parent=None,
     v1 = datatypes.Vector(lenX, 0, 0)
     v2 = datatypes.Vector(0, lenX / 3, 0)
 
-    points = getPointArrayWithOffset(
+    points = get_point_array_with_offset(
         [v0, v1, v2], pos_offset, rot_offset)
 
-    bladeIco = curve.addCurve(parent, name, points, True, 1, m)
+    bladeIco = curve.add_curve(parent, name, points, True, 1, m)
+    curve.set_color(bladeIco, color)
 
-    setcolor(bladeIco, color)
-
-    attribute.setNotKeyableAttributes(bladeIco)
-    attribute.unlockAttribute(bladeIco, attributes=["tx", "ty", "tz",
-                                                    "rx", "ry", "rz",
-                                                    "sx", "sy", "sz",
-                                                    "v", "ro"])
+    attribute.nonkeyable(bladeIco, attrs=["tx", "ty", "tz",
+                                          "rx", "ry", "rz",
+                                          "sx", "sy", "sz",
+                                          "v", "ro"])
+    attribute.lock(bladeIco, attrs=["tx", "ty", "tz",
+                                    "rx", "ry", "rz",
+                                    "sx", "sy", "sz",
+                                    "v", "ro"])
     # bladeIco.scale.set(1, 1, 1)
     # Set the control shapes isHistoricallyInteresting
     for oShape in bladeIco.getShapes():
@@ -1159,7 +1160,7 @@ def guideBladeIcon(parent=None,
     return bladeIco
 
 
-def getPointArrayWithOffset(point_pos, pos_offset=None, rot_offset=None):
+def get_point_array_with_offset(point_pos, pos_offset=None, rot_offset=None):
     """Get Point array with offset
     Convert a list of vector to a List of float and add the position and
     rotation offset.
@@ -1172,7 +1173,7 @@ def getPointArrayWithOffset(point_pos, pos_offset=None, rot_offset=None):
     Returns:
         list of vector: the new point positions
     """
-    points = []
+    points = list()
     for v in point_pos:
         if rot_offset:
             mv = om.MVector(v.x, v.y, v.z)
@@ -1187,16 +1188,3 @@ def getPointArrayWithOffset(point_pos, pos_offset=None, rot_offset=None):
         points.append(v)
 
     return points
-
-
-def setcolor(node, color):
-    """Set the color in the Icons.
-    Arguments:
-        node(dagNode): The object
-        color (int or list of float): The color in index base or RGB.
-    """
-    # TODO: configure this funcion to work with RGB or Index color base
-    # on Maya version.
-    # version = mgear.core.getMayaver()
-
-    curve.set_color(node, color)
