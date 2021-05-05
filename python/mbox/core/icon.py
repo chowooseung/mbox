@@ -10,7 +10,8 @@ from pymel.core import datatypes
 import math
 
 # mbox
-from mbox.core import curve, attribute
+from mbox.core import curve
+from mbox.core import attribute
 
 
 #############################################
@@ -924,7 +925,7 @@ def axis(parent=None,
 
     points = get_point_array_with_offset([v0, v1], pos_offset, rot_offset)
     node = curve.add_curve(parent, name, points, False, 1, m)
-    curve.set_color(node, 4)
+    curve.set_color(node, 13)
 
     points = get_point_array_with_offset([v0, v2], pos_offset, rot_offset)
     crv_0 = curve.add_curve(parent, name, points, False, 1, m)
@@ -997,12 +998,14 @@ def guide_root_icon(parent=None,
         rootIco.addChild(shp, add=True, shape=True)
     pm.delete(cubeIco)
 
-    attribute.nonkeyable(rootIco, attrs=["tx", "ty", "tz",
-                                         "rx", "ry", "rz",
-                                         "sx", "sy", "sz",
-                                         "v", "ro"])
+    attribute.non_key(rootIco, attrs=["tx", "ty", "tz",
+                                      "rx", "ry", "rz",
+                                      "sx", "sy", "sz",
+                                      "v"])
     attribute.add(rootIco, "isGuide", "bool", keyable=False)
     attribute.add(rootIco, "guides", "message", multi=True)
+    attribute.lock(rootIco, "v")
+    attribute.hide(rootIco, "v")
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -1013,7 +1016,7 @@ def guide_root_icon(parent=None,
 def guide_root_icon_2d(parent=None,
                        name="root",
                        width=.5,
-                       color=[0, 0, 0],
+                       color=[1, 0, 0],
                        m=datatypes.Matrix(),
                        pos_offset=None,
                        rot_offset=None):
@@ -1054,12 +1057,14 @@ def guide_root_icon_2d(parent=None,
         rootIco.addChild(shp, add=True, shape=True)
     pm.delete(squareIco)
 
-    attribute.nonkeyable(rootIco, attrs=["tx", "ty", "tz",
-                                         "rx", "ry", "rz",
-                                         "sx", "sy", "sz",
-                                         "v", "ro"])
+    attribute.non_key(rootIco, attrs=["tx", "ty", "tz",
+                                      "rx", "ry", "rz",
+                                      "sx", "sy", "sz",
+                                      "v"])
     attribute.add(rootIco, "isGuide", "bool", keyable=False)
     attribute.add(rootIco, "guides", "message", multi=True)
+    attribute.lock(rootIco, "v")
+    attribute.hide(rootIco, "v")
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -1070,7 +1075,7 @@ def guide_root_icon_2d(parent=None,
 def guide_locator_icon(parent=None,
                        name="locator",
                        width=.5,
-                       color=[0, 0, 0],
+                       color=[1, 1, 0],
                        m=datatypes.Matrix(),
                        pos_offset=None,
                        rot_offset=None):
@@ -1100,10 +1105,12 @@ def guide_locator_icon(parent=None,
         rootIco.addChild(shp, add=True, shape=True)
     pm.delete(sphereIco)
 
-    attribute.nonkeyable(rootIco, attrs=["tx", "ty", "tz",
-                                         "rx", "ry", "rz",
-                                         "sx", "sy", "sz",
-                                         "v", "ro"])
+    attribute.non_key(rootIco, attrs=["tx", "ty", "tz",
+                                      "rx", "ry", "rz",
+                                      "sx", "sy", "sz",
+                                      "v"])
+    attribute.lock(rootIco, "v")
+    attribute.hide(rootIco, "v")
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -1112,27 +1119,24 @@ def guide_locator_icon(parent=None,
 
 
 def guide_blade_icon(parent=None,
+                     aim=None,
                      name="blade",
                      lenX=1.0,
-                     color=[0, 0, 0],
+                     color=[1, 0, 0],
                      m=datatypes.Matrix(),
                      pos_offset=None,
                      rot_offset=None):
-    """Create a curve with a BLADE GUIDE shape.
-    Note:
-        This icon is specially design for **Shifter** blade guides
-    Arguments:
-        parent (dagNode): The parent object of the newly created curve.
-        name (str): Name of the curve.
-        lenX (float): Width of the shape.
-        color (int or list of float): The color in index base or RGB.
-        m (matrix): The global transformation of the curve.
-        pos_offset (vector): The xyz position offset of the curve from
-            its center.
-        rot_offset (vector): The xyz rotation offset of the curve from
-            its center. xyz in radians
-    Returns:
-        dagNode: The newly created icon.
+    """
+
+    :param parent:
+    :param aim:
+    :param name:
+    :param lenX:
+    :param color:
+    :param m:
+    :param pos_offset:
+    :param rot_offset:
+    :return:
     """
     v0 = datatypes.Vector(0, 0, 0)
     v1 = datatypes.Vector(lenX, 0, 0)
@@ -1144,14 +1148,29 @@ def guide_blade_icon(parent=None,
     bladeIco = curve.add_curve(parent, name, points, True, 1, m)
     curve.set_color(bladeIco, color)
 
-    attribute.nonkeyable(bladeIco, attrs=["tx", "ty", "tz",
-                                          "rx", "ry", "rz",
-                                          "sx", "sy", "sz",
-                                          "v", "ro"])
+    attribute.add(bladeIco, "rollOffset", "float", 0)
+    attribute.non_key(bladeIco, attrs=["tx", "ty", "tz",
+                                       "rx", "ry", "rz",
+                                       "sx", "sy", "sz",
+                                       "v", "rollOffset"])
+    pm.pointConstraint(parent, bladeIco)
+    aim_cons = pm.aimConstraint(aim,
+                                bladeIco,
+                                offset=(0, 0, 0),
+                                aimVector=(1, 0, 0),
+                                upVector=(0, 1, 0),
+                                worldUpType="objectrotation",
+                                worldUpVector=(0, 1, 0),
+                                worldUpObject=parent)
+    bladeIco.rollOffset >> aim_cons.offsetX
     attribute.lock(bladeIco, attrs=["tx", "ty", "tz",
                                     "rx", "ry", "rz",
                                     "sx", "sy", "sz",
-                                    "v", "ro"])
+                                    "v"])
+    attribute.hide(bladeIco, attrs=["tx", "ty", "tz",
+                                    "rx", "ry", "rz",
+                                    "sx", "sy", "sz",
+                                    "v"])
     # bladeIco.scale.set(1, 1, 1)
     # Set the control shapes isHistoricallyInteresting
     for oShape in bladeIco.getShapes():

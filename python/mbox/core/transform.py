@@ -144,7 +144,7 @@ def get_chain_transform2(positions, normal, axis="xz", negate=False):
 
         # Normal Offset
         if i > 0 and i != len(positions) - 1:
-            normal = vector.getTransposedVector(
+            normal = vector.get_transposed_vector(
                 normal, [v0, v1], [v1, v2])
 
         if i == len(positions) - 1:
@@ -157,7 +157,7 @@ def get_chain_transform2(positions, normal, axis="xz", negate=False):
     return transforms
 
 
-def getTransformFromPos(pos):
+def get_transform_from_pos(pos):
     """Create a transformation Matrix from a given position.
     Arguments:
         pos (vector): Position for the transformation matrix
@@ -174,7 +174,7 @@ def getTransformFromPos(pos):
     return m
 
 
-def getOffsetPosition(node, offset=[0, 0, 0]):
+def get_offset_position(node, offset=[0, 0, 0]):
     """Get an offset position from dagNode
     Arguments:
         node (dagNode): The dagNode with the original position.
@@ -204,7 +204,7 @@ def get_position_from_matrix(in_m):
     return pos
 
 
-def setMatrixPosition(in_m, pos):
+def set_matrix_position(in_m, pos):
     """Set the position for a given matrix
     Arguments:
         in_m (matrix): The input Matrix.
@@ -223,7 +223,7 @@ def setMatrixPosition(in_m, pos):
     return m
 
 
-def setMatrixRotation(m, rot):
+def set_matrix_rotation(m, rot):
     """Set the rotation for a given matrix
     Arguments:
         in_m (matrix): The input Matrix.
@@ -242,7 +242,7 @@ def setMatrixRotation(m, rot):
     return m
 
 
-def setMatrixScale(m, scl=[1, 1, 1]):
+def set_matrix_scale(m, scl=[1, 1, 1]):
     """Set the scale for a given matrix
     Arguments:
         in_m (matrix): The input Matrix.
@@ -366,16 +366,12 @@ def getRotationFromAxis(in_a, in_b, axis="xy", negate=False):
     return m
 
 
-def getSymmetricalTransform(t, axis="yz", fNegScale=False):
-    """Get the symmetrical tranformation
-    Get the symmetrical tranformation matrix from a define 2 axis mirror
-    plane. exp:"yz".
-    Arguments:
-        t (matrix): The transformation matrix to mirror.
-        axis (str): The mirror plane.
-        fNegScale(bool):  This function is not yet implemented.
-    Returns:
-        matrix: The symmetrical tranformation matrix.
+def get_symmetrical_transform(matrix, axis="yz"):
+    """
+
+    :param matrix:
+    :param axis:
+    :return:
     """
 
     if axis == "yz":
@@ -394,14 +390,12 @@ def getSymmetricalTransform(t, axis="yz", fNegScale=False):
                                                 0, -1, 0, 0,
                                                 0, 0, 1, 0,
                                                 0, 0, 0, 1)
-    t *= mirror
+    matrix *= mirror
 
-    # TODO: add freeze negative scaling procedure.
-
-    return t
+    return matrix
 
 
-def resetTransform(node, t=True, r=True, s=True):
+def reset_transform(node, t=True, r=True, s=True):
     """Reset the scale, rotation and translation for a given dagNode.
     Arguments:
         node(dagNode): The object to reset the transforms.
@@ -532,9 +526,9 @@ def getInterpolateTransformMatrix(t1, t2, blend=.5):
     t1 = convert2TransformMatrix(t1)
     t2 = convert2TransformMatrix(t2)
 
-    if (blend == 1.0):
+    if blend == 1.0:
         return t2
-    elif (blend == 0.0):
+    elif blend == 0.0:
         return t1
 
     # translate

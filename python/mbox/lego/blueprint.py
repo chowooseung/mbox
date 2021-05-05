@@ -46,19 +46,19 @@ def get_blueprint_from_file(path):
     return data
 
 
-def draw(blueprint, context):
+def _draw(graph, blueprint):
     """
 
     :return:
     """
-    if "blockID" not in blueprint:
-        box.blueprint(blueprint, context)
+    if "id" not in blueprint:
+        box.blueprint(blueprint)
     else:
-        mod = importlib.import_module("mbox.lego.box.{0}.blueprint".format(blueprint["blockID"]))
+        mod = importlib.import_module("mbox.lego.box.{0}.blueprint".format(blueprint["id"]))
         importlib.reload(mod)
-        if blueprint["blockVersion"] != mod.version:
+        if blueprint["version"] != mod.version:
             pass
-        mod.blueprint(blueprint, context)
+        mod.blueprint(blueprint)
     for child in blueprint["children"]:
         draw(child)
 

@@ -111,12 +111,12 @@ def add_enum(node,
              longName,
              value,
              enum,
-             niceName,
-             shortName,
-             keyable,
-             readable,
-             storable,
-             writable):
+             niceName=None,
+             shortName=None,
+             keyable=True,
+             readable=True,
+             storable=True,
+             writable=True):
     """
     add enum attribute
 
@@ -132,6 +132,30 @@ def add_enum(node,
     :param writable:
     :return:
     """
+    # if node.hasAttr(longName):
+    #     mgear.log("Attribute '" + longName + "' already exists",
+    #               mgear.sev_warning)
+    #     return
+
+    data = dict()
+
+    if shortName is not None:
+        data["shortName"] = shortName
+    if niceName is not None:
+        data["niceName"] = niceName
+
+    data["attributeType"] = "enum"
+    data["en"] = ":".join(enum)
+
+    data["keyable"] = keyable
+    data["readable"] = readable
+    data["storable"] = storable
+    data["writable"] = writable
+
+    node.addAttr(longName, **data)
+    node.setAttr(longName, value)
+
+    return node.attr(longName)
 
 
 def add_proxy(sourceAttrs, targets, duplicatedPolicy=None):
@@ -171,7 +195,7 @@ def lock(nodes, attrs):
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, keyable=True)
+            node.setAttr(attr, lock=True)
 
 
 def unlock(nodes, attrs):
@@ -189,10 +213,27 @@ def unlock(nodes, attrs):
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, keyable=True)
+            node.setAttr(attr, lock=False)
 
 
-def keyable(nodes, attrs):
+def hide(nodes, attrs):
+    """
+
+    :param nodes:
+    :param attrs:
+    :return:
+    """
+    if not isinstance(nodes, list):
+        nodes = [nodes]
+    if not isinstance(attrs, list):
+        attrs = [attrs]
+
+    for node in nodes:
+        for attr in attrs:
+            node.setAttr(attr, keyable=False, channelBox=False)
+
+
+def key(nodes, attrs):
     """
     attribute keyable
 
@@ -207,12 +248,12 @@ def keyable(nodes, attrs):
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, keyable=True)
+            node.setAttr(attr, keyable=True)
 
 
-def nonkeyable(nodes, attrs):
+def non_key(nodes, attrs):
     """
-    attribute nonkeyable
+    attribute
 
     :param nodes: transform or transform list
     :param attrs: attribute or attribute list
@@ -225,10 +266,10 @@ def nonkeyable(nodes, attrs):
 
     for node in nodes:
         for attr in attrs:
-            node.setAttr(attr, lock=False, keyable=False, channelBox=True)
+            node.setAttr(attr, keyable=False, channelBox=True)
 
 
-def change_rotateorder(node, rotateOrder):
+def change_rotate_order(node, rotateOrder):
     """
     when rotateOrder change, euler revalue
 
@@ -236,3 +277,4 @@ def change_rotateorder(node, rotateOrder):
     :param rotateOrder:
     :return:
     """
+

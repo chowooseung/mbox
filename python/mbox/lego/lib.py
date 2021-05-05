@@ -9,6 +9,38 @@ from collections import OrderedDict
 import sys
 import os
 
+# mbox
+from mbox.core import primitive
+from mbox.core import attribute
+from mbox.core import icon
+
+
+def blueprint_find_dag(node, name):
+    dags = pm.ls(node, dagObjects=True)
+    return filter(lambda x: name == x.nodeName(), dags)
+
+
+def blueprint_find_index(node, name, side):
+    """
+
+    :param node:
+    :param name:
+    :param side:
+    :return:
+    """
+    networks = [root.message.outputs(type="network")[0] for root in pm.ls(node, dagObjects=True)
+                if root.hasAttr("isGuide")]
+    indexes = list()
+    for network in networks:
+        if network.attr("name").get() == name and network.side.getEnums().get_key(network.side.get()) == side:
+            indexes.append(int(network.attr("index").get()))
+    if not indexes:
+        return str(0)
+    for index, number in enumerate(sorted(indexes)):
+        if str(index) != str(number):
+            return str(index)
+    return str(max(indexes)+1)
+
 
 def get_blueprint_graph(graph, data=None):
     """
@@ -95,6 +127,7 @@ def get_root_info(node):
     data["preScripts"] = list()
     data["postScripts"] = list()
     data["nameRule"] = OrderedDict()
+    data["nameRule"]["sideName"] = ["", "", ""]
     data["nameRule"]["jointExp"] = str()
     data["nameRule"]["controllerExp"] = str()
     data["nameRule"]["convention"] = OrderedDict()
@@ -123,8 +156,8 @@ def get_block_info(node):
     data = OrderedDict()
     data["blockID"] = node.name()
     data["blockVersion"] = str()
+    data["blockSide"] = str()
     data["transforms"] = list()
-    data["direction"] = ["", "", ""]
     data["mirror"] = True
     data["jointAxis"] = ["z", "y"]
     data["joint"] = True
