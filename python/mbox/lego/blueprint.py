@@ -110,7 +110,6 @@ def get_root_info(node):
     data["preScripts"] = node.attr("preScripts").get() if node.attr("preScripts").get() else list()
     data["postScripts"] = node.attr("postScripts").get() if node.attr("postScripts").get() else list()
     data["nameRule"] = OrderedDict()
-    data["nameRule"]["direction"] = node.attr("direction").get()
     data["nameRule"]["jointExp"] = node.attr("jointExp").get()
     data["nameRule"]["controllerExp"] = node.attr("controllerExp").get()
     data["nameRule"]["convention"] = OrderedDict()
@@ -121,7 +120,7 @@ def get_root_info(node):
     data["nameRule"]["controllerDescriptionLetterCase"] = \
         node.attr("controllerDescriptionLetterCase").getEnums().key(node.attr("controllerDescriptionLetterCase").get())
     data["blocks"] = node.attr("affects")[0].outputs(type="network") \
-        if node.attr("affects").outputs(type="network") else None
+        if node.attr("affects")[0].outputs(type="network") else None
     data["notes"] = node.attr("notes").get()
 
     return data
@@ -143,7 +142,6 @@ def get_block_info(node):
     data["mirror"] = node.attr("mirror").get()
     data["joint"] = node.attr("joint").get()
     data["jointAxis"] = [node.attr("primaryAxis").get(), node.attr("secondaryAxis").get()]
-    data["priority"] = node.attr("priority").get()
     data["parent"] = node.attr("parent").get()
 
     mod = importlib.import_module("mbox.lego.box.{block}.blueprint".format(block=data["component"]))
@@ -260,8 +258,7 @@ def draw_block_selection(node, block):
     orig_bp = get_blueprint_from_hierarchy(node.getParent(generations=-1))
 
     mod = importlib.import_module("mbox.lego.box.{block}.blueprint".format(block=block))
-    priority = 1 if node.hasAttr("isBlueprint") else node.message.outputs(type="network")[0].attr("priority").get() + 1
-    block_bp = mod.initialize_(orig_bp, node.nodeName(), priority)
+    block_bp = mod.initialize_(orig_bp, node.nodeName())
 
     insert_blueprint(orig_bp["blocks"], block_bp, node.getParent(generations=-1), orig_bp)
 
@@ -279,8 +276,9 @@ def draw_block_no_selection(block):
     """
     init_bp = blueprint.initialize_()
     guide = blueprint.blueprint(init_bp)
+
     mod = importlib.import_module("mbox.lego.box.{block}.blueprint".format(block=block))
-    block_bp = mod.initialize_(init_bp, "guide", 1)
+    block_bp = mod.initialize_(init_bp, "guide")
 
     insert_blueprint(init_bp["blocks"], block_bp, guide, init_bp)
 
@@ -386,5 +384,5 @@ def save(bp, path):
     :param path:
     :return:
     """
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w") as f:
         json.dump(bp, f, ensure_ascii=False, sort_keys=False, indent=2)

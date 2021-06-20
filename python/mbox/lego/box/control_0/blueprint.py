@@ -11,7 +11,7 @@ from mbox.lego.blueprint import get_block_index
 from mbox.core import attribute, icon
 
 
-def initialize_(bp, parent, priority):
+def initialize_(bp, parent):
     data = OrderedDict()
     data["component"] = "control_0"
     data["version"] = "0.0.0"
@@ -27,7 +27,7 @@ def initialize_(bp, parent, priority):
     data["meta"]["worldOrientAxis"] = False
     data["meta"]["keyAbleAttrs"] = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
     data["parent"] = parent
-    data["priority"] = priority
+    data["priority"] = 0
 
     return data
 
@@ -53,7 +53,6 @@ def initialize(affects, bp):
     attribute.add(network, "transforms", "matrix", multi=True)
     for index, transform in enumerate(bp["transforms"]):
         network.attr("transforms")[index].set(pm.datatypes.Matrix(transform))
-    attribute.add(network, "priority", "long", bp["priority"], keyable=False)
 
     affects >> network.affectedBy[0]
     return network
