@@ -4,9 +4,7 @@
 import math
 
 # maya
-from pymel import util
-from pymel.core import datatypes
-from pymel.core import nodetypes
+import pymel.core as pm
 
 # mbox
 from mbox.core import vector
@@ -33,9 +31,9 @@ def get_transform_looking_at(pos, lookAt, normal, axis="xy", negate=False):
         a = lookAt - pos
 
     a.normalize()
-    c = util.cross(a, normal)
+    c = pm.util.cross(a, normal)
     c.normalize()
-    b = util.cross(c, a)
+    b = pm.util.cross(c, a)
     b.normalize()
 
     if axis == "xy":
@@ -84,7 +82,7 @@ def get_transform_looking_at(pos, lookAt, normal, axis="xy", negate=False):
         Y = b
         Z = c
 
-    m = datatypes.Matrix()
+    m = pm.datatypes.Matrix()
     m[0] = [X[0], X[1], X[2], 0.0]
     m[1] = [Y[0], Y[1], Y[2], 0.0]
     m[2] = [Z[0], Z[1], Z[2], 0.0]
@@ -111,7 +109,7 @@ def get_chain_transform(positions, normal, axis="xz", negate=False):
 
         # Normal Offset
         if i > 0:
-            normal = vector.getTransposedVector(
+            normal = vector.get_transposed_vector(
                 normal, [v0, v1], [v1, v2])
 
         t = get_transform_looking_at(v1, v2, normal, axis, negate)
@@ -165,7 +163,7 @@ def get_transform_from_pos(pos):
         matrix: The newly created transformation matrix
     >>>  t = tra.getTransformFromPos(self.guide.pos["root"])
     """
-    m = datatypes.Matrix()
+    m = pm.datatypes.Matrix()
     m[0] = [1.0, 0, 0, 0.0]
     m[1] = [0, 1.0, 0, 0.0]
     m[2] = [0, 0, 1.0, 0.0]
@@ -188,7 +186,7 @@ def get_offset_position(node, offset=[0, 0, 0]):
             vTemp = tra.getOffsetPosition( self.root, [0,-3,0.1])
             self.knee = self.addLoc("knee", self.root, vTemp)
     """
-    offsetVec = datatypes.Vector(offset[0], offset[1], offset[2])
+    offsetVec = pm.datatypes.Vector(offset[0], offset[1], offset[2])
     return offsetVec + node.get_translation(space="world")
 
 
@@ -204,6 +202,14 @@ def get_position_from_matrix(in_m):
     return pos
 
 
+def get_rotation_from_matrix(in_m):
+    """Get the Rotation values from matrix
+
+    :param in_m:
+    :return:
+    """
+
+
 def set_matrix_position(in_m, pos):
     """Set the position for a given matrix
     Arguments:
@@ -214,7 +220,7 @@ def set_matrix_position(in_m, pos):
     >>> tnpo = tra.setMatrixPosition(tOld, tra.get_position_from_matrix(t))
     >>> t = tra.setMatrixPosition(t, self.guide.apos[-1])
     """
-    m = datatypes.Matrix()
+    m = pm.datatypes.Matrix()
     m[0] = in_m[0]
     m[1] = in_m[1]
     m[2] = in_m[2]
@@ -223,26 +229,25 @@ def set_matrix_position(in_m, pos):
     return m
 
 
-def set_matrix_rotation(m, rot):
+def set_matrix_rotation(in_m, rot_m):
     """Set the rotation for a given matrix
-    Arguments:
-        in_m (matrix): The input Matrix.
-        rot (list of float): The rotation values for xyz
-    Returns:
-        matrix: The matrix with the new rotation
+
+    :param in_m:
+    :param rot_m:
+    :return:
     """
-    X = rot[0]
-    Y = rot[1]
-    Z = rot[2]
+    X = rot_m[0]
+    Y = rot_m[1]
+    Z = rot_m[2]
 
-    m[0] = [X[0], X[1], X[2], 0.0]
-    m[1] = [Y[0], Y[1], Y[2], 0.0]
-    m[2] = [Z[0], Z[1], Z[2], 0.0]
+    in_m[0] = [X[0], X[1], X[2], 0.0]
+    in_m[1] = [Y[0], Y[1], Y[2], 0.0]
+    in_m[2] = [Z[0], Z[1], Z[2], 0.0]
 
-    return m
+    return in_m
 
 
-def set_matrix_scale(m, scl=[1, 1, 1]):
+def set_matrix_scale(in_m, scl=[1, 1, 1]):
     """Set the scale for a given matrix
     Arguments:
         in_m (matrix): The input Matrix.
@@ -250,18 +255,18 @@ def set_matrix_scale(m, scl=[1, 1, 1]):
     Returns:
         matrix: The matrix with the new scale
     """
-    tm = datatypes.TransformationMatrix(m)
+    tm = pm.datatypes.TransformationMatrix(in_m)
     tm.setScale(scl, space="world")
 
-    m = datatypes.Matrix(tm)
+    m = pm.datatypes.Matrix(tm)
 
     return m
 
 
-def getFilteredTransform(m,
-                         translation=True,
-                         rotation=True,
-                         scaling=True):
+def get_filtered_transform(m,
+                           translation=True,
+                           rotation=True,
+                           scaling=True):
     """Retrieve a transformation filtered.
     Arguments:
         m (matrix): the reference matrix
@@ -275,28 +280,27 @@ def getFilteredTransform(m,
         matrix : The filtered matrix
     """
 
-    t = datatypes.Vector(m[3][0], m[3][1], m[3][2])
-    x = datatypes.Vector(m[0][0], m[0][1], m[0][2])
-    y = datatypes.Vector(m[1][0], m[1][1], m[1][2])
-    z = datatypes.Vector(m[2][0], m[2][1], m[2][2])
+    t = pm.datatypes.Vector(m[3][0], m[3][1], m[3][2])
+    x = pm.datatypes.Vector(m[0][0], m[0][1], m[0][2])
+    y = pm.datatypes.Vector(m[1][0], m[1][1], m[1][2])
+    z = pm.datatypes.Vector(m[2][0], m[2][1], m[2][2])
 
-    out = datatypes.Matrix()
+    out = pm.datatypes.Matrix()
 
     if translation:
-        out = setMatrixPosition(out, t)
+        out = set_matrix_position(out, t)
 
     if rotation and scaling:
-        out = setMatrixRotation(out, [x, y, z])
+        out = set_matrix_rotation(out, [x, y, z])
     elif rotation and not scaling:
-        out = setMatrixRotation(out, [x.normal(), y.normal(), z.normal()])
+        out = set_matrix_rotation(out, [x.normal(), y.normal(), z.normal()])
     elif not rotation and scaling:
-        out = setMatrixRotation(out,
-                                [datatypes.Vector(1, 0, 0)
-                                 * x.length(), datatypes.Vector(0, 1, 0)
-                                 * y.length(), datatypes.Vector(0, 0, 1)
-                                 * z.length()])
+        out = set_matrix_rotation(out, [pm.datatypes.Vector(1, 0, 0) * x.length(),
+                                        pm.datatypes.Vector(0, 1, 0) * y.length(),
+                                        pm.datatypes.Vector(0, 0, 1) * z.length()])
 
     return out
+
 
 ##########################################################
 # ROTATION
@@ -314,17 +318,17 @@ def getRotationFromAxis(in_a, in_b, axis="xy", negate=False):
         matrix: The newly created matrix.
     Example:
         .. code-block:: python
-            x = datatypes.Vector(0,-1,0)
+            x = pm.datatypes.Vector(0,-1,0)
             x = x * tra.getTransform(self.eff_loc)
-            z = datatypes.Vector(self.normal.x,
+            z = pm.datatypes.Vector(self.normal.x,
                                  self.normal.y,
                                  self.normal.z)
             z = z * tra.getTransform(self.eff_loc)
             m = tra.getRotationFromAxis(x, z, "xz", self.negate)
     """
-    a = datatypes.Vector(in_a.x, in_a.y, in_a.z)
-    b = datatypes.Vector(in_b.x, in_b.y, in_b.z)
-    c = datatypes.Vector()
+    a = pm.datatypes.Vector(in_a.x, in_a.y, in_a.z)
+    b = pm.datatypes.Vector(in_b.x, in_b.y, in_b.z)
+    c = pm.datatypes.Vector()
 
     if negate:
         a *= -1
@@ -360,7 +364,7 @@ def getRotationFromAxis(in_a, in_b, axis="xy", negate=False):
         y = b
         x = -c
 
-    m = datatypes.Matrix()
+    m = pm.datatypes.Matrix()
     setMatrixRotation(m, [x, y, z])
 
     return m
@@ -373,23 +377,23 @@ def get_symmetrical_transform(matrix, axis="yz"):
     :param axis:
     :return:
     """
-
+    mirror = None
     if axis == "yz":
-        mirror = datatypes.TransformationMatrix(-1, 0, 0, 0,
-                                                0, 1, 0, 0,
-                                                0, 0, 1, 0,
-                                                0, 0, 0, 1)
+        mirror = pm.datatypes.Matrix(-1.0, 0.0, 0.0, 0.0,
+                                     0.0, 1.0, 0.0, 0.0,
+                                     0.0, 0.0, 1.0, 0.0,
+                                     0.0, 0.0, 0.0, 1.0)
 
     if axis == "xy":
-        mirror = datatypes.TransformationMatrix(1, 0, 0, 0,
-                                                0, 1, 0, 0,
-                                                0, 0, -1, 0,
-                                                0, 0, 0, 1)
+        mirror = pm.datatypes.Matrix(1.0, 0.0, 0.0, 0.0,
+                                     0.0, 1.0, 0.0, 0.0,
+                                     0.0, 0.0, -1.0, 0.0,
+                                     0.0, 0.0, 0.0, 1.0)
     if axis == "zx":
-        mirror = datatypes.TransformationMatrix(1, 0, 0, 0,
-                                                0, -1, 0, 0,
-                                                0, 0, 1, 0,
-                                                0, 0, 0, 1)
+        mirror = pm.datatypes.Matrix(1.0, 0.0, 0.0, 0.0,
+                                     0.0, -1.0, 0.0, 0.0,
+                                     0.0, 0.0, 1.0, 0.0,
+                                     0.0, 0.0, 0.0, 1.0)
     matrix *= mirror
 
     return matrix
@@ -405,31 +409,31 @@ def reset_transform(node, t=True, r=True, s=True):
     Returns:
         None
     """
-    trsDic = {"tx": 0,
-              "ty": 0,
-              "tz": 0,
-              "rx": 0,
-              "ry": 0,
-              "rz": 0,
-              "sx": 1,
-              "sy": 1,
-              "sz": 1}
+    trs_dict = {"tx": 0,
+                "ty": 0,
+                "tz": 0,
+                "rx": 0,
+                "ry": 0,
+                "rz": 0,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1}
 
-    tAxis = ["tx", "ty", "tz"]
-    rAxis = ["rx", "ry", "rz"]
-    sAxis = ["sx", "sy", "sz"]
+    t_axis = ["tx", "ty", "tz"]
+    r_axis = ["rx", "ry", "rz"]
+    s_axis = ["sx", "sy", "sz"]
     axis = []
 
     if t:
-        axis = axis + tAxis
+        axis = axis + t_axis
     if r:
-        axis = axis + rAxis
+        axis = axis + r_axis
     if s:
-        axis = axis + sAxis
+        axis = axis + s_axis
 
     for a in axis:
         try:
-            node.attr(a).set(trsDic[a])
+            node.attr(a).set(trs_dict[a])
         except Exception:
             pass
 
@@ -468,9 +472,9 @@ def quaternionSlerp(q1, q2, blend):
         quaternion: The interpolated quaternion.
     Example:
         .. code-block:: python
-            q = quaternionSlerp(datatypes.Quaternion(
+            q = quaternionSlerp(pm.datatypes.Quaternion(
                                 t1.getRotationQuaternion()),
-                                datatypes.Quaternion(
+                                pm.datatypes.Quaternion(
                                     t2.getRotationQuaternion()), blend)
     """
     dot = quaternionDotProd(q1, q2)
@@ -487,8 +491,8 @@ def quaternionSlerp(q1, q2, blend):
         w1 = 1.0 - blend
         w2 = blend
 
-    result = (datatypes.Quaternion(q1).scaleIt(w1)
-              + datatypes.Quaternion(q2).scaleIt(w2))
+    result = (pm.datatypes.Quaternion(q1).scaleIt(w1)
+              + pm.datatypes.Quaternion(q2).scaleIt(w2))
 
     return result
 
@@ -502,10 +506,10 @@ def convert2TransformMatrix(tm):
     Returns:
         matrix: The transformation matrix in worldSpace
     """
-    if isinstance(tm, nodetypes.Transform):
-        tm = datatypes.TransformationMatrix(tm.getMatrix(worldSpace=True))
-    if isinstance(tm, datatypes.Matrix):
-        tm = datatypes.TransformationMatrix(tm)
+    if isinstance(tm, pm.nodetypes.Transform):
+        tm = pm.datatypes.TransformationMatrix(tm.getMatrix(worldSpace=True))
+    if isinstance(tm, pm.datatypes.Matrix):
+        tm = pm.datatypes.TransformationMatrix(tm)
 
     return tm
 
@@ -537,18 +541,18 @@ def getInterpolateTransformMatrix(t1, t2, blend=.5):
                                      blend)
 
     # scale
-    scaleA = datatypes.Vector(*t1.getScale(space="world"))
-    scaleB = datatypes.Vector(*t2.getScale(space="world"))
+    scaleA = pm.datatypes.Vector(*t1.getScale(space="world"))
+    scaleB = pm.datatypes.Vector(*t2.getScale(space="world"))
 
     vs = vector.linearlyInterpolate(scaleA, scaleB, blend)
 
     # rotate
-    q = quaternionSlerp(datatypes.Quaternion(t1.getRotationQuaternion()),
-                        datatypes.Quaternion(t2.getRotationQuaternion()),
+    q = quaternionSlerp(pm.datatypes.Quaternion(t1.getRotationQuaternion()),
+                        pm.datatypes.Quaternion(t2.getRotationQuaternion()),
                         blend)
 
     # out
-    result = datatypes.TransformationMatrix()
+    result = pm.datatypes.TransformationMatrix()
 
     result.setTranslation(pos, space="world")
     result.setRotationQuaternion(q.x, q.y, q.z, q.w)
@@ -568,13 +572,13 @@ def interpolate_rotation(obj, targets, blends):
 
 
 def interpolate_scale(obj, targets, blends):
-    rot = [0, 0, 0]
+    s = [0, 0, 0]
     for t, b in zip(targets, blends):
-        rot[0] += t.sx.get() * b
-        rot[1] += t.sy.get() * b
-        rot[2] += t.sz.get() * b
+        s[0] += t.sx.get() * b
+        s[1] += t.sy.get() * b
+        s[2] += t.sz.get() * b
 
-    obj.scale.set(rot)
+    obj.scale.set(s)
 
 
 def getDistance2(obj0, obj1):
@@ -609,4 +613,3 @@ def get_closes_transform(target_transform, source_transforms):
     sorted_dist = sorted(distances.items(), key=lambda kv: kv[1][1])
 
     return sorted_dist
-

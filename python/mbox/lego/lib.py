@@ -2,165 +2,27 @@
 
 # maya
 import pymel.core as pm
-import maya.cmds as mc
-
-#
-from collections import OrderedDict
-import sys
-import os
 
 # mbox
-from mbox.core import primitive
-from mbox.core import attribute
-from mbox.core import icon
+from mbox.lego import blueprint
 
 
-def blueprint_find_dag(node, name):
-    dags = pm.ls(node, dagObjects=True)
-    return filter(lambda x: name == x.nodeName(), dags)
-
-
-def blueprint_find_index(node, name, side):
+def draw_blueprint(bp, block):
     """
 
-    :param node:
-    :param name:
-    :param side:
+    :param bp:
+    :param block:
     :return:
     """
-    networks = [root.message.outputs(type="network")[0] for root in pm.ls(node, dagObjects=True)
-                if root.hasAttr("isGuide")]
-    indexes = list()
-    for network in networks:
-        if network.attr("name").get() == name and network.side.getEnums().get_key(network.side.get()) == side:
-            indexes.append(int(network.attr("index").get()))
-    if not indexes:
-        return str(0)
-    for index, number in enumerate(sorted(indexes)):
-        if str(index) != str(number):
-            return str(index)
-    return str(max(indexes)+1)
+    if bp:
+        blueprint.draw_from_blueprint(bp)
+        return
 
+    selected = pm.selected(type="transform")
 
-def get_blueprint_graph(graph, data=None):
-    """
+    if selected:
+        if selected[0].hasAttr("isBlueprint") or selected[0].hasAttr("isBlueprintComponent"):
+            blueprint.draw_block_selection(selected[0], block)
+    else:
+        blueprint.draw_block_no_selection(block)
 
-    :param graph:
-    :param data:
-    :return:
-    """
-    if data is None:
-        root = list(graph.keys())[0]
-        info = get_root_info(root)
-        info["children"] = list()
-        get_blueprint_graph(graph[root], info["children"])
-        return info
-    elif isinstance(data, list) and graph is not None:
-        for key in graph.keys():
-            info = get_block_info(key)
-            data.append(info)
-            if graph[key]:
-                info["children"] = list()
-                get_blueprint_graph(graph[key], info["children"])
-            else:
-                info["children"] = None
-
-
-def get_dag_graph(selection):
-    """
-
-    :param selection:
-    :return:
-    """
-    try:
-        selected = pm.selected(type="transform")[0]
-        if selected.hasAttr("isLego"):
-            return __recursive(selected, OrderedDict())
-        else:
-            selected = pm.selected(type="transform")[0].message.outputs(type="transform")[0]
-            root = selected.getParent(generations=-1)
-        if selection:
-            data = OrderedDict()
-            data[root] = __recursive(selected, OrderedDict())
-            return data
-        else:
-            return __recursive(root, OrderedDict())
-    except Exception as error:
-        sys.stdout.write(error)
-        return None
-
-
-def __recursive(node, data):
-    """
-
-    :param node:
-    :param data:
-    :return:
-    """
-    guides = [node] if node.hasAttr("isLego") else node.guides.inputs(type="transform")
-    children = [y for x in guides for y in x.getChildren(type="transform") if y.hasAttr("isGuide")]
-
-    child = OrderedDict().fromkeys(children, None)
-    data[node] = child if child else None
-
-    for child in children:
-        __recursive(child, data[node])
-    return data
-
-
-def get_root_info(node):
-    """
-
-    :param node:
-    :return:
-    """
-    # network = node.message.outputs(type="network")[0]
-    # pre = network.preScripts.get()
-    # post = network.postScripts.get()
-    # joint_exp = network.jointExp.get()
-    # controller_exp = network.controllerExp.get()
-    # common_convention = network.commonConvention.get()
-    # joint_convention = network.jointConvention.get()
-
-    data = OrderedDict()
-    data["schemaVersion"] = "blueprint-1"
-    data["preScripts"] = list()
-    data["postScripts"] = list()
-    data["nameRule"] = OrderedDict()
-    data["nameRule"]["sideName"] = ["", "", ""]
-    data["nameRule"]["jointExp"] = str()
-    data["nameRule"]["controllerExp"] = str()
-    data["nameRule"]["convention"] = OrderedDict()
-    data["nameRule"]["convention"]["common"] = str()
-    data["nameRule"]["convention"]["joint"] = str()
-
-    return data
-
-
-def get_block_info(node):
-    """
-
-    :param node:
-    :return:
-    """
-    # network = node.message.outputs(type="network")[0]
-    # network.blockID.get()
-    # network.blockVersion.get()
-    # network.transforms.get()
-    # network.direction.get()
-    # network.children.get()
-    # network.mirror.get()
-    # network.jointAxis.get()
-    # network.joint.get()
-
-    data = OrderedDict()
-    data["blockID"] = node.name()
-    data["blockVersion"] = str()
-    data["blockSide"] = str()
-    data["transforms"] = list()
-    data["mirror"] = True
-    data["jointAxis"] = ["z", "y"]
-    data["joint"] = True
-    data["meta"] = dict()
-
-    return data

@@ -4,7 +4,7 @@
         "exclusiveMaximum": "maximum",
         "exclusiveMinimum": "minimum"
     },
-    "id": "http://json-schema.org/draft-03/schema#",
+    "component": "http://json-schema.org/draft-03/schema#",
     "properties": {
         "$ref": {
             "format": "uri",
@@ -107,7 +107,7 @@
         "format": {
             "type": "string"
         },
-        "id": {
+        "component": {
             "format": "uri",
             "type": "string"
         },

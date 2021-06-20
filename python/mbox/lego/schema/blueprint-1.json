@@ -5,33 +5,25 @@
     "block": {
       "description": "lego blocks component data",
       "properties": {
-        "blockID": {
+        "component": {
           "description": "block ID",
           "type": "string"
         },
-        "blockVersion": {
+        "version": {
           "description": "block version",
           "type": "string"
         },
-        "children": {
-          "oneOf": [
-            {
-              "items": {"$ref": "#/definitions/block"},
-              "minItems": 1,
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "name": {
+          "description": "block name. arm, leg, ...",
+          "type": "string"
         },
         "direction": {
-          "items": {
-            "description": "Center, Left, Right. ['C', 'L' 'R']",
-            "type": "string"
-          },
-          "minItems": 3,
-          "type": "array"
+          "description": "block direction. Center(C), Left(L), Right(R)",
+          "type": "string"
+        },
+        "index": {
+          "description": "block index. 0, 1, ...",
+          "type": "string"
         },
         "joint": {
           "description": "output joint True/False",
@@ -54,28 +46,67 @@
         "transforms": {
           "description": "guide transform and value",
           "type": "array"
+        },
+        "priority": {
+          "description": "Create Block Priority Level",
+          "type": "integer"
+        },
+        "parent": {
+          "description": "blueprint parent node name",
+          "type": "string"
         }
       },
       "required": [
-        "blockID",
-        "blockVersion",
-        "transforms",
+        "component",
+        "version",
+        "name",
         "direction",
-        "children",
-        "mirror",
-        "meta",
+        "index",
+        "joint",
         "jointAxis",
-        "joint"
+        "meta",
+        "mirror",
+        "transforms",
+        "priority",
+        "parent"
       ],
       "type": "object"
     },
     "root": {
       "description": "lego block root data",
       "properties": {
-        "children": {
-          "items": {"$ref": "#/definitions/block"},
-          "minItems": 1,
-          "type": "array"
+        "component": {
+          "description": "root ID",
+          "type": "string"
+        },
+        "version": {
+          "description": "root version"
+        },
+        "process": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "direction": {
+          "description": "direction string. ['C', 'L', 'R']",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 3
+        },
+        "blocks": {
+          "oneOf": [
+            {
+              "items": {"$ref": "#/definitions/block"},
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "nameRule": {
           "properties": {
@@ -99,35 +130,62 @@
             },
             "jointExp": {
               "type": "string"
+            },
+            "jointDescriptionLetterCase": {
+              "description": "joint letter case. [default, lower, upper, capitalize],",
+              "type": "string"
+            },
+            "controllerDescriptionLetterCase": {
+              "description": "controller letter case. [default, lower, upper, capitalize],",
+              "type": "string"
             }
           },
           "required": [
             "jointExp",
             "controllerExp",
-            "convention"
+            "convention",
+            "jointDescriptionLetterCase",
+            "controllerDescriptionLetterCase"
           ],
           "type": "object"
         },
-        "postScripts": {
-          "type": "array",
-          "items": {"type": "string"},
-          "minItems": 0
+        "runPreScripts": {
+          "type": "boolean"
+        },
+        "runPostScripts": {
+          "type": "boolean"
         },
         "preScripts": {
           "type": "array",
           "items": {"type": "string"},
           "minItems": 0
         },
+        "postScripts": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 0
+        },
         "schemaVersion": {
+          "type": "string"
+        },
+        "notes": {
           "type": "string"
         }
       },
       "required": [
-        "schemaVersion",
+        "component",
+        "version",
+        "process",
+        "name",
+        "direction",
+        "blocks",
         "nameRule",
-        "children",
+        "runPreScripts",
+        "runPostScripts",
         "preScripts",
-        "postScripts"
+        "postScripts",
+        "schemaVersion",
+        "notes"
       ]
     }
   },

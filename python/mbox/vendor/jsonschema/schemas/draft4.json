@@ -52,7 +52,7 @@
         ]
     },
     "description": "Core schema meta-schema",
-    "id": "http://json-schema.org/draft-04/schema#",
+    "component": "http://json-schema.org/draft-04/schema#",
     "properties": {
         "$schema": {
             "format": "uri",
@@ -123,7 +123,7 @@
             "default": false,
             "type": "boolean"
         },
-        "id": {
+        "component": {
             "format": "uri",
             "type": "string"
         },

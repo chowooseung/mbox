@@ -1002,8 +1002,7 @@ def guide_root_icon(parent=None,
                                       "rx", "ry", "rz",
                                       "sx", "sy", "sz",
                                       "v"])
-    attribute.add(rootIco, "isGuide", "bool", keyable=False)
-    attribute.add(rootIco, "guides", "message", multi=True)
+    attribute.add(rootIco, "isBlueprintComponent", "bool", keyable=False)
     attribute.lock(rootIco, "v")
     attribute.hide(rootIco, "v")
     # Set the control shapes isHistoricallyInteresting
