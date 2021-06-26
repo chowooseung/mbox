@@ -68,7 +68,6 @@ def get_transform_looking_at(pos, lookAt, normal, axis="xy", negate=False):
         Z = a
         Y = b
         X = -c
-
     elif axis == "x-y":
         X = a
         Y = -b

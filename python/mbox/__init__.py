@@ -1,10 +1,25 @@
 # -*- coding:utf-8 -*-
 
-__version_info__ = (0, 0, 1)
-__version__ = "{}.{}.{}".format(*__version_info__)
+#
+import logging
 
-major, minor, micro = __version_info__
+#
+from mbox import version
 
-version = __version__
-version_info = ("{}(major={}, minor={}, micro={})".format(__package__, major, minor, micro))
+logger = logging.getLogger(__name__)
 
+
+def mbox_info():
+    logger.info("mbox Information")
+    logger.info("version {0}".format(mbox_version()))
+
+
+def mbox_version():
+    return version.version
+
+
+def mbox_menu():
+    """mbox menu setup
+
+    :return:
+    """

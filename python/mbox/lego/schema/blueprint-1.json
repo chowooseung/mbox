@@ -113,6 +113,9 @@
             "controllerExp": {
               "type": "string"
             },
+            "jointExp": {
+              "type": "string"
+            },
             "convention": {
               "properties": {
                 "common": {
@@ -127,9 +130,6 @@
                 "joint"
               ],
               "type": "object"
-            },
-            "jointExp": {
-              "type": "string"
             },
             "jointDescriptionLetterCase": {
               "description": "joint letter case. [default, lower, upper, capitalize],",

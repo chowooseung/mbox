@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-""" blueprint(bp) module"""
+"""blueprint module"""
 
 # maya
 import pymel.core as pm
@@ -10,6 +10,7 @@ import json
 
 # mbox
 from mbox.lego.box import blueprint
+from mbox.core import transform
 
 #
 import os
@@ -51,6 +52,7 @@ def get_blueprint_graph(graph, data=None, priority=0):
             info = get_block_info(key.message.outputs(type="network")[0])
             data.append(info)
             info["priority"] = priority
+            info["parent"] = "guide" if "guide" in key.getParent().nodeName() else key.getParent().nodeName()
             get_blueprint_graph(graph[key], data, priority)
         priority -= 1
 
@@ -306,7 +308,7 @@ def draw_from_blueprint(bp):
             mod.blueprint(get_specific_dag_node(root, block["parent"]), block)
 
 
-def synchronize(root, bp):
+def apply_to_hierarchy(root, bp):
     """
 
     :param root:
@@ -340,12 +342,13 @@ def insert_blueprint(parent, child, root=None, bp=None):
     """
     parent.append(child)
     if root and bp:
-        synchronize(root, bp)
+        apply_to_hierarchy(root, bp)
 
 
 def delete_blueprint(bp, root=None, node=False):
     """ delete a part of blueprint graph
 
+    TODO: 딜리트 만들어야함
     :return:
     """
     name = bp["name"]
@@ -364,21 +367,35 @@ def delete_blueprint(bp, root=None, node=False):
     del bp
 
 
-def duplicate_blueprint(root, parent, bp, mirror=False):
-    """
+def duplicate_blueprint(root, bp, mirror=False, apply=True):
+    """duplicate blueprint
+    if mirror is True, it changes direction(left -> right, right -> left)
 
-    :param root:
-    :param parent:
+
+    :param root: root dag node
     :param bp:
     :param mirror:
+    :param apply:
     :return:
     """
+    orig_bp = get_blueprint_from_hierarchy(root)
     dup_bp = copy.deepcopy(bp)
-    parent.append(dup_bp)
+
+    if mirror:
+        if dup_bp["direction"] != "center":
+            dup_bp["direction"] = "left" if dup_bp["direction"] == "right" else "right"
+        for index, tf in enumerate(dup_bp["transforms"]):
+            dup_bp["transforms"][index] = transform.get_symmetrical_transform(pm.datatypes.Matrix(tf))
+    dup_bp["index"] = get_block_index(orig_bp, dup_bp["name"], dup_bp["direction"])
+    orig_bp["blocks"].append(dup_bp)
+
+    if apply:
+        apply_to_hierarchy(root, orig_bp)
 
 
 def save(bp, path):
     """
+    TODO: 세이브 하는것 생각해봐야함
 
     :param bp:
     :param path:
