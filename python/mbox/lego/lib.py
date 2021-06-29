@@ -4,6 +4,7 @@
 import pymel.core as pm
 
 # mbox
+import mbox
 from mbox import version
 from mbox.lego import blueprint
 from mbox.lego import lego
@@ -55,32 +56,31 @@ def duplicate_blueprint_component(node, mirror=False, apply=True):
     blueprint.duplicate_blueprint(node.getParent(generations=-1), specific_block, mirror=mirror, apply=apply)
 
 
-def build_lego_from_blueprint(bp):
-    """build rig
-
-    :param bp:
-    :return:
-    """
-    log_window()
-    logger.info(version.version_info)
-
-    lego.lego(bp)
-
-
-def build_lego_from_selection(node):
+def build(bp, selected=None, window=True, step="all"):
     """build rig from selection node
 
-    :param node:
+    :param bp:
+    :param selected:
+    :param window:
+    :param step:
     :return:
     """
-    if node.hasAttr("isBlueprint") or node.hasAttr("isBlueprintComponent"):
-        logger.info("selected node : {0}".format(node.name()))
-        bp = blueprint.get_blueprint_from_hierarchy(node)
-        build_lego_from_blueprint(bp)
+    if window:
+        log_window()
+    mbox.log_information()
+
+    if selected:
+        logger.info("selected node : {0}".format(selected.name()))
+        bp = blueprint.get_blueprint_from_hierarchy(selected)
+    else:
+        logger.info("no selection")
+    lego.lego(bp, step)
 
 
 def log_window():
-    """mgear shifter log window
+    """show build log console
+
+    from mgear
 
     :return:
     """

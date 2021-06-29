@@ -52,7 +52,7 @@ def get_blueprint_graph(graph, data=None, priority=0):
             info = get_block_info(key.message.outputs(type="network")[0])
             data.append(info)
             info["priority"] = priority
-            info["parent"] = "guide" if "guide" in key.getParent().nodeName() else key.getParent().nodeName()
+            info["parent"] = "guide" if "guide" in key.getParent().name() else key.getParent().name()
             get_blueprint_graph(graph[key], data, priority)
         priority -= 1
 
@@ -101,28 +101,29 @@ def get_root_info(node):
     :return:
     """
     data = OrderedDict()
-    data["schemaVersion"] = node.attr("schemaVersion").get()
     data["component"] = node.attr("component").get()
     data["version"] = node.attr("version").get()
-    data["name"] = node.attr("name").get()
     data["process"] = node.attr("process").getEnums().key(node.attr("process").get())
+    data["step"] = node.attr("step").getEnums().key(node.attr("step").get())
+    data["name"] = node.attr("name").get()
     data["direction"] = node.attr("direction").get()
-    data["runPreScripts"] = node.attr("runPreScripts").get()
-    data["runPostScripts"] = node.attr("runPostScripts").get()
-    data["preScripts"] = node.attr("preScripts").get() if node.attr("preScripts").get() else list()
-    data["postScripts"] = node.attr("postScripts").get() if node.attr("postScripts").get() else list()
+    data["blocks"] = node.attr("affects")[0].outputs(type="network") \
+        if node.attr("affects")[0].outputs(type="network") else None
     data["nameRule"] = OrderedDict()
     data["nameRule"]["jointExp"] = node.attr("jointExp").get()
     data["nameRule"]["controllerExp"] = node.attr("controllerExp").get()
     data["nameRule"]["convention"] = OrderedDict()
-    data["nameRule"]["convention"]["common"] = node.attr("commonConvention").get()
     data["nameRule"]["convention"]["joint"] = node.attr("jointConvention").get()
+    data["nameRule"]["convention"]["common"] = node.attr("commonConvention").get()
     data["nameRule"]["jointDescriptionLetterCase"] = \
         node.attr("jointDescriptionLetterCase").getEnums().key(node.attr("jointDescriptionLetterCase").get())
     data["nameRule"]["controllerDescriptionLetterCase"] = \
         node.attr("controllerDescriptionLetterCase").getEnums().key(node.attr("controllerDescriptionLetterCase").get())
-    data["blocks"] = node.attr("affects")[0].outputs(type="network") \
-        if node.attr("affects")[0].outputs(type="network") else None
+    data["runPreScripts"] = node.attr("runPreScripts").get()
+    data["runPostScripts"] = node.attr("runPostScripts").get()
+    data["preScripts"] = node.attr("preScripts").get() if node.attr("preScripts").get() else list()
+    data["postScripts"] = node.attr("postScripts").get() if node.attr("postScripts").get() else list()
+    data["schemaVersion"] = node.attr("schemaVersion").get()
     data["notes"] = node.attr("notes").get()
 
     return data
@@ -140,10 +141,9 @@ def get_block_info(node):
     data["name"] = node.attr("name").get()
     data["direction"] = node.attr("direction").getEnums().key(node.attr("direction").get())
     data["index"] = node.attr("index").get()
-    data["transforms"] = [x.tolist() for x in node.attr("transforms").get()]
-    data["mirror"] = node.attr("mirror").get()
     data["joint"] = node.attr("joint").get()
     data["jointAxis"] = [node.attr("primaryAxis").get(), node.attr("secondaryAxis").get()]
+    data["transforms"] = [x.tolist() for x in node.attr("transforms").get()]
     data["parent"] = node.attr("parent").get()
 
     mod = importlib.import_module("mbox.lego.box.{block}.blueprint".format(block=data["component"]))

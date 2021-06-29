@@ -1,9 +1,15 @@
 # -*- coding:utf-8 -*-
 
-__version_info__ = (0, 0, 1)
-__version__ = "{}.{}.{}".format(*__version_info__)
+__mbox = (0, 0, 1)
+mbox = "{}.{}.{}".format(*__mbox)
 
-major, minor, micro = __version_info__
+__schema = 1
+schema = "blueprint-{}".format(__schema)
 
-version = __version__
-version_info = ("{}(major={}, minor={}, micro={})".format(__package__, major, minor, micro))
+
+def mbox_mmm():
+    return __mbox
+
+
+def schema_n():
+    return __schema

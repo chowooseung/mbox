@@ -18,16 +18,16 @@ def initialize_(bp, parent):
     data["name"] = "control"
     data["direction"] = "center"
     data["index"] = get_block_index(bp, data["name"], data["direction"])
-    data["transforms"] = [pm.datatypes.Matrix().tolist()]
-    data["mirror"] = False
     data["joint"] = True
     data["jointAxis"] = ["x", "y"]
+    data["transforms"] = [pm.datatypes.Matrix().tolist()]
+    data["priority"] = 0
+    data["parent"] = parent
     data["meta"] = OrderedDict()
     data["meta"]["asWorld"] = False
-    data["meta"]["worldOrientAxis"] = False
+    data["meta"]["mirrorBehaviour"] = False
+    data["meta"]["worldOrientAxis"] = True
     data["meta"]["keyAbleAttrs"] = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
-    data["parent"] = parent
-    data["priority"] = 0
 
     return data
 
@@ -41,20 +41,19 @@ def initialize(affects, bp):
     attribute.add(network, "name", "string", bp["name"])
     attribute.add_enum(network, "direction", bp["direction"], ["center", "right", "left"], keyable=False)
     attribute.add(network, "index", "string", bp["index"])
-    attribute.add(network, "parent", "string", bp["parent"])
-    attribute.add(network, "mirror", "bool", bp["mirror"], keyable=False)
     attribute.add(network, "joint", "bool", bp["joint"], keyable=False)
     attribute.add(network, "primaryAxis", "string", bp["jointAxis"][0])
     attribute.add(network, "secondaryAxis", "string", bp["jointAxis"][1])
-    attribute.add(network, "asWorld", "bool", bp["meta"]["asWorld"], keyable=False)
-    attribute.add(network, "worldOrientAxis", "bool", bp["meta"]["worldOrientAxis"], keyable=False)
-    for attr in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]:
-        attribute.add(network, attr, "bool", True if attr in bp["meta"]["keyAbleAttrs"] else False, keyable=False)
     attribute.add(network, "transforms", "matrix", multi=True)
     for index, transform in enumerate(bp["transforms"]):
         network.attr("transforms")[index].set(pm.datatypes.Matrix(transform))
-
+    attribute.add(network, "asWorld", "bool", bp["meta"]["asWorld"], keyable=False)
+    attribute.add(network, "mirrorBehaviour", "bool", bp["meta"]["mirrorBehaviour"], keyable=False)
+    attribute.add(network, "worldOrientAxis", "bool", bp["meta"]["worldOrientAxis"], keyable=False)
+    for attr in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]:
+        attribute.add(network, attr, "bool", True if attr in bp["meta"]["keyAbleAttrs"] else False, keyable=False)
     affects >> network.affectedBy[0]
+
     return network
 
 
@@ -87,6 +86,7 @@ def get_block_info(node):
     """
     data = OrderedDict()
     data["asWorld"] = node.attr("asWorld").get()
+    data["mirrorBehaviour"] = node.attr("mirrorBehaviour").get()
     data["worldOrientAxis"] = node.attr("worldOrientAxis").get()
     data["keyAbleAttrs"] = \
         [a for a in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"] if node.attr(a).get()]

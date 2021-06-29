@@ -78,7 +78,7 @@ def finalize(context):
     logger.info("Step. finalize")
 
 
-def lego(bp):
+def lego(bp, step):
     """
 
     :return:
@@ -99,6 +99,16 @@ def lego(bp):
     context["postScripts"] = bp["postScripts"]
 
     prepare(context)
+    if step == "prepare":
+        return
     objects(context)
+    if step == "objects":
+        return
     attributes(context)
+    if step == "attributes":
+        return
+    operate(context)
+    if step == "operate":
+        return
     finalize(context)
+
