@@ -102,7 +102,7 @@ def inspect_settings():
         wind.tabs.setCurrentIndex(0)
 
     elif guide_root:
-        module_name = "mbox.lego.box.blueprint"
+        module_name = "mbox.lego.box.settings"
         mod = __import__(module_name, globals(), locals(), ["*"], -1)
         wind = pyqt.show_dialog(mod.guideSettings, dockable=True)
         wind.tabs.setCurrentIndex(0)
@@ -163,8 +163,8 @@ def get_blocks_directory():
 def load_blocks_blueprint(block):
     """Import the Component """
     dirs = get_blocks_directory()
-    defFmt = "mbox.lego.box.{}.blueprint"
-    customFmt = "{}.blueprint"
+    defFmt = "mbox.lego.box.{}.settings"
+    customFmt = "{}.settings"
 
     mod = utils.import_from_standard_or_custom_directories(dirs, defFmt, customFmt, block)
     return mod

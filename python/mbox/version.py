@@ -7,9 +7,3 @@ __schema = 1
 schema = "blueprint-{}".format(__schema)
 
 
-def mbox_mmm():
-    return __mbox
-
-
-def schema_n():
-    return __schema

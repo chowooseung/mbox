@@ -1,11 +1,4 @@
 # -*- coding:utf-8 -*-
-AUTHOR = "chowooseoung"
-TYPE = "control_0"
-VERSION = "0.0.0"
-NAME = "control"
-DIRECTION = "center"
-URL = ""
-DESCRIPTION = "1 controller"
 
 #
 from collections import OrderedDict
@@ -17,99 +10,81 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from maya.app.general.mayaMixin import MayaQDockWidget
 
 # mbox
+from mbox.core.attribute import add_attribute
 from mbox.lego.blueprint import get_block_index
-from mbox.core import attribute, icon, pyqt
-from mbox.vendor.Qt import QtWidgets, QtCore
+from mbox.core import icon
+from mbox.lego.box import element
 
-from .settingui import sui
-
-def initialize_(bp, parent):
-    data = OrderedDict()
-    data["component"] = TYPE
-    data["version"] = VERSION
-    data["name"] = NAME
-    data["direction"] = DIRECTION
-    data["index"] = get_block_index(bp, data["name"], data["direction"])
-    data["joint"] = True
-    data["jointAxis"] = ["x", "y"]
-    data["transforms"] = [pm.datatypes.Matrix().tolist()]
-    data["priority"] = 1
-    data["parent"] = parent
-    data["meta"] = OrderedDict()
-    data["meta"]["asWorld"] = False
-    data["meta"]["mirrorBehaviour"] = False
-    data["meta"]["worldOrientAxis"] = True
-    data["meta"]["keyAbleAttrs"] = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
-
-    return data
+# mgear
+from mgear.core import pyqt
+from mgear.vendor.Qt import QtWidgets, QtCore
 
 
-def initialize(affects, bp):
-    network = pm.createNode("network")
-    attribute.add(network, "guide", "message")
-    attribute.add(network, "rig", "message")
-    attribute.add(network, "component", "string", bp["component"])
-    attribute.add(network, "version", "string", bp["version"])
-    attribute.add(network, "name", "string", bp["name"])
-    attribute.add_enum(network, "direction", bp["direction"], ["center", "right", "left"], keyable=False)
-    attribute.add(network, "index", "string", bp["index"])
-    attribute.add(network, "joint", "bool", bp["joint"], keyable=False)
-    attribute.add(network, "primaryAxis", "string", bp["jointAxis"][0])
-    attribute.add(network, "secondaryAxis", "string", bp["jointAxis"][1])
-    attribute.add(network, "transforms", "matrix", multi=True)
-    for index, transform in enumerate(bp["transforms"]):
-        network.attr("transforms")[index].set(pm.datatypes.Matrix(transform))
-    attribute.add(network, "asWorld", "bool", bp["meta"]["asWorld"], keyable=False)
-    attribute.add(network, "mirrorBehaviour", "bool", bp["meta"]["mirrorBehaviour"], keyable=False)
-    attribute.add(network, "worldOrientAxis", "bool", bp["meta"]["worldOrientAxis"], keyable=False)
-    for attr in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]:
-        attribute.add(network, attr, "bool", True if attr in bp["meta"]["keyAbleAttrs"] else False, keyable=False)
-    affects >> network.affectedBy[0]
-    attribute.add(network, "parent", "string", bp["parent"])
-    attribute.add(network, "priority", "long", bp["priority"], keyable=False, minValue=0)
+class Block(element.Blocks):
+    AUTHOR = "cho wooseoung"
+    URL = None
+    EMAIL = "chowooseoung@gmail.com"
+    VERSION = [0, 0, 1]
+    TYPE = "control_0"
+    NAME = "control"
+    DESCRIPTION = ""
 
-    return network
+    def __init__(self):
+        super(Block, self).__init__()
+        self.component = self.TYPE
+        self.version = "{}. {}. {}".format(*self.VERSION)
+        self.name = self.NAME
+        self.transforms = [pm.datatypes.Matrix().tolist()]
 
+        # component data
+        self.asWorld = False
+        self.mirrorBehaviour = False
+        self.worldOrientAxis = True
+        self.keyAbleAttrs = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
 
-def blueprint(parent, bp):
-    """
+    def print(self):
+        common_msg = super(Block, self).print()
+        msg = (f"       asWorld : {self.asWorld}\n"
+               f"       mirrorBehaviour : {self.mirrorBehaviour}\n"
+               f"       worldOrientAxis : {self.worldOrientAxis}\n"
+               f"       keyAbleAttrs : {self.keyAbleAttrs}\n")
+        return common_msg + msg
 
-    :param parent:
-    :param bp:
-    :return:
-    """
-    # name
-    root_n = "{name}_{direction}{index}_root".format(name=bp["name"], direction=bp["direction"], index=bp["index"])
+    def guide(self, parent):
+        # name
+        root_name = f"{self.name}_{self.direction}{self.index}_root"
 
-    # create
-    root = icon.guide_root_icon(parent, root_n, m=pm.datatypes.Matrix(bp["transforms"][0]))
-    network = initialize(parent.getParent(generations=-1).message.outputs(type="network")[0].affects[0], bp)
+        # create
+        root = icon.guide_root_icon(parent, root_name, m=pm.datatypes.Matrix(self.transforms[0]))
 
-    # attribute
-    attribute.hide(root, "v")
-    attribute.lock(root, "v")
-    root.message >> network.guide
-    root.worldMatrix >> network.transforms[0]
+        network = pm.createNode("network")
+        add_attribute(network, "guide", "message")
+        add_attribute(network, "rig", "message")
+        add_attribute(network, "component", "string", self.component)
+        add_attribute(network, "version", "string", self.version)
+        add_attribute(network, "name", "string", self.name)
+        add_attribute(network, "direction", self.direction, ["center", "right", "left"], keyable=False)
+        add_attribute(network, "index", "string", self.index)
+        add_attribute(network, "joint", "bool", self.joint, keyable=False)
+        add_attribute(network, "primaryAxis", "string", self.jointAxis[0])
+        add_attribute(network, "secondaryAxis", "string", self.jointAxis[1])
+        add_attribute(network, "transforms", "matrix", multi=True)
+        add_attribute(network, "asWorld", "bool", self.asWorld, keyable=False)
+        add_attribute(network, "mirrorBehaviour", "bool", self.mirrorBehaviour, keyable=False)
+        add_attribute(network, "worldOrientAxis", "bool", self.worldOrientAxis, keyable=False)
+        for attr in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]:
+            add_attribute(network, attr, "bool", True if attr in self.keyAbleAttrs else False, keyable=False)
+        add_attribute(network, "parent", "string")
+        add_attribute(network, "priority", "long", self.priority, keyable=False, minValue=0)
 
-
-def get_block_info(node):
-    """ get specific block meta info
-
-    :param node: network node
-    :return: meta data
-    """
-    data = OrderedDict()
-    data["asWorld"] = node.attr("asWorld").get()
-    data["mirrorBehaviour"] = node.attr("mirrorBehaviour").get()
-    data["worldOrientAxis"] = node.attr("worldOrientAxis").get()
-    data["keyAbleAttrs"] = \
-        [a for a in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"] if node.attr(a).get()]
-
-    return data
+        # attribute
+        parent.getParent(generations=-1).message.outputs(type="network")[0].affects[0] >> network.affectsBy[0]
+        root.message >> network.guide
+        root.worldMatrix >> network.transforms[0]
 
 
 class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings):
-    """Create the component setting window"""
+    """from mgear.shifter_classic_components.control_01.guide.componentSettings"""
 
     def __init__(self, parent=None):
         self.toolName = TYPE

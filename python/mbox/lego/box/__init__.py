@@ -8,7 +8,7 @@ import pymel.core as pm
 
 # mbox
 from mbox import version
-from mbox.core import attribute, primitive, icon
+from mbox.core import attribute, icon
 
 
 def objects(bp, context, contextName):
@@ -29,7 +29,7 @@ def objects(bp, context, contextName):
 
     world_root = primitive.add_transform(blocks, "world_root")
     world_npo = primitive.add_transform(world_root, "world_npo")
-    world_con = icon.create(world_npo, "world_{0}".format(bp["controllerExp"]), color=17, icon="compas")
+    world_con = icon.create(world_npo)
     world_ref = primitive.add_transform(world_con, "world_ref")
     world_output = primitive.add_transform(world_root, "world_output")
 

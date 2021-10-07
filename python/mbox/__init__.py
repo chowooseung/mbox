@@ -6,11 +6,14 @@ import os
 
 # mbox
 from mbox import version
+from mbox import menu
 
 # maya
 import pymel.core as pm
 
 logger = logging.getLogger(__name__)
+
+menu_id = "mBox"
 
 
 def log_information():
@@ -24,6 +27,7 @@ def mbox_menu():
 
     :return:
     """
+    menu.create(menu_id)
 
 
 def about():

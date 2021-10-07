@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""Utilitie functions"""
+"""from mgear.core.utils"""
 
 #
 import logging
@@ -14,44 +14,6 @@ import pymel.core as pm
 from maya import mel
 
 logger = logging.getLogger(__name__)
-
-
-##########################################################
-# UTILS
-##########################################################
-
-
-def as_pynode(obj):
-    """Check and convert a given string to Pynode
-
-    If the object is not str or unicode or PyNode will raise type error
-
-    Args:
-        obj (str, unicode, PyNode): Object to check and/or convert to PyNode
-
-    Returns:
-        PyNode: the pynode object
-    """
-    if isinstance(obj, str) or isinstance(obj, unicode):
-        obj = pm.PyNode(obj)
-
-    if not isinstance(obj, pm.PyNode):
-        raise TypeError("{} is type {} not str, unicode or PyNode".format(
-            str(obj), type(obj)))
-
-    return obj
-
-
-def is_odd(num):
-    """Check if the number is odd.
-
-    Arguments:
-    num (int): the number
-
-    Returns:
-        bool: True or False
-    """
-    return num % 2
 
 
 def gather_custom_module_directories(envvarkey, defaultModulePath, component=False):
