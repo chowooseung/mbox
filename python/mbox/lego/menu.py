@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # maya
 import pymel.core as pm
@@ -37,8 +37,8 @@ def install():
 
 
 str_lego_box = """
-from mbox.lego import lib
-lib.lego_box()"""
+from mbox.lego import legoboxui
+legoboxui.show_lego_box()"""
 
 str_settings = """
 from mbox.lego import lib
@@ -55,10 +55,12 @@ str_build_from_blueprint = """
 """
 
 str_import_blueprint = """
-"""
+from mbox.lego import lib
+lib.import_blueprint(None)"""
 
 str_export_blueprint = """
-"""
+from mbox.lego import lib
+lib.export_blueprint(None, None)"""
 
 str_reload_lego_box = """
 """

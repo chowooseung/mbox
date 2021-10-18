@@ -202,7 +202,7 @@
   <customwidget>
    <class>DragQListView</class>
    <extends>QListView</extends>
-   <header location="global">mbox.core.widgets</header>
+   <header location="global">mgear.core.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

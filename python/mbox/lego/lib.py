@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # maya
 import pymel.core as pm
@@ -6,36 +6,31 @@ import pymel.core as pm
 # mbox
 import mbox
 from mbox import lego
-from mbox.lego import blueprint, box
-from mbox.core import utils, pyqt
+from mbox.lego import blueprint
 
 #
 import logging
-import os
+
+# mgear
+from mbox.lego.utils import load_block_blueprint
+from mgear.core import pyqt
 
 logger = logging.getLogger(__name__)
 
 
 def draw_blueprint(bp, block, parent, showUI):
-    """
-
-    :param bp:
-    :param block:
-    :param parent:
-    :param showUI:
-    :return:
-    """
+    """"""
     if bp:
-        blueprint.draw_from_blueprint(bp)
+        blueprint.draw_guide_from_blueprint()
         return
-
     if parent:
         selected = [pm.PyNode(parent)]
     else:
         selected = pm.selected(type="transform")
-
     if selected:
-        if selected[0].hasAttr("isBlueprint") or selected[0].hasAttr("isBlueprintComponent"):
+        if selected[0].hasAttr("isGuideRoot") or selected[0].hasAttr("isGuideComponent"):
+            blueprint.draw_block_selection(selected[0], block)
+        elif selected[0].hasAttr("isGuide"):
             blueprint.draw_block_selection(selected[0], block)
     else:
         blueprint.draw_block_no_selection(block)
@@ -44,37 +39,24 @@ def draw_blueprint(bp, block, parent, showUI):
 
 
 def duplicate_blueprint_component(mirror=False, apply=True):
-    """
-
-    :param node:
-    :param mirror:
-    :param apply:
-    :return:
-    """
-    node = pm.selected(type="transform")
-    if not len(node):
-        logger.info("plz select blueprint root or component")
+    """"""
+    selected = pm.selected(type="transform")
+    try:
+        selected = selected[0]
+        if selected.hasAttr("isGuide"):
+            selected = selected.worldMatrix[0].outputs(type="network")[0].guide.get()
+        network = selected.message.outputs(type="network")[0]
+    except Exception as e:
+        pm.displayWarning("select mbox component")
         return
 
-    node = node[0]
-    if int(node.hasAttr("isBlueprint")) + int(node.hasAttr("isBlueprintComponent")) != 1:
-        logger.info("plz select blueprint root or component")
-        return
-
-    orig_bp = blueprint.get_blueprint_from_hierarchy(node.getParent(generations=-1))
-
-    network = node.worldMatrix.outputs(type="network")[0]
-    name = network.attr("name").get()
-    direction = network.attr("direction").getEnums().key(network.attr("direction").get())
-    index = network.attr("index").get()
-    specific_block = blueprint.get_specific_block_blueprint(orig_bp,
-                                                            "{name}_{direction}_{index}".format(name=name,
-                                                                                                direction=direction,
-                                                                                                index=index))
-    blueprint.duplicate_blueprint(node.getParent(generations=-1), specific_block, mirror=mirror, apply=apply)
+    root_block = blueprint.get_blueprint_graph(selected.getParent(generations=-1))
+    block = root_block.get_specify_block(network.attr("name"), network.attr("direction"), network.attr("index"))
+    # todo
 
 
 def inspect_settings():
+    # todo
     oSel = pm.selected(type="transform")
     if oSel:
         root = oSel[0]
@@ -97,14 +79,14 @@ def inspect_settings():
         pm.select(root)
 
     if comp_type:
-        mod = load_blocks_blueprint(comp_type)
-        wind = pyqt.show_dialog(mod.componentSettings, dockable=True)
+        mod = load_block_blueprint(comp_type)
+        wind = pyqt.showDialog(mod.componentSettings, dockable=True)
         wind.tabs.setCurrentIndex(0)
 
     elif guide_root:
         module_name = "mbox.lego.box.settings"
         mod = __import__(module_name, globals(), locals(), ["*"], -1)
-        wind = pyqt.show_dialog(mod.guideSettings, dockable=True)
+        wind = pyqt.showDialog(mod.guideSettings, dockable=True)
         wind.tabs.setCurrentIndex(0)
 
     else:
@@ -112,33 +94,20 @@ def inspect_settings():
 
 
 def build(bp, selected=None, window=True, step="all"):
-    """build rig from selection node
-
-    :param bp:
-    :param selected:
-    :param window:
-    :param step:
-    :return:
-    """
+    """"""
     if window:
         log_window()
     mbox.log_information()
 
     if selected:
-        logger.info("selected node : {0}".format(selected.name()))
-        bp = blueprint.get_blueprint_from_hierarchy(selected)
+        logger.info("selected node : {0}".format(selected.naming()))
+        bp = blueprint.blueprint_from_guide(selected)
     else:
         logger.info("no selection")
-    lego.lego(bp, step)
 
 
 def log_window():
-    """show build log console
-
-    from mgear
-
-    :return:
-    """
+    """"""
     log_window_name = "mbox_lego_build_log_window"
     log_window_field_reporter = "mbox_lego_build_log_field_reporter"
     if not pm.window(log_window_name, exists=True):
@@ -154,26 +123,55 @@ def log_window():
         pm.showWindow(log_window_name)
 
 
-def get_blocks_directory():
-    return utils.gather_custom_module_directories(
-        "MBOX_CUSTOM_BOX_PATH",
-        [os.path.join(os.path.dirname(box.__file__))])
+def export_blueprint(node, path):
+    """blueprint json file export"""
+    if not path:
+        path = _file_dialog(path, mode=0)
+        if not path:
+            pm.displayWarning("File path None")
+            return
+    if not node:
+        try:
+            selected = pm.selected(type="transform")[0]
+            if not selected.hasAttr("isGuideRoot"):
+                raise RuntimeError("select mbox root guide")
+        except IndexError as e:
+            pm.displayWarning(e)
+            return
+        except RuntimeError as e:
+            pm.displayWarning(e)
+            return
+    else:
+        selected = node
+
+    root_block = blueprint.blueprint_from_guide(selected)
+    root_block.save(root_block, path)
 
 
-def load_blocks_blueprint(block):
-    """Import the Component """
-    dirs = get_blocks_directory()
-    defFmt = "mbox.lego.box.{}.settings"
-    customFmt = "{}.settings"
+def import_blueprint(path, draw=True):
+    """blueprint json file import"""
+    if not path:
+        path = _file_dialog(path, mode=1)
+        if not path:
+            pm.displayWarning("File path None")
+            return
 
-    mod = utils.import_from_standard_or_custom_directories(dirs, defFmt, customFmt, block)
-    return mod
+    root_block = blueprint.blueprint_from_file(path)
+    if draw:
+        root_block.draw_guide()
+
+    return root_block
 
 
-def load_blocks_init(block):
-    dirs = get_blocks_directory()
-    defFmt = "mbox.lego.box.{}"
-    customFmt = "{}"
+def _file_dialog(path=None, mode=0):
+    """from mgear.shifter.io._get_file
+    mode [0:save, 1:open]"""
+    file_path = pm.fileDialog2(
+        startingDirectory=path if path else pm.workspace(query=True, rootDirectory=True),
+        fileMode=mode,
+        fileFilter='mBox Guide Template .mbox (*%s)' % ".mbox")
 
-    mod = utils.import_from_standard_or_custom_directories(dirs, defFmt, customFmt, block)
-    return mod
+    if not file_path:
+        return
+
+    return file_path[0]

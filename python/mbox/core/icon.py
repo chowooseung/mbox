@@ -55,7 +55,7 @@ def guide_root_icon(parent=None,
     pm.delete(cubeIco)
 
     attribute.setNotKeyableAttributes(rootIco)
-    attribute.addAttribute(rootIco, "isBlueprintComponent", "bool", keyable=False)
+    attribute.addAttribute(rootIco, "isGuideComponent", "bool", keyable=False)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -109,7 +109,6 @@ def guide_root_icon_2d(parent=None,
 
     attribute.setNotKeyableAttributes(rootIco)
     attribute.addAttribute(rootIco, "isGuide", "bool", keyable=False)
-    attribute.addAttribute(rootIco, "guides", "message", multi=True)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -151,6 +150,7 @@ def guide_locator_icon(parent=None,
     pm.delete(sphereIco)
 
     attribute.setNotKeyableAttributes(rootIco)
+    attribute.addAttribute(rootIco, "isGuide", "bool", keyable=False)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -189,10 +189,10 @@ def guide_blade_icon(parent=None,
     curve.set_color(bladeIco, color)
 
     attribute.addAttribute(bladeIco, "rollOffset", "float", 0)
-    attribute.setNotKeyableAttributes(bladeIco, attrs=["tx", "ty", "tz",
-                                       "rx", "ry", "rz",
-                                       "sx", "sy", "sz",
-                                       "v", "rollOffset"])
+    attribute.setNotKeyableAttributes(bladeIco, attributes=["tx", "ty", "tz",
+                                                            "rx", "ry", "rz",
+                                                            "sx", "sy", "sz",
+                                                            "v", "rollOffset"])
     pm.pointConstraint(parent, bladeIco)
     aim_cons = pm.aimConstraint(aim,
                                 bladeIco,
@@ -203,14 +203,8 @@ def guide_blade_icon(parent=None,
                                 worldUpVector=(0, 1, 0),
                                 worldUpObject=parent)
     bladeIco.rollOffset >> aim_cons.offsetX
-    attribute.lock(bladeIco, attrs=["tx", "ty", "tz",
-                                    "rx", "ry", "rz",
-                                    "sx", "sy", "sz",
-                                    "v"])
-    attribute.hide(bladeIco, attrs=["tx", "ty", "tz",
-                                    "rx", "ry", "rz",
-                                    "sx", "sy", "sz",
-                                    "v"])
+    attribute.setNotKeyableAttributes(bladeIco)
+    attribute.addAttribute(bladeIco, "isGuide", "bool", keyable=False)
     # bladeIco.scale.set(1, 1, 1)
     # Set the control shapes isHistoricallyInteresting
     for oShape in bladeIco.getShapes():

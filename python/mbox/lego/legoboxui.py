@@ -1,9 +1,11 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # mbox
-from mbox.lego import boxui, editorui
-from mbox.vendor.Qt import QtCore, QtWidgets
-from mbox.core import pyqt
+from mbox.lego import boxcomponent
+
+# mgear
+from mgear.vendor.Qt import QtCore, QtWidgets
+from mgear.core import pyqt
 
 # maya
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
@@ -17,8 +19,7 @@ class LegoBox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.toolName = "LegoBox"
         super(LegoBox, self).__init__(parent=parent)
 
-        self.box_ui = boxui.Blocks()
-        self.editor_ui = editorui.Blueprint()
+        self.box_ui = boxcomponent.BoxComponent()
         self.installEventFilter(self)
         self.create_window()
         self.create_layout()
@@ -39,12 +40,11 @@ class LegoBox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.setObjectName("legobox_tab")
         self.tabs.insertTab(0, self.box_ui, "Lego Components")
-        self.tabs.insertTab(1, self.editor_ui, "Editor")
 
         self.gm_layout.addWidget(self.tabs)
 
         self.setLayout(self.gm_layout)
 
 
-def show_guide_manager(*args):
+def show_lego_box(*args):
     pyqt.showDialog(LegoBox, dockable=True)

@@ -1,29 +1,31 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 
 #
 import os
 import sys
 import traceback
 from functools import partial
-import importlib
+from importlib import reload
 
 # maya
 import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 # mbox
-from mbox.core import pyqt
-from mbox.vendor.Qt import QtCore, QtWidgets, QtGui
-from mbox.lego import boxdesign, lib
+from mbox.lego import boxcomponentui, lib, utils
+
+# mgear
+from mgear.core import pyqt
+from mgear.vendor.Qt import QtCore, QtWidgets, QtGui
 
 PY2 = sys.version_info[0] == 2
 
 
-class BoxDesignUI(QtWidgets.QDialog, boxdesign.Ui_Form):
+class BoxComponentUI(QtWidgets.QDialog, boxcomponentui.Ui_Form):
 
     def __init__(self, parent=None):
 
-        super(BoxDesignUI, self).__init__(parent)
+        super(BoxComponentUI, self).__init__(parent)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.setupUi(self)
         self.component_listView.setAcceptDrops(False)
@@ -34,24 +36,24 @@ class BoxDesignUI(QtWidgets.QDialog, boxdesign.Ui_Form):
     def keyPressEvent(self, event):
 
         if not event.key() == QtCore.Qt.Key_Escape:
-            super(BoxDesignUI, self).keyPressEvent(event)
+            super(BoxComponentUI, self).keyPressEvent(event)
 
 
-class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
+class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
     def __init__(self, parent=None):
 
         self.toolName = "legoBlockComponentManager"
-        super(BoxUI, self).__init__(parent=parent)
+        super(BoxComponent, self).__init__(parent=parent)
 
-        self.box_ui = BoxDesignUI()
-        self.box_ui.component_listView.setAction(self.drag_draw_component)
-        self.box_ui.component_listView.installEventFilter(self)
+        self.component_ui = BoxComponentUI()
+        self.component_ui.component_listView.setAction(self.drag_draw_component)
+        self.component_ui.component_listView.installEventFilter(self)
 
         self.start_dir = pm.workspace(query=True, rootDirectory=True)
 
         self.__proxyModel = QtCore.QSortFilterProxyModel(self)
-        self.box_ui.component_listView.setModel(self.__proxyModel)
+        self.component_ui.component_listView.setModel(self.__proxyModel)
 
         self.create_window()
         self.create_layout()
@@ -79,7 +81,7 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     def create_layout(self):
 
         self.gmc_layout = QtWidgets.QVBoxLayout()
-        self.gmc_layout.addWidget(self.box_ui)
+        self.gmc_layout.addWidget(self.component_ui)
         self.gmc_layout.setContentsMargins(3, 3, 3, 3)
 
         self.setLayout(self.gmc_layout)
@@ -87,7 +89,7 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     def get_component_list(self):
 
         comp_list = list()
-        compDir = lib.get_blocks_directory()
+        compDir = utils.get_blocks_directory()
         trackLoadComponent = list()
         for path, comps in compDir.items():
             pm.progressWindow(title='Loading Components',
@@ -110,11 +112,8 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                                                    comp_name, "__init__.py")):
                     continue
                 try:
-                    module = lib.load_blocks_blueprint(comp_name)
-                    if PY2:
-                        reload(module)
-                    else:
-                        importlib.reload(module)
+                    module = utils.load_block_blueprint(comp_name)
+                    reload(module)
                     comp_list.append(module.TYPE)
                 except Exception as e:
                     pm.displayWarning(
@@ -156,7 +155,7 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         Returns:
             None: None
         """
-        comp_widget = self.box_ui.component_listView
+        comp_widget = self.component_ui.component_listView
         currentSelection = comp_widget.selectedIndexes()
         if currentSelection is None:
             return
@@ -173,7 +172,7 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.comp_menu.show()
 
     def _search_menu(self, QPos):
-        search_widget = self.box_ui.search_lineEdit
+        search_widget = self.component_ui.search_lineEdit
 
         self.search_menu = QtWidgets.QMenu()
         parentPosition = search_widget.mapToGlobal(QtCore.QPoint(0, 0))
@@ -188,32 +187,32 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     def create_connections(self):
 
         # buttons
-        self.box_ui.settings_pushButton.clicked.connect(lib.inspect_settings)
-        # self.box_ui.build_pushButton.clicked.connect(lib.build, None, )
-        self.box_ui.duplicate_pushButton.clicked.connect(partial(lib.duplicate_blueprint_component, False, True))
-        self.box_ui.dupSym_pushButton.clicked.connect(partial(lib.duplicate_blueprint_component, True, True))
-        # self.box_ui.extrCtl_pushButton.clicked.connect(guide_manager.extract_controls)
-        self.box_ui.draw_pushButton.clicked.connect(self.draw_comp_doubleClick)
+        self.component_ui.settings_pushButton.clicked.connect(lib.inspect_settings)
+        # self.component_ui.build_pushButton.clicked.connect(lib.build, None, )
+        self.component_ui.duplicate_pushButton.clicked.connect(partial(lib.duplicate_blueprint_component, False, True))
+        self.component_ui.dupSym_pushButton.clicked.connect(partial(lib.duplicate_blueprint_component, True, True))
+        # self.component_ui.extrCtl_pushButton.clicked.connect(guide_manager.extract_controls)
+        self.component_ui.draw_pushButton.clicked.connect(self.draw_comp_doubleClick)
 
         # list view
-        self.box_ui.search_lineEdit.textChanged.connect(
+        self.component_ui.search_lineEdit.textChanged.connect(
             self.filter_changed)
 
-        self.box_ui.component_listView.clicked.connect(self.update_info)
-        self.selModel = self.box_ui.component_listView.selectionModel()
+        self.component_ui.component_listView.clicked.connect(self.update_info)
+        self.selModel = self.component_ui.component_listView.selectionModel()
         self.selModel.selectionChanged.connect(self.update_info)
-        self.box_ui.component_listView.doubleClicked.connect(
+        self.component_ui.component_listView.doubleClicked.connect(
             self.draw_comp_doubleClick)
 
         # connect menu
-        self.box_ui.component_listView.setContextMenuPolicy(
+        self.component_ui.component_listView.setContextMenuPolicy(
             QtCore.Qt.CustomContextMenu)
-        self.box_ui.component_listView.customContextMenuRequested.connect(
+        self.component_ui.component_listView.customContextMenuRequested.connect(
             self._component_menu)
 
-        self.box_ui.search_lineEdit.setContextMenuPolicy(
+        self.component_ui.search_lineEdit.setContextMenuPolicy(
             QtCore.Qt.CustomContextMenu)
-        self.box_ui.search_lineEdit.customContextMenuRequested.connect(
+        self.component_ui.search_lineEdit.customContextMenuRequested.connect(
             self._search_menu)
 
     #############
@@ -222,15 +221,12 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
     def update_info(self):
         try:
-            item = self.box_ui.component_listView.selectedIndexes()[0]
+            item = self.component_ui.component_listView.selectedIndexes()[0]
             comp_name = item.data()
-            module = lib.load_blocks_blueprint(comp_name)
-            if PY2:
-                reload(module)
-            else:
-                importlib.reload(module)
+            module = utils.load_block_blueprint(comp_name)
+            reload(module)
             info_text = (
-                "{}\n".format(module.DESCRIPTION)
+                "{}\n".format(module.Block.DESCRIPTION)
                 + "\n-------------------------------\n\n"
                 + "Author: {}\n".format(module.AUTHOR)
                 + "Url: {}\n".format(module.URL)
@@ -241,7 +237,7 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         except IndexError:
             info_text = ""
 
-        self.box_ui.info_plainTextEdit.setPlainText(info_text)
+        self.component_ui.info_plainTextEdit.setPlainText(info_text)
 
     def draw_comp_doubleClick(self, *args):
         self.draw_component()
@@ -256,8 +252,8 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             pm.displayWarning("Nothing catch under cursor. Not Component Draw")
 
     def draw_component(self, parent=None):
-        showUI = self.box_ui.showUI_checkBox.checkState()
-        for x in self.box_ui.component_listView.selectedIndexes():
+        showUI = self.component_ui.showUI_checkBox.checkState()
+        for x in self.component_ui.component_listView.selectedIndexes():
             lib.draw_blueprint(None, x.data(), parent, showUI)
 
     def filter_changed(self, ft):
@@ -269,12 +265,12 @@ class BoxUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                                 QtCore.QRegExp.Wildcard
                                 )
         self.__proxyModel.setFilterRegExp(regExp)
-        self.box_ui.info_plainTextEdit.setPlainText("")
+        self.component_ui.info_plainTextEdit.setPlainText("")
 
 
-def show_box_ui(*args):
-    pyqt.show_dialog(BoxUI, dockable=True)
+def show_box_component(*args):
+    pyqt.showDialog(BoxComponent, dockable=True)
 
 
 if __name__ == "__main__":
-    show_box_ui()
+    show_box_component()
