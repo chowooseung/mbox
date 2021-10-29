@@ -55,7 +55,7 @@ def guide_root_icon(parent=None,
     pm.delete(cubeIco)
 
     attribute.setNotKeyableAttributes(rootIco)
-    attribute.addAttribute(rootIco, "isGuideComponent", "bool", keyable=False)
+    attribute.addAttribute(rootIco, "is_guide_component", "bool", keyable=False)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -108,7 +108,7 @@ def guide_root_icon_2d(parent=None,
     pm.delete(squareIco)
 
     attribute.setNotKeyableAttributes(rootIco)
-    attribute.addAttribute(rootIco, "isGuide", "bool", keyable=False)
+    attribute.addAttribute(rootIco, "is_guide", "bool", keyable=False)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -150,7 +150,7 @@ def guide_locator_icon(parent=None,
     pm.delete(sphereIco)
 
     attribute.setNotKeyableAttributes(rootIco)
-    attribute.addAttribute(rootIco, "isGuide", "bool", keyable=False)
+    attribute.addAttribute(rootIco, "is_guide", "bool", keyable=False)
     # Set the control shapes isHistoricallyInteresting
     for oShape in rootIco.getShapes():
         oShape.isHistoricallyInteresting.set(False)
@@ -204,7 +204,7 @@ def guide_blade_icon(parent=None,
                                 worldUpObject=parent)
     bladeIco.rollOffset >> aim_cons.offsetX
     attribute.setNotKeyableAttributes(bladeIco)
-    attribute.addAttribute(bladeIco, "isGuide", "bool", keyable=False)
+    attribute.addAttribute(bladeIco, "is_guide", "bool", keyable=False)
     # bladeIco.scale.set(1, 1, 1)
     # Set the control shapes isHistoricallyInteresting
     for oShape in bladeIco.getShapes():

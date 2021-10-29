@@ -17,25 +17,28 @@ from mgear.core import pyqt
 
 logger = logging.getLogger(__name__)
 
+STEP_PRE, STEP_OBJECTS, STEP_ATTRIBUTES, STEP_OPERATOR, STEP_CONNECTIONS, STEP_CLEANUP, STEP_POST = range(7)
 
-def draw_blueprint(bp, block, parent, showUI):
+
+def draw_guide(bp, block, parent, showUI):
     """"""
     if bp:
-        blueprint.draw_guide_from_blueprint()
+        pm.select(bp.draw_guide())
         return
     if parent:
         selected = [pm.PyNode(parent)]
     else:
         selected = pm.selected(type="transform")
     if selected:
-        if selected[0].hasAttr("isGuideRoot") or selected[0].hasAttr("isGuideComponent"):
-            blueprint.draw_block_selection(selected[0], block)
-        elif selected[0].hasAttr("isGuide"):
-            blueprint.draw_block_selection(selected[0], block)
+        if selected[0].hasAttr("is_guide_root") \
+                or selected[0].hasAttr("is_guide_component")\
+                or selected[0].hasAttr("is_guide"):
+            blueprint.draw_specify_component_guide(selected[0], block)
     else:
-        blueprint.draw_block_no_selection(block)
+        blueprint.draw_specify_component_guide(None, block)
 
-    # TODO: showUI
+    if showUI:
+        inspect_settings()
 
 
 def duplicate_blueprint_component(mirror=False, apply=True):
@@ -43,7 +46,7 @@ def duplicate_blueprint_component(mirror=False, apply=True):
     selected = pm.selected(type="transform")
     try:
         selected = selected[0]
-        if selected.hasAttr("isGuide"):
+        if selected.hasAttr("is_guide"):
             selected = selected.worldMatrix[0].outputs(type="network")[0].guide.get()
         network = selected.message.outputs(type="network")[0]
     except Exception as e:
@@ -55,11 +58,10 @@ def duplicate_blueprint_component(mirror=False, apply=True):
     # todo
 
 
-def inspect_settings():
-    # todo
-    oSel = pm.selected(type="transform")
-    if oSel:
-        root = oSel[0]
+def inspect_settings(guide=None, network=None):
+    selected = pm.selected(type="transform")
+    if selected:
+        root = selected[0]
     else:
         pm.displayWarning(
             "please select one object from the component guide")
@@ -68,11 +70,11 @@ def inspect_settings():
     comp_type = False
     guide_root = False
     while root:
-        if pm.attributeQuery("isBlueprintComponent", node=root, exists=True):
+        if pm.attributeQuery("is_guide_component", node=root, exists=True):
             network = root.message.outputs(type="network")[0]
             comp_type = network.attr("component").get()
             break
-        elif pm.attributeQuery("isBlueprint", node=root, exists=True):
+        elif pm.attributeQuery("is_guide_root", node=root, exists=True):
             guide_root = root
             break
         root = root.getParent()
@@ -80,27 +82,31 @@ def inspect_settings():
 
     if comp_type:
         mod = load_block_blueprint(comp_type)
-        wind = pyqt.showDialog(mod.componentSettings, dockable=True)
+        wind = pyqt.showDialog(mod.BlockSettings, dockable=True)
         wind.tabs.setCurrentIndex(0)
+        wind.guide = guide
+        wind.network = network
 
     elif guide_root:
         module_name = "mbox.lego.box.settings"
-        mod = __import__(module_name, globals(), locals(), ["*"], -1)
-        wind = pyqt.showDialog(mod.guideSettings, dockable=True)
+        mod = __import__(module_name, globals(), locals(), ["*"], 0)
+        wind = pyqt.showDialog(mod.RootSettings, dockable=True)
         wind.tabs.setCurrentIndex(0)
+        wind.guide = guide
+        wind.network = network
 
     else:
         pm.displayError("The selected object is not part of component guide")
 
 
-def build(bp, selected=None, window=True, step="all"):
+def draw_rig(bp, selected=None, window=True, step="all"):
     """"""
     if window:
         log_window()
     mbox.log_information()
 
     if selected:
-        logger.info("selected node : {0}".format(selected.naming()))
+        logger.info("selected node : {0}".format(selected.name()))
         bp = blueprint.blueprint_from_guide(selected)
     else:
         logger.info("no selection")
@@ -133,7 +139,7 @@ def export_blueprint(node, path):
     if not node:
         try:
             selected = pm.selected(type="transform")[0]
-            if not selected.hasAttr("isGuideRoot"):
+            if not selected.hasAttr("is_guide_root"):
                 raise RuntimeError("select mbox root guide")
         except IndexError as e:
             pm.displayWarning(e)
@@ -158,7 +164,7 @@ def import_blueprint(path, draw=True):
 
     root_block = blueprint.blueprint_from_file(path)
     if draw:
-        root_block.draw_guide()
+        pm.select(root_block.draw_guide())
 
     return root_block
 

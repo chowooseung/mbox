@@ -18,12 +18,14 @@ from mgear.core import primitive, attribute
 logger = logging.getLogger(__name__)
 
 
-def get_component_index(self, name, direction, indexes):
+def get_component_index(self, name, direction, indexes=None):
+    if indexes is None:
+        indexes = list()
     for block in self.blocks:
         get_component_index(block, name, direction, indexes)
 
-    if hasattr(self, "component"):
-        if (self.naming == name) and (self.direction == direction):
+    if self.component != "mbox":
+        if (self.name == name) and (self.direction == direction):
             indexes.append(self.index)
         return
 
@@ -37,26 +39,67 @@ def get_component_index(self, name, direction, indexes):
 
 
 def get_specify_block(self, name, direction, index):
+    if self.component != "mbox":
+        if self.name == name and self.direction == direction and self.index == index:
+            return self
+
     for block in self.blocks:
         b = get_specify_block(block, name, direction, index)
         if b:
-            return
+            return b
 
-    if hasattr(self, "component"):
-        if self.naming == name and self.direction == direction and self.index == index:
-            return self
+
+def get_component_guide(component):
+    if component.hasAttr("is_guide"):
+        while True:
+            parent = component.getParent() if component.getParent().hasAttr("is_guide_component") else None
+            component = parent
+            if parent:
+                break
+    elif component.hasAttr("is_guideRoot"):
+        return [component]
+
+    repeated = [component]
+    guides = list()
+    guides += repeated
+    while True:
+        children = list()
+        for r in repeated:
+            children += [x for x in r.getChildren(type="transform") if x.hasAttr("is_guide")]
+        guides += children
+        if not children:
+            break
+        repeated = children
+    return guides
+
+
+def get_child_component(component):
+    guides = get_component_guide(component)
+
+    return [x for y in guides for x in y.getChildren(type="transform") if x.hasAttr("is_guide_component")]
+
+
+def connect_network(obj):
+    if obj.component == "mbox":
+        reset_network_connection(obj)
+
+    for block in obj.blocks:
+        pm.connectAttr(obj.NETWORK.affects[0], block.NETWORK.affectedBy[0], force=True)
+        connect_network(block)
+
+
+def reset_network_connection(obj):
+    pm.disconnectAttr(obj.NETWORK.affects[0])
+    for block in obj.blocks:
+        reset_network_connection(block)
 
 
 class Root:
 
-    GUIDE = None
-    NETWORK = None
-    RIG = None
-
-    def __init__(self):
-        Root.GUIDE = None
-        Root.NETWORK = None
-        Root.RIG = None
+    def __init__(self, guide=None, network=None, rig=None):
+        self.GUIDE = guide
+        self.NETWORK = network
+        self.RIG = rig
 
         # component
         self.component = "mbox"
@@ -74,34 +117,54 @@ class Root:
         self.name = "rig"
 
         # Direction string
-        self.direction = ["C", "L", "R"]
+        self.joint_direction = ["C", "L", "R"]
+        self.controls_direction = ["C", "L", "R"]
 
         # Extension
-        self.jointExt = "jnt"
-        self.controlExt = "con"
+        self.joint_ext = "jnt"
+        self.controls_ext = "con"
 
         # Convention
-        self.jointConvention = "{name}_{direction}{index}_{description}_{extension}"
-        self.controlConvention = "{name}_{direction}{index}_{description}_{extension}"
+        self.joint_convention = "{name}_{direction}{index}_{description}_{extension}"
+        self.controls_convention = "{name}_{direction}{index}_{description}_{extension}"
 
         # default, lower, upper, capitalize
-        self.jointDescriptionLetterCase = "default"
-        self.controlDescriptionLetterCase = "default"
+        self.joint_description_letter_case = "default"
+        self.controls_description_letter_case = "default"
 
         # padding
-        self.jointPadding = 0
-        self.controlPadding = 0
+        self.joint_padding = 0
+        self.controls_padding = 0
 
         # bool
-        self.runPreScripts = False
-        self.runPostScripts = False
+        self.run_pre_scripts = False
+        self.run_post_scripts = False
 
         # Scripts path
-        self.preScripts = list()
-        self.postScripts = list()
+        self.pre_scripts = list()
+        self.post_scripts = list()
 
         # Schema version
         self.schema = mbox.version.schema
+
+        # controls index color
+        self.l_color_fk = 6
+        self.l_color_ik = 18
+        self.r_color_fk = 23
+        self.r_color_ik = 14
+        self.c_color_fk = 13
+        self.c_color_ik = 17
+
+        # use RGB color
+        self.use_RGB_color = False
+
+        # controls RGB color
+        self.l_RGB_fk = [0, 0, 1]
+        self.l_RGB_ik = [0, 0.25, 1]
+        self.r_RGB_fk = [1, 0, 0]
+        self.r_RGB_ik = [1, 0.1, 0.25]
+        self.c_RGB_fk = [1, 1, 0]
+        self.c_RGB_ik = [0, 0.6, 0]
 
         # notes
         self.notes = None
@@ -120,66 +183,88 @@ class Root:
 
         msg = f"\n\n"
         for key, value in self.__dict__.items():
-            msg += f"{key} : {value}\n"
+            if key == "blocks":
+                msg += f"{key} : \n{blocks_msg}\n"
+            else:
+                msg += f"{key} : {value}\n"
 
         logger.info(msg)
 
     def draw_guide(self):
         """network node의 affectedBy[0], affects[0]은 blocks의 관계에 사용합니다."""
-        if not Root.NETWORK:
+        if not self.NETWORK:
             self.draw_network()
         # create root, root network
-        Root.GUIDE = primitive.addTransform(None, "guide", m=pm.datatypes.Matrix())
+        self.GUIDE = primitive.addTransform(None, "guide", m=pm.datatypes.Matrix())
 
         # attribute
-        attribute.lockAttribute(Root.GUIDE)
-        attribute.setKeyableAttributes(Root.GUIDE, list())
-        attribute.addAttribute(Root.GUIDE, "isGuideRoot", "bool", keyable=False)
+        attribute.lockAttribute(self.GUIDE)
+        attribute.setKeyableAttributes(self.GUIDE, list())
+        attribute.addAttribute(self.GUIDE, "is_guide_root", "bool", keyable=False)
 
         # connection
-        pm.connectAttr(Root.GUIDE.message, Root.NETWORK.guide, force=True)
+        pm.connectAttr(self.GUIDE.message, self.NETWORK.guide, force=True)
 
         selection = None
         for block in self.blocks:
-            selection = block.draw_guide(parent=Root.GUIDE)
+            selection = block.draw_guide(parent=self.GUIDE)
 
+        connect_network(self)
         return selection
 
     def draw_network(self):
-        Root.NETWORK = pm.createNode("network")
+        self.NETWORK = pm.createNode("network")
 
-        attribute.addAttribute(Root.NETWORK, "guide", "message")
-        attribute.addAttribute(Root.NETWORK, "rig", "message")
-        attribute.addAttribute(Root.NETWORK, "component", "string", self.component)
-        attribute.addAttribute(Root.NETWORK, "name", "string", self.name)
-        attribute.addAttribute(Root.NETWORK, "version", "string", self.version)
-        attribute.addAttribute(Root.NETWORK, "schema", "string", self.schema)
-        attribute.addAttribute(Root.NETWORK, "process", "string", self.process)
-        attribute.addEnumAttribute(Root.NETWORK, "step", self.step,
+        attribute.addAttribute(self.NETWORK, "guide", "message")
+        attribute.addAttribute(self.NETWORK, "rig", "message")
+        attribute.addAttribute(self.NETWORK, "component", "string", self.component)
+        attribute.addAttribute(self.NETWORK, "name", "string", self.name)
+        attribute.addAttribute(self.NETWORK, "version", "string", self.version)
+        attribute.addAttribute(self.NETWORK, "schema", "string", self.schema)
+        attribute.addAttribute(self.NETWORK, "process", "string", self.process)
+        attribute.addEnumAttribute(self.NETWORK, "step", self.step,
                                    ["all", "prepare", "objects", "attributes", "operate"], keyable=False)
-        add_attribute(Root.NETWORK, "direction", "string", multi=True)
-        [Root.NETWORK.direction[index].set(direction) for index, direction in enumerate(self.direction)]
-        attribute.addAttribute(Root.NETWORK, "jointExt", "string", self.jointExt)
-        attribute.addAttribute(Root.NETWORK, "controlExt", "string", self.controlExt)
-        attribute.addAttribute(Root.NETWORK, "jointConvention", "string", self.jointConvention)
-        attribute.addAttribute(Root.NETWORK, "controlConvention", "string", self.controlConvention)
-        attribute.addEnumAttribute(Root.NETWORK, "jointDescriptionLetterCase", self.jointDescriptionLetterCase,
+        add_attribute(self.NETWORK, "joint_direction", "string", multi=True)
+        add_attribute(self.NETWORK, "controls_direction", "string", multi=True)
+        [self.NETWORK.joint_direction[i].set(direction) for i, direction in enumerate(self.joint_direction)]
+        [self.NETWORK.controls_direction[i].set(direction) for i, direction in enumerate(self.controls_direction)]
+        attribute.addAttribute(self.NETWORK, "joint_ext", "string", self.joint_ext)
+        attribute.addAttribute(self.NETWORK, "controls_ext", "string", self.controls_ext)
+        attribute.addAttribute(self.NETWORK, "joint_convention", "string", self.joint_convention)
+        attribute.addAttribute(self.NETWORK, "controls_convention", "string", self.controls_convention)
+        attribute.addEnumAttribute(self.NETWORK, "joint_description_letter_case", self.joint_description_letter_case,
                                    ["default", "lower", "upper", "capitalize"], keyable=False)
-        attribute.addEnumAttribute(Root.NETWORK, "controlDescriptionLetterCase", self.controlDescriptionLetterCase,
+        attribute.addEnumAttribute(self.NETWORK, "controls_description_letter_case",
+                                   self.controls_description_letter_case,
                                    ["default", "lower", "upper", "capitalize"], keyable=False)
-        attribute.addAttribute(Root.NETWORK, "runPreScripts", "bool", self.runPreScripts, keyable=False)
-        attribute.addAttribute(Root.NETWORK, "runPostScripts", "bool", self.runPostScripts, keyable=False)
-        add_attribute(Root.NETWORK, "preScripts", "string", multi=True)
-        add_attribute(Root.NETWORK, "postScripts", "string", multi=True)
-        [Root.NETWORK.preScripts[index].set(script) for index, script in enumerate(self.preScripts)]
-        [Root.NETWORK.postScripts[index].set(script) for index, script in enumerate(self.postScripts)]
-        attribute.addAttribute(Root.NETWORK, "notes", "string", self.notes)
+        attribute.addAttribute(self.NETWORK, "joint_padding", "long", self.joint_padding, keyable=False)
+        attribute.addAttribute(self.NETWORK, "controls_padding", "long", self.controls_padding, keyable=False)
+        attribute.addAttribute(self.NETWORK, "run_pre_scripts", "bool", self.run_pre_scripts, keyable=False)
+        attribute.addAttribute(self.NETWORK, "run_post_scripts", "bool", self.run_post_scripts, keyable=False)
+        add_attribute(self.NETWORK, "pre_scripts", "string", multi=True)
+        add_attribute(self.NETWORK, "post_scripts", "string", multi=True)
+        [self.NETWORK.pre_scripts[index].set(script) for index, script in enumerate(self.pre_scripts)]
+        [self.NETWORK.post_scripts[index].set(script) for index, script in enumerate(self.post_scripts)]
+        attribute.addAttribute(self.NETWORK, "l_color_fk", "long", self.l_color_fk, minValue=0, maxValue=31)
+        attribute.addAttribute(self.NETWORK, "l_color_ik", "long", self.l_color_ik, minValue=0, maxValue=31)
+        attribute.addAttribute(self.NETWORK, "r_color_fk", "long", self.r_color_fk, minValue=0, maxValue=31)
+        attribute.addAttribute(self.NETWORK, "r_color_ik", "long", self.r_color_ik, minValue=0, maxValue=31)
+        attribute.addAttribute(self.NETWORK, "c_color_fk", "long", self.c_color_fk, minValue=0, maxValue=31)
+        attribute.addAttribute(self.NETWORK, "c_color_ik", "long", self.c_color_ik, minValue=0, maxValue=31)
+        attribute.addAttribute(self.NETWORK, "use_RGB_Color", "bool", self.use_RGB_color, keyable=False)
+        attribute.addColorAttribute(self.NETWORK, "l_RGB_fk", self.l_RGB_fk, keyable=False)
+        attribute.addColorAttribute(self.NETWORK, "l_RGB_ik", self.l_RGB_ik, keyable=False)
+        attribute.addColorAttribute(self.NETWORK, "r_RGB_fk", self.r_RGB_fk, keyable=False)
+        attribute.addColorAttribute(self.NETWORK, "r_RGB_ik", self.r_RGB_ik, keyable=False)
+        attribute.addColorAttribute(self.NETWORK, "c_RGB_fk", self.c_RGB_fk, keyable=False)
+        attribute.addColorAttribute(self.NETWORK, "c_RGB_ik", self.c_RGB_ik, keyable=False)
+        attribute.addAttribute(self.NETWORK, "notes", "string", self.notes)
 
         for block in self.blocks:
             block.draw_network()
 
     def draw_rig(self, context, step):
-        if not Root.NETWORK:
+        if not self.NETWORK:
             self.draw_network()
 
         # step objects
@@ -207,64 +292,54 @@ class Root:
         return context
 
     def update_blueprint_to_network(self):
-        Root.NETWORK.attr("name").set(self.name)
-        Root.NETWORK.attr("version").set(self.version)
-        Root.NETWORK.attr("schema").set(self.schema)
-        Root.NETWORK.attr("process").set(self.process)
-        Root.NETWORK.attr("step").set(self.step)
-        Root.NETWORK.attr("direction").set(self.direction)
-        Root.NETWORK.attr("jointExt").set(self.jointExt)
-        Root.NETWORK.attr("controlExt").set(self.controlExt)
-        Root.NETWORK.attr("jointConvention").set(self.jointConvention)
-        Root.NETWORK.attr("controlConvention").set(self.controlConvention)
-        Root.NETWORK.attr("jointDescriptionLetterCase").set(self.jointDescriptionLetterCase)
-        Root.NETWORK.attr("controlDescriptionLetterCase").set(self.controlDescriptionLetterCase)
-        Root.NETWORK.attr("jointPadding").set(self.jointPadding)
-        Root.NETWORK.attr("controlPadding").set(self.controlPadding)
-        Root.NETWORK.attr("runPreScripts").set(self.runPreScripts)
-        Root.NETWORK.attr("runPostScripts").set(self.runPostScripts)
-        [Root.NETWORK.preScripts[index].set(script) for index, script in enumerate(self.preScripts)]
-        [Root.NETWORK.postScripts[index].set(script) for index, script in enumerate(self.postScripts)]
-        Root.NETWORK.attr("notes").set(self.notes)
+        self.NETWORK.attr("name").set(self.name)
+        self.NETWORK.attr("version").set(self.version)
+        self.NETWORK.attr("schema").set(self.schema)
+        self.NETWORK.attr("process").set(self.process)
+        self.NETWORK.attr("step").set(self.step)
+        [self.NETWORK.joint_direction[i].set(direction) for i, direction in enumerate(self.joint_direction)]
+        [self.NETWORK.controls_direction[i].set(direction) for i, direction in enumerate(self.controls_direction)]
+        self.NETWORK.attr("joint_ext").set(self.joint_ext)
+        self.NETWORK.attr("controls_ext").set(self.controls_ext)
+        self.NETWORK.attr("joint_convention").set(self.joint_convention)
+        self.NETWORK.attr("controls_convention").set(self.controls_convention)
+        self.NETWORK.attr("joint_description_letter_case").set(self.joint_description_letter_case)
+        self.NETWORK.attr("controls_description_letter_case").set(self.controls_description_letter_case)
+        self.NETWORK.attr("joint_padding").set(self.joint_padding)
+        self.NETWORK.attr("controls_padding").set(self.controls_padding)
+        self.NETWORK.attr("run_pre_scripts").set(self.run_pre_scripts)
+        self.NETWORK.attr("run_post_scripts").set(self.run_post_scripts)
+        [self.NETWORK.pre_scripts[index].set(script) for index, script in enumerate(self.pre_scripts)]
+        [self.NETWORK.post_scripts[index].set(script) for index, script in enumerate(self.post_scripts)]
+        self.NETWORK.attr("notes").set(str(self.notes))
 
         for block in self.blocks:
             block.update_blueprint_to_network()
 
     def update_network_to_blueprint(self):
-        self.name = Root.NETWORK.attr("name").get()
-        self.version = Root.NETWORK.attr("version").get()
-        self.schema = Root.NETWORK.attr("schema").get()
-        self.process = Root.NETWORK.attr("process").get()
-        self.step = Root.NETWORK.attr("step").get(asString=True)
-        self.direction = Root.NETWORK.attr("direction").get()
-        self.jointExt = Root.NETWORK.attr("jointExt").get()
-        self.controlExt = Root.NETWORK.attr("controlExt").get()
-        self.jointConvention = Root.NETWORK.attr("jointConvention").get()
-        self.controlConvention = Root.NETWORK.attr("controlConvention").get()
-        self.jointDescriptionLetterCase = Root.NETWORK.attr("jointDescriptionLetterCase").get(asString=True)
-        self.controlDescriptionLetterCase = Root.NETWORK.attr("controlDescriptionLetterCase").get(asString=True)
-        self.jointPadding = Root.NETWORK.attr("jointPadding").get()
-        self.controlPadding = Root.NETWORK.attr("controlPadding").get()
-        self.runPreScripts = Root.NETWORK.attr("runPreScripts").get()
-        self.runPostScripts = Root.NETWORK.attr("runPostScripts").get()
-        self.preScripts = Root.NETWORK.attr("preScripts").get()
-        self.postScripts = Root.NETWORK.attr("postScripts").get()
-        self.notes = Root.NETWORK.attr("notes").get()
+        self.name = self.NETWORK.attr("name").get()
+        self.version = self.NETWORK.attr("version").get()
+        self.schema = self.NETWORK.attr("schema").get()
+        self.process = self.NETWORK.attr("process").get()
+        self.step = self.NETWORK.attr("step").get(asString=True)
+        self.joint_direction = self.NETWORK.attr("joint_direction").get()
+        self.controls_direction = self.NETWORK.attr("controls_direction").get()
+        self.joint_ext = self.NETWORK.attr("joint_ext").get()
+        self.controls_ext = self.NETWORK.attr("controls_ext").get()
+        self.joint_convention = self.NETWORK.attr("joint_convention").get()
+        self.controls_convention = self.NETWORK.attr("controls_convention").get()
+        self.joint_description_letter_case = self.NETWORK.attr("joint_description_letter_case").get(asString=True)
+        self.controls_description_letter_case = self.NETWORK.attr("controls_description_letter_case").get(asString=True)
+        self.joint_padding = self.NETWORK.attr("joint_padding").get()
+        self.controls_padding = self.NETWORK.attr("controls_padding").get()
+        self.run_pre_scripts = self.NETWORK.attr("run_pre_scripts").get()
+        self.run_post_scripts = self.NETWORK.attr("run_post_scripts").get()
+        self.pre_scripts = self.NETWORK.attr("pre_scripts").get()
+        self.post_scripts = self.NETWORK.attr("post_scripts").get()
+        self.notes = self.NETWORK.attr("notes").get()
 
-    @staticmethod
-    def connect_network(obj):
-        if obj.component == "mbox":
-            Root.reset_network_connection(obj)
-
-        for block in obj.blocks:
-            pm.connectAttr(obj.__class__.NETWORK.affects[0], block.__class__.NETWORK.affedtedBy[0], force=True)
-            Root.connect_network(block)
-
-    @staticmethod
-    def reset_network_connection(obj):
-        pm.disconnectAttr(obj.__class__.NETWORK.affects[0])
-        for block in obj.blocks:
-            Root.reset_network_connection(block)
+        for block in self.blocks:
+            block.update_network_to_blueprint()
 
     @staticmethod
     def save(obj, path=None):
@@ -297,10 +372,10 @@ class Root:
 
 class Blocks:
 
-    def __init__(self):
-        self.__class__.GUIDE = None
-        self.__class__.NETWORK = None
-        self.__class__.RIG = None
+    def __init__(self, guide=None, network=None, rig=None):
+        self.GUIDE = guide
+        self.NETWORK = network
+        self.RIG = rig
 
         # what kind of box
         self.component = None
@@ -318,17 +393,18 @@ class Blocks:
         self.index = 0
 
         # True - create joint / False
-        self.joint = True
+        self.joint_rig = True
 
         # primary axis, secondary axis
-        self.primaryAxis = "x"
-        self.secondaryAxis = "y"
+        self.primary_axis = "x"
+        self.secondary_axis = "y"
 
         # guide transform matrix list
         self.transforms = list()
 
         # parent node name
-        self.rootRefIndex = -1
+        self.root_ref_index = -1
+        self.joint_ref_index = -1
 
         # blocks
         self.blocks = list()
@@ -351,26 +427,28 @@ class Blocks:
 
     def draw_guide(self, parent):
         """"""
+        pm.connectAttr(self.GUIDE.message, self.NETWORK.guide, force=True)
         for block in self.blocks:
             block.draw_guide(parent)
 
     def draw_network(self):
-        self.__class__.NETWORK = pm.createNode("network")
-        attribute.addAttribute(self.__class__.NETWORK, "guide", "message")
-        attribute.addAttribute(self.__class__.NETWORK, "rig", "message")
-        attribute.addAttribute(self.__class__.NETWORK, "component", "string", self.component)
-        attribute.addAttribute(self.__class__.NETWORK, "version", "string", self.version)
-        attribute.addAttribute(self.__class__.NETWORK, "name", "string", self.name)
-        attribute.addEnumAttribute(self.__class__.NETWORK, "direction", self.direction,
+        self.NETWORK = pm.createNode("network")
+        attribute.addAttribute(self.NETWORK, "guide", "message")
+        attribute.addAttribute(self.NETWORK, "rig", "message")
+        attribute.addAttribute(self.NETWORK, "component", "string", self.component)
+        attribute.addAttribute(self.NETWORK, "version", "string", self.version)
+        attribute.addAttribute(self.NETWORK, "name", "string", self.name)
+        attribute.addEnumAttribute(self.NETWORK, "direction", self.direction,
                                    ["center", "right", "left"], keyable=False)
-        attribute.addAttribute(self.__class__.NETWORK, "index", "long", self.index, keyable=False)
-        attribute.addAttribute(self.__class__.NETWORK, "joint", "bool", self.joint, keyable=False)
-        attribute.addEnumAttribute(self.__class__.NETWORK, "primaryAxis", self.primaryAxis,
+        attribute.addAttribute(self.NETWORK, "index", "long", self.index, keyable=False)
+        attribute.addAttribute(self.NETWORK, "joint_rig", "bool", self.joint_rig, keyable=False)
+        attribute.addEnumAttribute(self.NETWORK, "primary_axis", self.primary_axis,
                                    ["x", "y", "z", "-x", "-y", "-z"], keyable=False)
-        attribute.addEnumAttribute(self.__class__.NETWORK, "secondaryAxis", self.secondaryAxis,
+        attribute.addEnumAttribute(self.NETWORK, "secondary_axis", self.secondary_axis,
                                    ["x", "y", "z", "-x", "-y", "-z"], keyable=False)
-        add_attribute(self.__class__.NETWORK, "transforms", "matrix", multi=True)
-        attribute.addAttribute(self.__class__.NETWORK, "rootRefIndex", "long", self.rootRefIndex)
+        add_attribute(self.NETWORK, "transforms", "matrix", multi=True)
+        attribute.addAttribute(self.NETWORK, "root_ref_index", "long", self.root_ref_index)
+        attribute.addAttribute(self.NETWORK, "joint_ref_index", "long", self.joint_ref_index)
 
         for block in self.blocks:
             block.draw_network()
@@ -398,19 +476,21 @@ class Blocks:
                 block.draw_rig(block, context, step)
 
     def update_blueprint_to_network(self):
-        if self.__class__.GUIDE:
+        print("update bp to net")
+        if self.GUIDE:
+            print("has guide")
             # get component guide node
-            repeated = [self.__class__.GUIDE]
+            repeated = [self.GUIDE]
             guides = list()
             guides += repeated
             while True:
                 children = list()
                 for r in repeated:
-                    children += [x for x in r.getChildren(type="transform") if x.hasAttr("isGuide")]
+                    children += [x for x in r.getChildren(type="transform") if x.hasAttr("is_guide")]
                 guides += children
                 if not children:
                     break
-                repeated = guides
+                repeated = children
 
             # rename guide node
             for guide in guides:
@@ -419,36 +499,38 @@ class Blocks:
                 n[1] = f"{self.direction}{self.index}"
                 guide.rename("_".join(n))
 
-        Root.NETWORK.attr("component").set(self.component)
-        Root.NETWORK.attr("version").set(self.version)
-        Root.NETWORK.attr("name").set(self.name)
-        Root.NETWORK.attr("direction").set(self.direction)
-        Root.NETWORK.attr("index").set(self.index)
-        Root.NETWORK.attr("joint").set(self.joint)
-        Root.NETWORK.attr("primaryAxis").set(self.primaryAxis)
-        Root.NETWORK.attr("secondaryAxis").set(self.secondaryAxis)
-        if self.__class__.GUIDE:
-            for index, attr in enumerate(Root.NETWORK.transforms):
+        self.NETWORK.attr("component").set(self.component)
+        self.NETWORK.attr("version").set(self.version)
+        self.NETWORK.attr("name").set(self.name)
+        self.NETWORK.attr("direction").set(self.direction)
+        self.NETWORK.attr("index").set(self.index)
+        self.NETWORK.attr("joint_rig").set(self.joint_rig)
+        self.NETWORK.attr("primary_axis").set(self.primary_axis)
+        self.NETWORK.attr("secondary_axis").set(self.secondary_axis)
+        if self.GUIDE:
+            for index, attr in enumerate(self.NETWORK.transforms):
                 attr.inputs(type="transform")[0].setMatrix(pm.datatypes.Matrix(self.transforms[index]), worldSpace=True)
         else:
-            [Root.NETWORK.attr("transforms")[i].set(pm.datatypes.Matrix(m)) for i, m in enumerate(self.transforms)]
-        Root.NETWORK.attr("rootRefIndex").set(self.rootRefIndex)
+            [self.NETWORK.attr("transforms")[i].set(pm.datatypes.Matrix(m)) for i, m in enumerate(self.transforms)]
+        self.NETWORK.attr("root_ref_index").set(self.root_ref_index)
+        self.NETWORK.attr("joint_ref_index").set(self.joint_ref_index)
 
         for block in self.blocks:
             block.update_blueprint_to_network()
 
     def update_network_to_blueprint(self):
         """get common block info"""
-        self.component = Root.NETWORK.attr("component").get()
-        self.version = Root.NETWORK.attr("version").get()
-        self.name = Root.NETWORK.attr("name").get()
-        self.direction = Root.NETWORK.attr("direction").get(asString=True)
-        self.index = Root.NETWORK.attr("index").get()
-        self.joint = Root.NETWORK.attr("joint").get()
-        self.primaryAxis = Root.NETWORK.attr("primaryAxis").get(asString=True)
-        self.secondaryAxis = Root.NETWORK.attr("secondaryAxis").get(asString=True)
-        self.transforms = [x.tolist() for x in Root.NETWORK.attr("transforms").get()]
-        self.rootRefIndex = Root.NETWORK.attr("rootRefIndex").get()
+        self.component = self.NETWORK.attr("component").get()
+        self.version = self.NETWORK.attr("version").get()
+        self.name = self.NETWORK.attr("name").get()
+        self.direction = self.NETWORK.attr("direction").get(asString=True)
+        self.index = self.NETWORK.attr("index").get()
+        self.joint_rig = self.NETWORK.attr("joint_rig").get()
+        self.primary_axis = self.NETWORK.attr("primary_axis").get(asString=True)
+        self.secondary_axis = self.NETWORK.attr("secondary_axis").get(asString=True)
+        self.transforms = [x.tolist() for x in self.NETWORK.attr("transforms").get()]
+        self.root_ref_index = self.NETWORK.attr("root_ref_index").get()
+        self.joint_ref_index = self.NETWORK.attr("joint_ref_index").get()
 
         for block in self.blocks:
             block.update_network_to_blueprint()

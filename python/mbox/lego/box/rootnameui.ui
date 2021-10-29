@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>359</width>
-    <height>344</height>
+    <width>356</width>
+    <height>456</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,23 +23,23 @@
       </sizepolicy>
      </property>
      <property name="title">
-      <string>Common Naming Rule</string>
+      <string>Controls Name Convention</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QLineEdit" name="common_name_rule_lineEdit">
+         <widget class="QLineEdit" name="controls_name_convention_lineEdit">
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Naming rule:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;To configure custom names, please use the following tokes with &amp;quot;&lt;span style=&quot; font-weight:600;&quot;&gt;{}&lt;/span&gt;&amp;quot;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{component}&lt;/span&gt; = The name of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{side}&lt;/span&gt; = The side of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{index&lt;/span&gt;} = Index of the component. This is important when more than one component have the same name&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{description}&lt;/span&gt; = The name of the object inside the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{extension}&lt;/span&gt; = The extension of the object. For example &amp;quot;ctl&amp;quot; for controls or &amp;quot;jnt&amp;quot; for joints&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOTE:&lt;/span&gt; the only valid separator is &amp;quot;_&amp;quot;. This is a Maya limitation.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;This is the default configuration:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{component}_{side}{index}_{description}_{extension}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Other examples of configurations:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{component}{side}{index}{description}{extension}&lt;/p&gt;&lt;p&gt;{component}{index}_{description}_{extension}_{side}&lt;/p&gt;&lt;p&gt;{component}{index}_some_random_text_{description}_{extension}_{side}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;It is recommended to use all the tokens to ensure that there is no name clashing&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Naming rule:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;To configure custom names, please use the following tokes with &amp;quot;&lt;span style=&quot; font-weight:600;&quot;&gt;{}&lt;/span&gt;&amp;quot;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{name}&lt;/span&gt; = The name of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{direction}&lt;/span&gt; = The side of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{index&lt;/span&gt;} = Index of the component. This is important when more than one component have the same name&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{description}&lt;/span&gt; = The name of the object inside the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{extension}&lt;/span&gt; = The extension of the object. For example &amp;quot;ctl&amp;quot; for controls or &amp;quot;jnt&amp;quot; for joints&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOTE:&lt;/span&gt; the only valid separator is &amp;quot;_&amp;quot;. This is a Maya limitation.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;This is the default configuration:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{name}_{direction}{index}_{description}_{extension}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Other examples of configurations:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{name}{direction}{index}{description}{extension}&lt;/p&gt;&lt;p&gt;{name}{index}_{description}_{extension}_{direction}&lt;/p&gt;&lt;p&gt;{name}{index}_some_random_text_{description}_{extension}_{direction}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;It is recommended to use all the tokens to ensure that there is no name clashing&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
-           <string>{component}_{side}{index}_{description}_{extension}</string>
+           <string>{name}_{direction}{index}_{description}_{extension}</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="reset_common_name_rule_pushButton">
+         <widget class="QPushButton" name="reset_controls_convention_pushButton">
           <property name="maximumSize">
            <size>
             <width>40</width>
@@ -69,7 +69,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="common_des_letter_case_comboBox">
+         <widget class="QComboBox" name="controls_letter_case_comboBox">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -112,23 +112,23 @@
       </sizepolicy>
      </property>
      <property name="title">
-      <string>Joints Naming Rule</string>
+      <string>Joint Name Convention</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
-         <widget class="QLineEdit" name="joint_name_rule_lineEdit">
+         <widget class="QLineEdit" name="joint_name_convention_lineEdit">
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Naming rule:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;To configure custom names, please use the following tokes with &amp;quot;&lt;span style=&quot; font-weight:600;&quot;&gt;{}&lt;/span&gt;&amp;quot;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{component}&lt;/span&gt; = The name of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{side}&lt;/span&gt; = The side of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{index&lt;/span&gt;} = Index of the component. This is important when more than one component have the same name&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{description}&lt;/span&gt; = The name of the object inside the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{extension}&lt;/span&gt; = The extension of the object. For example &amp;quot;ctl&amp;quot; for controls or &amp;quot;jnt&amp;quot; for joints&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOTE:&lt;/span&gt; the only valid separator is &amp;quot;_&amp;quot;. This is a Maya limitation.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;This is the default configuration:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{component}_{side}{index}_{description}_{extension}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Other examples of configurations:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{component}{side}{index}{description}{extension}&lt;/p&gt;&lt;p&gt;{component}{index}_{description}_{extension}_{side}&lt;/p&gt;&lt;p&gt;{component}{index}_some_random_text_{description}_{extension}_{side}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;It is recommended to use all the tokens to ensure that there is no name clashing&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Naming rule:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;To configure custom names, please use the following tokes with &amp;quot;&lt;span style=&quot; font-weight:600;&quot;&gt;{}&lt;/span&gt;&amp;quot;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{name}&lt;/span&gt; = The name of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{direction}&lt;/span&gt; = The side of the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{index&lt;/span&gt;} = Index of the component. This is important when more than one component have the same name&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{description}&lt;/span&gt; = The name of the object inside the component&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;{extension}&lt;/span&gt; = The extension of the object. For example &amp;quot;ctl&amp;quot; for controls or &amp;quot;jnt&amp;quot; for joints&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOTE:&lt;/span&gt; the only valid separator is &amp;quot;_&amp;quot;. This is a Maya limitation.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;This is the default configuration:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{name}_{direction}{index}_{description}_{extension}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Other examples of configurations:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;{name}{direction}{index}{description}{extension}&lt;/p&gt;&lt;p&gt;{name}{index}_{description}_{extension}_{direction}&lt;/p&gt;&lt;p&gt;{name}{index}_some_random_text_{description}_{extension}_{direction}&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;It is recommended to use all the tokens to ensure that there is no name clashing&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
-           <string>{component}_{side}{index}_{description}_{extension}</string>
+           <string>{name}_{direction}{index}_{description}_{extension}</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="reset_joint_name_rule_pushButton">
+         <widget class="QPushButton" name="reset_joint_convention_pushButton">
           <property name="maximumSize">
            <size>
             <width>40</width>
@@ -158,7 +158,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="joint_des_letter_case_comboBox">
+         <widget class="QComboBox" name="joint_letter_case_comboBox">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -203,7 +203,7 @@
         </sizepolicy>
        </property>
        <property name="title">
-        <string>direction Naming</string>
+        <string>Controls Direction</string>
        </property>
        <layout class="QFormLayout" name="formLayout_2">
         <item row="0" column="0">
@@ -214,7 +214,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="direction_left_name_lineEdit">
+         <widget class="QLineEdit" name="controls_direction_left_lineEdit">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -246,7 +246,7 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="direction_right_name_lineEdit">
+         <widget class="QLineEdit" name="controls_direction_right_lineEdit">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -278,7 +278,7 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QLineEdit" name="direction_center_name_lineEdit">
+         <widget class="QLineEdit" name="controls_direction_center_lineEdit">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -303,7 +303,7 @@
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QPushButton" name="reset_side_name_pushButton">
+         <widget class="QPushButton" name="reset_controls_direction_pushButton">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -325,6 +325,169 @@
       </widget>
      </item>
      <item row="0" column="1">
+      <widget class="QGroupBox" name="groupBox_12">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="title">
+        <string>Joint Direction</string>
+       </property>
+       <layout class="QFormLayout" name="formLayout_4">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Left</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="joint_direction_left_lineEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the text that will be used for the side:&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;for example:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;L&lt;/p&gt;&lt;p&gt;left&lt;/p&gt;&lt;p&gt;Left&lt;/p&gt;&lt;p&gt;l&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;r&lt;/p&gt;&lt;p&gt;right&lt;/p&gt;&lt;p&gt;Right&lt;/p&gt;&lt;p&gt;Derecha&lt;/p&gt;&lt;p&gt;R&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>L</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Right</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="joint_direction_right_lineEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the text that will be used for the side:&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;for example:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;L&lt;/p&gt;&lt;p&gt;left&lt;/p&gt;&lt;p&gt;Left&lt;/p&gt;&lt;p&gt;l&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;r&lt;/p&gt;&lt;p&gt;right&lt;/p&gt;&lt;p&gt;Right&lt;/p&gt;&lt;p&gt;Derecha&lt;/p&gt;&lt;p&gt;R&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>R</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>Center</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="joint_direction_center_lineEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the text that will be used for the side:&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;for example:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;L&lt;/p&gt;&lt;p&gt;left&lt;/p&gt;&lt;p&gt;Left&lt;/p&gt;&lt;p&gt;l&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;r&lt;/p&gt;&lt;p&gt;right&lt;/p&gt;&lt;p&gt;Right&lt;/p&gt;&lt;p&gt;Derecha&lt;/p&gt;&lt;p&gt;R&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>C</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QPushButton" name="reset_joint_direction_pushButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Reset</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>Index Padding</string>
+       </property>
+       <layout class="QFormLayout" name="formLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Controls</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="controls_padding_spinBox"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>Joint</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="joint_padding_spinBox"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
       <widget class="QGroupBox" name="groupBox_11">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -344,7 +507,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="ctl_name_ext_lineEdit">
+         <widget class="QLineEdit" name="controls_name_ext_lineEdit">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>

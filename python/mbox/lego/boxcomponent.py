@@ -226,7 +226,7 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             module = utils.load_block_blueprint(comp_name)
             reload(module)
             info_text = (
-                "{}\n".format(module.Block.DESCRIPTION)
+                "{}\n".format(module.DESCRIPTION)
                 + "\n-------------------------------\n\n"
                 + "Author: {}\n".format(module.AUTHOR)
                 + "Url: {}\n".format(module.URL)
@@ -254,7 +254,7 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     def draw_component(self, parent=None):
         showUI = self.component_ui.showUI_checkBox.checkState()
         for x in self.component_ui.component_listView.selectedIndexes():
-            lib.draw_blueprint(None, x.data(), parent, showUI)
+            lib.draw_guide(None, x.data(), parent, showUI)
 
     def filter_changed(self, ft):
         """Filter out the elements in the list view
