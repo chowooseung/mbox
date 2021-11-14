@@ -12,7 +12,7 @@ import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 # mbox
-from mbox.lego import boxcomponentui, lib, utils
+from mbox.lego import componentui, lib, utils, build
 
 # mgear
 from mgear.core import pyqt
@@ -21,11 +21,11 @@ from mgear.vendor.Qt import QtCore, QtWidgets, QtGui
 PY2 = sys.version_info[0] == 2
 
 
-class BoxComponentUI(QtWidgets.QDialog, boxcomponentui.Ui_Form):
+class ComponentUI(QtWidgets.QDialog, componentui.Ui_Form):
 
     def __init__(self, parent=None):
 
-        super(BoxComponentUI, self).__init__(parent)
+        super(ComponentUI, self).__init__(parent)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.setupUi(self)
         self.component_listView.setAcceptDrops(False)
@@ -36,17 +36,17 @@ class BoxComponentUI(QtWidgets.QDialog, boxcomponentui.Ui_Form):
     def keyPressEvent(self, event):
 
         if not event.key() == QtCore.Qt.Key_Escape:
-            super(BoxComponentUI, self).keyPressEvent(event)
+            super(ComponentUI, self).keyPressEvent(event)
 
 
-class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
+class Component(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
     def __init__(self, parent=None):
 
         self.toolName = "legoBlockComponentManager"
-        super(BoxComponent, self).__init__(parent=parent)
+        super(Component, self).__init__(parent=parent)
 
-        self.component_ui = BoxComponentUI()
+        self.component_ui = ComponentUI()
         self.component_ui.component_listView.setAction(self.drag_draw_component)
         self.component_ui.component_listView.installEventFilter(self)
 
@@ -112,7 +112,7 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                                                    comp_name, "__init__.py")):
                     continue
                 try:
-                    module = utils.load_block_blueprint(comp_name)
+                    module = utils.load_block_module(comp_name, guide=True)
                     reload(module)
                     comp_list.append(module.TYPE)
                 except Exception as e:
@@ -189,8 +189,8 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         # buttons
         self.component_ui.settings_pushButton.clicked.connect(lib.inspect_settings)
         # self.component_ui.build_pushButton.clicked.connect(lib.build, None, )
-        self.component_ui.duplicate_pushButton.clicked.connect(partial(lib.duplicate_blueprint_component, False, True))
-        self.component_ui.dupSym_pushButton.clicked.connect(partial(lib.duplicate_blueprint_component, True, True))
+        self.component_ui.duplicate_pushButton.clicked.connect(partial(build.duplicate_guide, False, True))
+        self.component_ui.dupSym_pushButton.clicked.connect(partial(build.duplicate_guide, True, True))
         # self.component_ui.extrCtl_pushButton.clicked.connect(guide_manager.extract_controls)
         self.component_ui.draw_pushButton.clicked.connect(self.draw_comp_doubleClick)
 
@@ -223,7 +223,7 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         try:
             item = self.component_ui.component_listView.selectedIndexes()[0]
             comp_name = item.data()
-            module = utils.load_block_blueprint(comp_name)
+            module = utils.load_block_module(comp_name, guide=True)
             reload(module)
             info_text = (
                 "{}\n".format(module.DESCRIPTION)
@@ -254,7 +254,7 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     def draw_component(self, parent=None):
         showUI = self.component_ui.showUI_checkBox.checkState()
         for x in self.component_ui.component_listView.selectedIndexes():
-            lib.draw_guide(None, x.data(), parent, showUI)
+            build.guide(None, x.data(), parent, showUI)
 
     def filter_changed(self, ft):
         """Filter out the elements in the list view
@@ -268,9 +268,9 @@ class BoxComponent(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.component_ui.info_plainTextEdit.setPlainText("")
 
 
-def show_box_component(*args):
-    pyqt.showDialog(BoxComponent, dockable=True)
+def show_component(*args):
+    pyqt.showDialog(Component, dockable=True)
 
 
 if __name__ == "__main__":
-    show_box_component()
+    show_component()

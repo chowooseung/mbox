@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'boxcomponentui.ui'
+## Form generated from reading UI file 'componentui.ui'
 ##
 ## Created by: Qt User Interface Compiler version 5.15.2
 ##
@@ -130,7 +130,7 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
-        self.tools_groupBox.setTitle(QCoreApplication.translate("Form", u"Box Tools", None))
+        self.tools_groupBox.setTitle(QCoreApplication.translate("Form", u"Tools", None))
 #if QT_CONFIG(whatsthis)
         self.settings_pushButton.setWhatsThis(QCoreApplication.translate("Form", u"<html><head/><body><p>Open Component/Guide root settings window.</p></body></html>", None))
 #endif // QT_CONFIG(whatsthis)

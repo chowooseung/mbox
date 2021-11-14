@@ -1,76 +1,71 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # maya
 import pymel.core as pm
 
 # mbox
-from mbox.core import string
+from mbox.lego.lib import (
+    AbstractObjects,
+    AbstractAttributes,
+    AbstractOperators,
+    AbstractConnection
+)
 
 # mgear
-from mgear.core import attribute, primitive, icon
-
-#
-from collections import OrderedDict
-import logging
-
-logger = logging.getLogger(__name__)
+from mgear.core import primitive, icon
 
 
-def objects(block, context):
-    """"""
-    # current context
-    context_name = f"{block.naming}_{block.direction}{block.index}"
-    context[context_name] = OrderedDict()
-    ct = context[context_name]
+class Objects(AbstractObjects):
 
-    # parent context
-    p_network = block.__class__.NETWORK.affedtedBy[0].get()
-    p_context_name = \
-        f"{p_network.attr('name').get()}_{p_network.attr('direction').get()}{p_network.attr('index').get()}"
-    p_ct = context[p_context_name]
+    def __init__(self, block):
+        super(Objects, self).__init__(block=block)
 
-    # name
-    c_convention = context["controlsConvention"]
-    j_convention = context["jointConvention"]
-    con_ext = context["controlsExt"]
-    jnt_ext = context["jointExt"]
-    con_padding = context["controlsPadding"]
-    jnt_padding = context["jointPadding"]
-    name_dict = {"name": block.naming, "direction": block.direction, "index": block.index}
+    def process(self, context):
+        super(Objects, self).process(context=context)
+        n_kwargs = {"name": self.block["name"], "direction": self.block["direction"], "index": self.block["index"]}
+        root_name = self.block.top.controls_name(**n_kwargs, description="", extension="root")
+        npo_name = self.block.top.controls_name(**n_kwargs, description="", extension="npo")
+        con_name = self.block.top.controls_name(**n_kwargs, description="", extension=self.block.top["controls_ext"])
+        ref_name = self.block.top.controls_name(**n_kwargs, description="", extension="ref")
 
-    root_name = string.naming(c_convention, padding=con_padding, **name_dict, extension="root")
-    npo_name = string.naming(c_convention, padding=con_padding, **name_dict, extension="npo")
-    con_name = string.naming(c_convention, padding=con_padding, **name_dict, extension=con_ext)
-    ref_name = string.naming(c_convention, padding=con_padding, **name_dict, extension="ref")
-    jnt_name = string.naming(j_convention, padding=jnt_padding, **name_dict, extension=jnt_ext)
+        root_m = self.parent_ins["ref"][self.block["controls_ref_index"]].getMatrix(worldSpace=True)
+        m = pm.datatypes.Matrix(self.block["transforms"][0])
 
-    # create
-    root = primitive.addTransform(context["root"]["blocks"], root_name, p_ct["ref"][-1].getMatrix(worldSpace=True))
-    npo = primitive.addTransform(root, npo_name, pm.datatypes.Matrix(block.transform[0]))
-    con = primitive.addTransform(npo, con_name)
-    ref = primitive.addTransform(con, ref_name)
-    jnt = primitive.addJoint(context["root"]["joints"], jnt_name, pm.datatypes.Matrix(block.transforms[0]))
+        # create
+        root = primitive.addTransform(self.top_ins["blocks"], root_name, root_m)
+        npo = primitive.addTransform(root, npo_name, m)
+        con = icon.circle(npo, con_name, m=m)
+        ref = primitive.addTransform(con, ref_name, m)
 
-    # controls
-    pm.controller(con, p_ct["con"][-1], parent=True)
-
-    ct["root"] = root
-    ct["controls"] = [con]
-    ct["ref"] = [ref]
-    ct["joints"] = [jnt]
+        self.ins["root"] = root # block root. use build connect network
+        self.ins["controls"] = [con] # block controls. use build connect controllers
+        self.ins["refs"] = [ref] # block reference transform. sub block parent matrix
+        # self.ins["joints"] = [jnt] # block joint. use build connect joint
 
 
-def attributes(block, context):
-    """"""
-    # current context
-    context_name = f"{block.naming}_{block.direction}{block.index}"
-    ct = context[context_name]
+class Attributes(AbstractAttributes):
+
+    def __init__(self, block):
+        super(Attributes, self).__init__(block=block)
+
+    def process(self, context):
+        super(Attributes, self).process(context=context)
 
 
-def connections(block, context):
-    """"""
-    # current context
-    context_name = f"{block.naming}_{block.direction}{block.index}"
-    ct = context[context_name]
+class Operators(AbstractOperators):
 
-    ct["root"].message >> block.__class__.NETWORK.rig
+    def __init__(self, block):
+        super(Operators, self).__init__(block=block)
+
+    def process(self, context):
+        super(Operators, self).process(context=context)
+
+
+class Connection(AbstractConnection):
+
+    def __init__(self, block):
+        super(Connection, self).__init__(block=block)
+
+    def process(self, context):
+        super(Connection, self).process(context=context)
+

@@ -2,42 +2,72 @@
 
 #
 import os
+import sys
+import importlib
+from types import ModuleType
 
-# mbox
-from mbox.lego import box
-from mgear.core import utils
-
-
-def get_blocks_directory():
-    return utils.gatherCustomModuleDirectories(
-        "MBOX_CUSTOM_BOX_PATH",
-        [os.path.join(os.path.dirname(box.__file__))])
+# may
+import pymel.core as pm
 
 
-def load_block_init(block):
-    dirs = get_blocks_directory()
-    defFmt = "mbox.lego.box.{}"
-    customFmt = "{}"
+MBOX_ROOT = os.getenv("MBOX_ROOT")
+MBOX_BOX = os.getenv("MBOX_BOX")
+MBOX_CUSTOM_BOX = os.getenv("MBOX_CUSTOM_BOX")
 
-    mod = utils.importFromStandardOrCustomDirectories(dirs, defFmt, customFmt, block)
+sys.path.append(MBOX_BOX)
+sys.path.append(MBOX_CUSTOM_BOX)
+
+
+def get_blocks_directory() -> dict:
+    result = dict()
+    msg = "same name block exists"
+    default_block_dir = [d for d in os.listdir(MBOX_BOX)
+                         if os.path.isdir(os.path.join(MBOX_BOX, d)) and "__pycache__" not in d]
+    assert len(set(default_block_dir)) == len(default_block_dir), msg
+    result[MBOX_BOX] = list(set(default_block_dir))
+    if os.path.exists(MBOX_CUSTOM_BOX):
+        custom_block_dir = [d for d in os.listdir(MBOX_CUSTOM_BOX)
+                            if os.path.isdir(os.path.join(MBOX_CUSTOM_BOX, d)) and "__pycache__" not in d]
+        assert len(set(custom_block_dir)) == len(custom_block_dir), msg
+        assert len(set(default_block_dir+custom_block_dir)) == len(default_block_dir+custom_block_dir), msg
+        result[MBOX_CUSTOM_BOX] = list(set(custom_block_dir))
+    return result
+
+
+def load_block_module(component: str, guide: bool) -> ModuleType:
+    blocks_dir = get_blocks_directory()
+    check = None
+    for box_path, blocks in blocks_dir.items():
+        if component in blocks:
+            check = True
+    assert check is True, f"{component} don't exists in box"
+    mod = importlib.import_module(f"{component}.blueprint" if guide else f"{component}")
     return mod
 
 
-def load_block_blueprint(block):
-    """Import the Component """
-    dirs = get_blocks_directory()
-    defFmt = "mbox.lego.box.{}.blueprint"
-    customFmt = "{}.blueprint"
+def load_build_step(block):
+    mod = load_block_module(block["component"], guide=False)
+    objects = mod.Objects(block)
+    attributes = mod.Attributes(block)
+    operators = mod.Operators(block)
+    connection = mod.Connection(block)
+    return objects, attributes, operators, connection
 
-    mod = utils.importFromStandardOrCustomDirectories(dirs, defFmt, customFmt, block)
-    return mod
+
+def guide_selected():
+    msg = "selected node is not mbox guide node"
+    selected = pm.selected(type="transform")
+    assert len(selected) > 0, msg
+    assert isinstance(selected[0], pm.nodetypes.Transform), msg
+    assert selected[0].hasAttr("is_guide") is True \
+           or selected[0].hasAttr("is_guide_component") is True \
+           or selected[0].hasAttr("is_guide_root") is True, msg
+    return selected[0]
 
 
-def load_block_setting(block):
-    """Import the Component """
-    dirs = get_blocks_directory()
-    defFmt = "mbox.lego.box.{}.setting"
-    customFmt = "{}.setting"
-
-    mod = utils.importFromStandardOrCustomDirectories(dirs, defFmt, customFmt, block)
-    return mod
+def rig_selected():
+    msg = "selected node is not mbox rig node"
+    selected = pm.selected(type="transform")
+    assert len(selected) > 0, msg
+    assert selected[0].getParent(generations=-1).hasAttr("is_rig_root") is True, msg
+    return selected[0].getParent(generations=-1)

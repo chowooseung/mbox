@@ -123,7 +123,7 @@
           </item>
           <item>
            <property name="text">
-            <string>prepare</string>
+            <string>preScripts</string>
            </property>
           </item>
           <item>
@@ -138,7 +138,17 @@
           </item>
           <item>
            <property name="text">
-            <string>operate</string>
+            <string>connection</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>additionalFunc</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>postScripts</string>
            </property>
           </item>
          </widget>

@@ -20,7 +20,7 @@ def install():
 
     """
     commands = (
-        ("Lego Box", str_lego_box),
+        ("Manager", str_manager),
         ("", None),
         ("Settings", str_settings),
         ("Extract Controls", str_extract_controls),
@@ -36,9 +36,9 @@ def install():
     mgear.menu.install("Lego", commands, parent=mbox.menu_id)
 
 
-str_lego_box = """
-from mbox.lego import legoboxui
-legoboxui.show_lego_box()"""
+str_manager = """
+from mbox.lego import manager
+manager.show_manager()"""
 
 str_settings = """
 from mbox.lego import lib

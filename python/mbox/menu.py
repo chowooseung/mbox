@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-"""from mgear.menu"""
 
 # maya
 import pymel.core as pm

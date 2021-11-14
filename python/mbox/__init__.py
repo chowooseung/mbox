@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 menu_id = "mBox"
 
 
-def log_information():
-    logger.info("mbox Information")
-    logger.info("mbox version : {0}".format(version.mbox))
-    logger.info("schema version : {0}".format(version.schema))
+def environ():
+    os.environ["MBOX_ROOT"] = os.path.dirname(__file__)
+    os.environ["MBOX_BOX"] = os.path.join(os.environ["MBOX_ROOT"], "lego", "box")
+    os.environ["MBOX_CUSTOM_BOX"] = ""
 
 
 def mbox_menu():
