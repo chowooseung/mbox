@@ -15,7 +15,8 @@ MBOX_BOX = os.getenv("MBOX_BOX")
 MBOX_CUSTOM_BOX = os.getenv("MBOX_CUSTOM_BOX")
 
 sys.path.append(MBOX_BOX)
-sys.path.append(MBOX_CUSTOM_BOX)
+for path in MBOX_CUSTOM_BOX.split(";"):
+    sys.path.append(path)
 
 
 def get_blocks_directory() -> dict:
@@ -45,7 +46,7 @@ def load_block_module(component: str, guide: bool) -> ModuleType:
     return mod
 
 
-def load_build_step(block):
+def load_build_step(block) -> tuple:
     mod = load_block_module(block["component"], guide=False)
     objects = mod.Objects(block)
     attributes = mod.Attributes(block)
@@ -54,20 +55,12 @@ def load_build_step(block):
     return objects, attributes, operators, connection
 
 
-def guide_selected():
+def select_guide():
     msg = "selected node is not mbox guide node"
     selected = pm.selected(type="transform")
     assert len(selected) > 0, msg
-    assert isinstance(selected[0], pm.nodetypes.Transform), msg
     assert selected[0].hasAttr("is_guide") is True \
            or selected[0].hasAttr("is_guide_component") is True \
            or selected[0].hasAttr("is_guide_root") is True, msg
     return selected[0]
 
-
-def rig_selected():
-    msg = "selected node is not mbox rig node"
-    selected = pm.selected(type="transform")
-    assert len(selected) > 0, msg
-    assert selected[0].getParent(generations=-1).hasAttr("is_rig_root") is True, msg
-    return selected[0].getParent(generations=-1)

@@ -25,7 +25,7 @@ class Objects(AbstractObjects):
         n_kwargs = {"name": self.block["name"], "direction": self.block["direction"], "index": self.block["index"]}
         root_name = self.block.top.controls_name(**n_kwargs, description="", extension="root")
         npo_name = self.block.top.controls_name(**n_kwargs, description="", extension="npo")
-        con_name = self.block.top.controls_name(**n_kwargs, description="", extension=self.block.top["controls_ext"])
+        con_name = self.block.top.controls_name(**n_kwargs, description="", extension=self.block.top["controls_extension"])
         ref_name = self.block.top.controls_name(**n_kwargs, description="", extension="ref")
 
         root_m = self.parent_ins["ref"][self.block["controls_ref_index"]].getMatrix(worldSpace=True)

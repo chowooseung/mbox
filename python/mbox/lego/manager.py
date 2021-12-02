@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from mbox.lego import component
+from mbox.lego import blocks
 
 # mgear
 from mgear.vendor.Qt import QtCore, QtWidgets
@@ -19,7 +19,7 @@ class Manager(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.toolName = "Manager"
         super(Manager, self).__init__(parent=parent)
 
-        self.component_ui = component.Component()
+        self.component_ui = blocks.Blocks()
         self.installEventFilter(self)
         self.create_window()
         self.create_layout()

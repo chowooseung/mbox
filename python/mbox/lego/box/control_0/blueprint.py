@@ -15,6 +15,7 @@ from mbox.lego.lib import (
     SubBlock
 )
 from mbox.lego.box import settings
+from . import settings_ui
 
 # mgear
 from mgear.core import pyqt, attribute
@@ -34,9 +35,9 @@ class Block(SubBlock):
 
     def __init__(self, parent):
         super(Block, self).__init__(parent=parent)
-        self["component"] = TYPE
         self["version"] = "{}. {}. {}".format(*VERSION)
-        self["name"] = NAME
+        self["comp_type"] = TYPE
+        self["comp_name"] = NAME
         self["transforms"] = [pm.datatypes.Matrix().tolist()]
 
         # specify attr
@@ -56,7 +57,7 @@ class Block(SubBlock):
             attribute.addAttribute(self.network, attr, "bool",
                                    True if attr in meta["key_able_attrs"] else False, keyable=False)
 
-        root_name = f"{self['name']}_{self['direction']}{self['index']}_root"
+        root_name = f"{self['comp_name']}_{self['comp_direction']}{self['comp_index']}_root"
         if isinstance(self.parent, TopBlock):
             parent = self.parent.network.attr("guide").inputs(type="transform")[0]
         else:
@@ -90,7 +91,31 @@ class Block(SubBlock):
          for a in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]]
 
 
+class BlockSettingsUI(QtWidgets.QDialog, settings_ui.Ui_Form):
+
+    def __init__(self, parent=None):
+        super(BlockSettingsUI, self).__init__(parent)
+        self.setupUi(self)
+
+
 class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
 
     def __init__(self, parent=None):
-        super(BlockSettings, self).__init__(parent=parent)
+        self.toolName = TYPE
+        # Delete old instances of the componet settings window.
+        pyqt.deleteInstances(self, MayaQDockWidget)
+
+        super(self.__class__, self).__init__(parent=parent)
+        self.settings_tab = BlockSettingsUI()
+
+        self.populate_block_controls()
+
+    def populate_block_controls(self):
+        """Populate Controls
+
+        Populate the controls values from the custom attributes of the
+        component.
+
+        """
+        # populate tab
+        self.tabs.insertTab(1, self.settings_tab, "Component Settings")

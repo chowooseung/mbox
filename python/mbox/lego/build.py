@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 #
+import importlib.util
+import os
 
 # maya
 import pymel.core as pm
@@ -13,26 +15,21 @@ from mbox.lego.lib import (
     Context,
     blueprint_from_guide,
     AdditionalFunc,
-    PreScripts,
-    PostScripts,
+    PreScript,
+    PostScript,
     logger
 )
+from mbox.lego import utils
 
 
 def guide(blueprint, block, parent, showUI):
     if blueprint:
         blueprint.guide()
     else:
-        if parent:
-            selected = [pm.PyNode(parent)]
-        else:
-            selected = pm.selected(type="transform")
-        if selected:
-            if selected[0].hasAttr("is_guide_root") \
-                    or selected[0].hasAttr("is_guide_component") \
-                    or selected[0].hasAttr("is_guide"):
-                draw_specify_component_guide(selected[0], block)
-        else:
+        try:
+            selected = pm.PyNode(parent) if parent else utils.select_guide()
+            draw_specify_component_guide(selected, block)
+        except AssertionError:
             draw_specify_component_guide(None, block)
 
         if showUI:
@@ -40,22 +37,16 @@ def guide(blueprint, block, parent, showUI):
 
 
 def duplicate_guide():
-    selected = pm.selected(type="transform")
-    assert len(selected) > 0
-    assert isinstance(selected[0], pm.nodetypes.Transform)
+    selected = utils.select_guide()
 
 
 def mirror_guide():
-    selected = pm.selected(type="transform")
-    assert len(selected) > 0
-    assert isinstance(selected[0], pm.nodetypes.Transform)
+    selected = utils.select_guide()
 
 
 def rig(blueprint: AbstractBlock or None) -> Context:
     if not blueprint:
-        blueprint = blueprint_from_guide(pm.selected(type="transform"))
-        if not blueprint:
-            raise RuntimeError
+        blueprint = blueprint_from_guide(utils.select_guide())
 
     context = Context()
     pre_scripts = list()
@@ -77,17 +68,17 @@ def rig(blueprint: AbstractBlock or None) -> Context:
 
     get_build_step(blueprint)
 
-    # for path in blueprint["scripts"]:
-    #     mod = importlib.import_module(path)
-    #     for cls_name in dir(mod):
-    #         cls = getattr(mod, cls_name)
-    #         if issubclass(type(cls), PreScripts):
-    #             pre_scripts.append(cls())
-    #         elif issubclass(type(cls), PostScripts):
-    #             post_scripts.append(cls())
-
-    pre_scripts.sort(key=lambda s: s.order)
-    post_scripts.sort(key=lambda s: s.order)
+    for path in blueprint["scripts"]:
+        name = os.path.splitext(os.path.basename(path))[0]
+        spec = importlib.util.spec_from_file_location(name, path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for cls_name in dir(mod):
+            cls = getattr(mod, cls_name)
+            if issubclass(type(cls), PreScript):
+                pre_scripts.append(cls())
+            elif issubclass(type(cls), PostScript):
+                post_scripts.append(cls())
 
     logger.debug("mbox build system")
     logger.debug("counting ... [???/???]")

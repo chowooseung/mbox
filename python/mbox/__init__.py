@@ -17,9 +17,11 @@ menu_id = "mBox"
 
 
 def environ():
-    os.environ["MBOX_ROOT"] = os.path.dirname(__file__)
-    os.environ["MBOX_BOX"] = os.path.join(os.environ["MBOX_ROOT"], "lego", "box")
+    os.environ["MBOX_ROOT"] = os.path.normpath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir))
+    os.environ["MBOX_PYTHON"] = os.path.normpath(os.path.dirname(__file__))
+    os.environ["MBOX_BOX"] = os.path.normpath(os.path.join(os.environ["MBOX_PYTHON"], "lego", "box"))
     os.environ["MBOX_CUSTOM_BOX"] = ""
+    os.environ["MBOX_CUSTOM_STEP_PATH"] = ""
 
 
 def mbox_menu():

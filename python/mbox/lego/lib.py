@@ -6,7 +6,7 @@ import pymel.core as pm
 # mbox
 import mbox
 from mbox.core.attribute import add_attribute
-from mbox.lego import utils
+from mbox.lego import utils, naming
 
 #
 import uuid
@@ -80,6 +80,7 @@ def blueprint_from_guide(selected):
     elif isinstance(selected, list):
         selected = selected[0]
 
+    hierarchy = None
     if selected.hasAttr("is_guide_root"):
         hierarchy = get_hierarchy_from_guide(selected, OrderedDict())
     elif selected.hasAttr("is_guide_component"):
@@ -91,15 +92,13 @@ def blueprint_from_guide(selected):
         hierarchy = OrderedDict()
         network = selected.getParent(generations=-1).message.outputs(type="network")[0]
         hierarchy[network] = get_hierarchy_from_guide(selected, OrderedDict())
-    else:
-        raise RuntimeError
 
     return blueprint_from_network(hierarchy)
 
 
 def blueprint_from_network(hierarchy):
     def get_blueprint(_p_block, _network, children):
-        mod = utils.load_block_module(_network.attr("component").get(), guide=True)
+        mod = utils.load_block_module(_network.attr("comp_type").get(), guide=True)
         block = mod.Block(parent=_p_block)
         block.network = _network
         if children:
@@ -118,9 +117,7 @@ def blueprint_from_network(hierarchy):
 
 
 def blueprint_from_rig():
-    rig_root = pm.selected(type="transform")[0].getParent(generations=-1)
-    if not rig_root.hasAttr("is_rig_root"):
-        raise RuntimeError("you don't select mbox rig")
+    rig_root = utils.select_guide().getParent(generations=-1)
     root_network = rig_root.message.outputs(type="network")[0]
 
     hierarchy = get_hierarchy_from_network(root_network, OrderedDict())
@@ -144,7 +141,7 @@ def blueprint_from_file(path):
 
     def get_blueprint(_block, _data):
         for child in _data["blocks"]:
-            mod = utils.load_block_module(child["component"], guide=True)
+            mod = utils.load_block_module(child["comp_type"], guide=True)
             _b = mod.Block(_block)
             get_blueprint(_b, child)
 
@@ -161,7 +158,7 @@ def draw_specify_component_guide(parent, component):
 
         # component block
         mod = utils.load_block_module(component, guide=True)
-        block = mod.Block(parent=blueprint)
+        mod.Block(parent=blueprint)
 
         blueprint.guide()
     else:
@@ -182,7 +179,7 @@ def draw_specify_component_guide(parent, component):
             for index, t in enumerate(block["transforms"]):
                 block["transforms"][index] = transform.setMatrixPosition(t, offset_t)
 
-        block["index"] = blueprint.valid_index(block["name"], block["direction"])
+        block["comp_index"] = blueprint.solve_index(block["comp_name"], block["comp_direction"])
         pm.select(block.guide())
 
 
@@ -200,10 +197,11 @@ def inspect_settings(guide=None, network=None):
     while root:
         if pm.attributeQuery("is_guide_component", node=root, exists=True):
             network = root.message.outputs(type="network")[0]
-            comp_type = network.attr("component").get()
+            comp_type = network.attr("comp_type").get()
             break
         elif pm.attributeQuery("is_guide_root", node=root, exists=True):
             guide_root = root
+            network = guide_root.message.outputs(type="network")[0]
             break
         root = root.getParent()
 
@@ -211,16 +209,12 @@ def inspect_settings(guide=None, network=None):
         mod = utils.load_block_module(comp_type, guide=True)
         window = pyqt.showDialog(mod.BlockSettings, dockable=True)
         window.tabs.setCurrentIndex(0)
-        window.guide = guide
-        window.network = network
 
     elif guide_root:
         module_name = "mbox.lego.box.settings"
         mod = __import__(module_name, globals(), locals(), ["*"], 0)
         window = pyqt.showDialog(mod.RootSettings, dockable=True)
         window.tabs.setCurrentIndex(0)
-        window.guide = guide
-        window.network = network
 
     else:
         pm.displayError("The selected object is not part of component guide")
@@ -331,7 +325,7 @@ class AbstractBlock(dict):
                 _block[k] = v
 
             for index, b_data in enumerate(_dict["blocks"]):
-                mod = utils.load_block_module(b_data["component"], guide=True)
+                mod = utils.load_block_module(b_data["comp_type"], guide=True)
                 _block["blocks"].append(mod.Block(_block))
                 __recursive(_block["blocks"][index], b_data)
 
@@ -415,7 +409,7 @@ class TopBlock(AbstractBlock):
         super(TopBlock, self).__init__(parent=None)
 
         # component
-        self["component"] = "mbox"
+        self["comp_type"] = "mbox"
 
         # version
         self["version"] = mbox.version.mbox
@@ -430,30 +424,46 @@ class TopBlock(AbstractBlock):
         self["name"] = "rig"
 
         # Direction string
-        self["joint_direction"] = ["C", "L", "R"]
-        self["controls_direction"] = ["C", "L", "R"]
+        self["joint_left_name"] = naming.DEFAULT_JOINT_SIDE_L_NAME
+        self["joint_right_name"] = naming.DEFAULT_JOINT_SIDE_R_NAME
+        self["joint_center_name"] = naming.DEFAULT_JOINT_SIDE_C_NAME
+        self["ctl_left_name"] = naming.DEFAULT_SIDE_L_NAME
+        self["ctl_right_name"] = naming.DEFAULT_SIDE_R_NAME
+        self["ctl_center_name"] = naming.DEFAULT_SIDE_C_NAME
 
         # Extension
-        self["joint_extension"] = "jnt"
-        self["controls_extension"] = "con"
+        self["joint_name_ext"] = naming.DEFAULT_JOINT_EXT_NAME
+        self["ctl_name_ext"] = naming.DEFAULT_CTL_EXT_NAME
 
-        # Convention
-        self["joint_convention"] = "{name}_{direction}{index}_{description}_{extension}"
-        self["controls_convention"] = "{name}_{direction}{index}_{description}_{extension}"
+        # Name rule
+        self["joint_name_rule"] = naming.DEFAULT_NAMING_RULE
+        self["ctl_name_rule"] = naming.DEFAULT_NAMING_RULE
 
         # default, lower, upper, capitalize
         self["joint_description_letter_case"] = "default"
-        self["controls_description_letter_case"] = "default"
+        self["ctl_description_letter_case"] = "default"
 
         # padding
-        self["joint_padding"] = 0
-        self["controls_padding"] = 0
+        self["joint_index_padding"] = 0
+        self["ctl_index_padding"] = 0
+
+        # world ctl
+        self["world_ctl"] = False
+        self["world_ctl_name"] = "world_ctl"
+
+        # joint rig
+        self["joint_rig"] = True
+
+        # uni scale
+        self["force_uni_scale"] = False
 
         # bool
-        self["run_scripts"] = False
+        self["run_pre_custom_step"] = False
+        self["run_post_custom_step"] = False
 
         # Scripts path
-        self["scripts"] = list()
+        self["pre_custom_step"] = str()
+        self["post_custom_step"] = str()
 
         # Schema version
         self["schema"] = mbox.version.schema
@@ -482,30 +492,30 @@ class TopBlock(AbstractBlock):
 
     @property
     def ins_name(self):
-        return f"{self['component']}"
+        return f"{self['comp_type']}"
 
     def control_name(self, name="", direction="", index="", description="", extension=""):
-        index = str(index).zfill(self["controls_padding"])
-        if self["controls_description_letter_case"] == "lower":
+        index = str(index).zfill(self["ctl_index_padding"])
+        if self["ctl_description_letter_case"] == "lower":
             description = description.lower()
-        elif self["controls_description_letter_case"] == "upper":
+        elif self["ctl_description_letter_case"] == "upper":
             description = description.upper()
-        elif self["controls_description_letter_case"] == "capitalize":
+        elif self["ctl_description_letter_case"] == "capitalize":
             description = description.capitalize()
-        rename = self["controls_convention"].format(
+        rename = self["ctl_name_rule"].format(
             name=name, direction=direction, index=index, description=description, extension=extension)
         c_name = "_".join([x for x in rename.split("_") if x])
         return c_name
 
     def joint_name(self, name="", direction="", index="", description="", extension=""):
-        index = str(index).zfill(self["joints_padding"])
+        index = str(index).zfill(self["joint_index_padding"])
         if self["joint_description_letter_case"] == "lower":
             description = description.lower()
         elif self["joint_description_letter_case"] == "upper":
             description = description.upper()
         elif self["joint_description_letter_case"] == "capitalize":
             description = description.capitalize()
-        rename = self["joints_convention"].format(
+        rename = self["joint_name_rule"].format(
             name=name, direction=direction, index=index, description=description, extension=extension)
         j_name = "_".join([x for x in rename.split("_") if x])
         return j_name
@@ -517,26 +527,36 @@ class TopBlock(AbstractBlock):
         self["schema"] = self.network.attr("schema").get()
         self["process"] = self.network.attr("process").get(asString=True)
         self["step"] = self.network.attr("step").get(asString=True)
-        self["joint_direction"] = self.network.attr("joint_direction").get()
-        self["controls_direction"] = self.network.attr("controls_direction").get()
-        self["joint_extension"] = self.network.attr("joint_extension").get()
-        self["controls_extension"] = self.network.attr("controls_extension").get()
-        self["joint_convention"] = self.network.attr("joint_convention").get()
-        self["controls_convention"] = self.network.attr("controls_convention").get()
+        self["joint_left_name"] = self.network.attr("joint_left_name").get()
+        self["joint_right_name"] = self.network.attr("joint_right_name").get()
+        self["joint_center_name"] = self.network.attr("joint_center_name").get()
+        self["ctl_left_name"] = self.network.attr("ctl_left_name").get()
+        self["ctl_right_name"] = self.network.attr("ctl_right_name").get()
+        self["ctl_center_name"] = self.network.attr("ctl_center_name").get()
+        self["joint_name_ext"] = self.network.attr("joint_name_ext").get()
+        self["ctl_name_ext"] = self.network.attr("ctl_name_ext").get()
+        self["joint_name_rule"] = self.network.attr("joint_name_rule").get()
+        self["ctl_name_rule"] = self.network.attr("ctl_name_rule").get()
         self["joint_description_letter_case"] = self.network.attr("joint_description_letter_case").get(asString=True)
-        self["controls_description_letter_case"] = \
-            self.network.attr("controls_description_letter_case").get(asString=True)
-        self["joint_padding"] = self.network.attr("joint_padding").get()
-        self["controls_padding"] = self.network.attr("controls_padding").get()
-        self["run_scripts"] = self.network.attr("run_scripts").get()
-        self["scripts"] = self.network.attr("scripts").get()
+        self["ctl_description_letter_case"] = \
+            self.network.attr("ctl_description_letter_case").get(asString=True)
+        self["joint_index_padding"] = self.network.attr("joint_index_padding").get()
+        self["ctl_index_padding"] = self.network.attr("ctl_index_padding").get()
+        self["world_ctl"] = self.network.attr("world_ctl").get()
+        self["world_ctl_name"] = self.network.attr("world_ctl_name").get()
+        self["joint_rig"] = self.network.attr("joint_rig").get()
+        self["force_uni_scale"] = self.network.attr("force_uni_scale").get()
+        self["run_pre_custom_step"] = self.network.attr("run_pre_custom_step").get()
+        self["pre_custom_step"] = self.network.attr("pre_custom_step").get()
+        self["run_post_custom_step"] = self.network.attr("run_post_custom_step").get()
+        self["post_custom_step"] = self.network.attr("post_custom_step").get()
         self["l_color_fk"] = self.network.attr("l_color_fk").get()
         self["l_color_ik"] = self.network.attr("l_color_ik").get()
         self["r_color_fk"] = self.network.attr("r_color_fk").get()
         self["r_color_ik"] = self.network.attr("r_color_ik").get()
         self["c_color_fk"] = self.network.attr("c_color_fk").get()
         self["c_color_ik"] = self.network.attr("c_color_ik").get()
-        self["use_RGB_Color"] = self.network.attr("use_RGB_Color").get()
+        self["use_RGB_color"] = self.network.attr("use_RGB_color").get()
         self["l_RGB_fk"] = self.network.attr("l_RGB_fk").get()
         self["l_RGB_ik"] = self.network.attr("l_RGB_ik").get()
         self["r_RGB_fk"] = self.network.attr("r_RGB_fk").get()
@@ -554,25 +574,35 @@ class TopBlock(AbstractBlock):
         self.network.attr("schema").set(self["schema"])
         self.network.attr("process").set(self["process"])
         self.network.attr("step").set(self["step"])
-        [self.network.attr("joint_direction")[i].set(x) for i, x in enumerate(self["joint_direction"])]
-        [self.network.attr("controls_direction")[i].set(x) for i, x in enumerate(self["controls_direction"])]
-        self.network.attr("joint_extension").set(self["joint_extension"])
-        self.network.attr("controls_extension").set(self["controls_extension"])
-        self.network.attr("joint_convention").set(self["joint_convention"])
-        self.network.attr("controls_convention").set(self["controls_convention"])
+        self.network.attr("joint_left_name").set(self["joint_left_name"])
+        self.network.attr("joint_right_name").set(self["joint_right_name"])
+        self.network.attr("joint_center_name").set(self["joint_center_name"])
+        self.network.attr("ctl_left_name").set(self["ctl_left_name"])
+        self.network.attr("ctl_right_name").set(self["ctl_right_name"])
+        self.network.attr("ctl_center_name").set(self["ctl_center_name"])
+        self.network.attr("joint_name_ext").set(self["joint_name_ext"])
+        self.network.attr("ctl_name_ext").set(self["ctl_name_ext"])
+        self.network.attr("joint_name_rule").set(self["joint_name_rule"])
+        self.network.attr("ctl_name_rule").set(self["ctl_name_rule"])
         self.network.attr("joint_description_letter_case").set(self["joint_description_letter_case"])
-        self.network.attr("controls_description_letter_case").set(self["controls_description_letter_case"])
-        self.network.attr("joint_padding").set(self["joint_padding"])
-        self.network.attr("controls_padding").set(self["controls_padding"])
-        self.network.attr("run_scripts").set(self["run_scripts"])
-        [self.network.attr("scripts")[i].set(script) for i, script in enumerate(self["scripts"])]
+        self.network.attr("ctl_description_letter_case").set(self["ctl_description_letter_case"])
+        self.network.attr("joint_index_padding").set(self["joint_index_padding"])
+        self.network.attr("ctl_index_padding").set(self["ctl_index_padding"])
+        self.network.attr("world_ctl").set(self["world_ctl"])
+        self.network.attr("world_ctl_name").set(self["world_ctl_name"])
+        self.network.attr("joint_rig").set(self["joint_rig"])
+        self.network.attr("force_uni_scale").set(self["force_uni_scale"])
+        self.network.attr("run_pre_custom_step").set(self["run_pre_custom_step"])
+        self.network.attr("pre_custom_step").set(self["pre_custom_step"])
+        self.network.attr("run_post_custom_step").set(self["run_post_custom_step"])
+        self.network.attr("post_custom_step").set(self["post_custom_step"])
         self.network.attr("l_color_fk").set(self["l_color_fk"])
         self.network.attr("l_color_ik").set(self["l_color_ik"])
         self.network.attr("r_color_fk").set(self["r_color_fk"])
         self.network.attr("r_color_ik").set(self["r_color_ik"])
         self.network.attr("c_color_fk").set(self["c_color_fk"])
         self.network.attr("c_color_ik").set(self["c_color_ik"])
-        self.network.attr("use_RGB_Color").set(self["use_RGB_Color"])
+        self.network.attr("use_RGB_color").set(self["use_RGB_color"])
         self.network.attr("l_RGB_fk").set(self["l_RGB_fk"])
         self.network.attr("l_RGB_ik").set(self["l_RGB_ik"])
         self.network.attr("r_RGB_fk").set(self["r_RGB_fk"])
@@ -589,7 +619,7 @@ class TopBlock(AbstractBlock):
         attribute.addAttribute(n, "oid", "string", self["oid"])
         attribute.addAttribute(n, "guide", "message")
         attribute.addAttribute(n, "rig", "message")
-        attribute.addAttribute(n, "component", "string", self["component"])
+        attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
         attribute.addAttribute(n, "name", "string", self["name"])
         attribute.addAttribute(n, "version", "string", self["version"])
         attribute.addAttribute(n, "schema", "string", self["schema"])
@@ -597,30 +627,37 @@ class TopBlock(AbstractBlock):
         attribute.addEnumAttribute(n, "step", self["step"],
                                    ["all", "preScripts", "objects", "attributes", "operators", "connection",
                                     "additionalFunc", "postScripts"], keyable=False)
-        add_attribute(n, "joint_direction", "string", multi=True)
-        add_attribute(n, "controls_direction", "string", multi=True)
-        [n.attr("joint_direction")[i].set(direction) for i, direction in enumerate(self["joint_direction"])]
-        [n.attr("controls_direction")[i].set(direction) for i, direction in enumerate(self["controls_direction"])]
-        attribute.addAttribute(n, "joint_extension", "string", self["joint_extension"])
-        attribute.addAttribute(n, "controls_extension", "string", self["controls_extension"])
-        attribute.addAttribute(n, "joint_convention", "string", self["joint_convention"])
-        attribute.addAttribute(n, "controls_convention", "string", self["controls_convention"])
+        attribute.addAttribute(n, "joint_left_name", "string", self["joint_left_name"])
+        attribute.addAttribute(n, "joint_right_name", "string", self["joint_right_name"])
+        attribute.addAttribute(n, "joint_center_name", "string", self["joint_center_name"])
+        attribute.addAttribute(n, "ctl_left_name", "string", self["ctl_left_name"])
+        attribute.addAttribute(n, "ctl_right_name", "string", self["ctl_right_name"])
+        attribute.addAttribute(n, "ctl_center_name", "string", self["ctl_center_name"])
+        attribute.addAttribute(n, "joint_name_ext", "string", self["joint_name_ext"])
+        attribute.addAttribute(n, "ctl_name_ext", "string", self["ctl_name_ext"])
+        attribute.addAttribute(n, "joint_name_rule", "string", self["joint_name_rule"])
+        attribute.addAttribute(n, "ctl_name_rule", "string", self["ctl_name_rule"])
         attribute.addEnumAttribute(n, "joint_description_letter_case", self["joint_description_letter_case"],
                                    ["default", "lower", "upper", "capitalize"], keyable=False)
-        attribute.addEnumAttribute(n, "controls_description_letter_case", self["controls_description_letter_case"],
+        attribute.addEnumAttribute(n, "ctl_description_letter_case", self["ctl_description_letter_case"],
                                    ["default", "lower", "upper", "capitalize"], keyable=False)
-        attribute.addAttribute(n, "joint_padding", "long", self["joint_padding"], keyable=False)
-        attribute.addAttribute(n, "controls_padding", "long", self["controls_padding"], keyable=False)
-        attribute.addAttribute(n, "run_scripts", "bool", self["run_scripts"], keyable=False)
-        add_attribute(n, "scripts", "string", multi=True)
-        [n.attr("scripts")[index].set(script) for index, script in enumerate(self["scripts"])]
-        attribute.addAttribute(n, "l_color_fk", "long", self["l_color_fk"], minValue=0, maxValue=31)
-        attribute.addAttribute(n, "l_color_ik", "long", self["l_color_ik"], minValue=0, maxValue=31)
-        attribute.addAttribute(n, "r_color_fk", "long", self["r_color_fk"], minValue=0, maxValue=31)
-        attribute.addAttribute(n, "r_color_ik", "long", self["r_color_ik"], minValue=0, maxValue=31)
-        attribute.addAttribute(n, "c_color_fk", "long", self["c_color_fk"], minValue=0, maxValue=31)
-        attribute.addAttribute(n, "c_color_ik", "long", self["c_color_ik"], minValue=0, maxValue=31)
-        attribute.addAttribute(n, "use_RGB_Color", "bool", self["use_RGB_color"], keyable=False)
+        attribute.addAttribute(n, "joint_index_padding", "long", self["joint_index_padding"], keyable=False)
+        attribute.addAttribute(n, "ctl_index_padding", "long", self["ctl_index_padding"], keyable=False)
+        attribute.addAttribute(n, "world_ctl", "bool", self["world_ctl"], keyable=False)
+        attribute.addAttribute(n, "world_ctl_name", "string", self["world_ctl_name"])
+        attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
+        attribute.addAttribute(n, "force_uni_scale", "bool", self["force_uni_scale"], keyable=False)
+        attribute.addAttribute(n, "run_pre_custom_step", "bool", self["run_pre_custom_step"], keyable=False)
+        attribute.addAttribute(n, "pre_custom_step", "string", self["pre_custom_step"])
+        attribute.addAttribute(n, "run_post_custom_step", "bool", self["run_post_custom_step"], keyable=False)
+        attribute.addAttribute(n, "post_custom_step", "string", self["post_custom_step"])
+        attribute.addAttribute(n, "l_color_fk", "long", self["l_color_fk"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "l_color_ik", "long", self["l_color_ik"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "r_color_fk", "long", self["r_color_fk"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "r_color_ik", "long", self["r_color_ik"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "c_color_fk", "long", self["c_color_fk"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "c_color_ik", "long", self["c_color_ik"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "use_RGB_color", "bool", self["use_RGB_color"], keyable=False)
         attribute.addColorAttribute(n, "l_RGB_fk", self["l_RGB_fk"], keyable=False)
         attribute.addColorAttribute(n, "l_RGB_ik", self["l_RGB_ik"], keyable=False)
         attribute.addColorAttribute(n, "r_RGB_fk", self["r_RGB_fk"], keyable=False)
@@ -644,44 +681,43 @@ class TopBlock(AbstractBlock):
 
     def find_block_with_oid(self, oid):
 
-        def __find(_block, _oid):
+        def _find(_block, _oid):
             if _block["oid"] == _oid:
                 return _block
 
             for _b in _block["blocks"]:
-                __b = __find(_b, _oid)
+                __b = _find(_b, _oid)
                 if __b:
                     return __b
 
-        return __find(self, oid)
+        return _find(self, oid)
 
     def find_block_with_ins_name(self, ins_name):
 
-        def __find(_block, _ins_name):
+        def _find(_block, _ins_name):
             if _block.ins_name == _ins_name:
                 return _block
 
             for _b in _block["blocks"]:
-                __b = __find(_b, _ins_name)
+                __b = _find(_b, _ins_name)
                 if __b:
                     return __b
 
-        return __find(self, ins_name)
+        return _find(self, ins_name)
 
-    def valid_index(self, name, direction):
+    def solve_index(self, name, direction, number=0):
         indexes = list()
 
-        def __index(_block, _indexes, _name, _direction):
-            if _block["name"] == _name and _block["direction"] == _direction:
-                _indexes.append(_block["index"])
+        def _solve_index(_block, _indexes, _name, _direction):
+            if _block["comp_name"] == _name and _block["comp_direction"] == _direction:
+                _indexes.append(_block["comp_index"])
 
             for _b in _block["blocks"]:
-                __index(_b, _indexes, _name, _direction)
+                _solve_index(_b, _indexes, _name, _direction)
 
         for block in self["blocks"]:
-            __index(block, indexes, name, direction)
+            _solve_index(block, indexes, name, direction)
 
-        number = 0
         while True:
             if number not in indexes:
                 break
@@ -694,20 +730,23 @@ class SubBlock(AbstractBlock):
     def __init__(self, parent=None):
         super(SubBlock, self).__init__(parent=parent)
 
-        # what kind of box
-        self["component"] = None
-
         # block version
         self["version"] = None
 
+        # what kind of block
+        self["comp_type"] = None
+
         # module name # arm... leg... spine...
-        self["name"] = None
+        self["comp_name"] = None
 
         # "center", "left", "right"
-        self["direction"] = "center"
+        self["comp_direction"] = "center"
 
         # index
-        self["index"] = 0
+        self["comp_index"] = 0
+
+        # ui host
+        self["ui_host"] = ""
 
         # True - create joint / False
         self["joint_rig"] = True
@@ -724,15 +763,16 @@ class SubBlock(AbstractBlock):
 
     @property
     def ins_name(self):
-        return f"{self['name']}.{self['direction']}.{self['index']}"
+        return f"{self['comp_name']}.{self['comp_direction']}.{self['comp_index']}"
 
     def from_network(self):
         self["oid"] = self.network.attr("oid").get()
-        self["component"] = self.network.attr("component").get()
         self["version"] = self.network.attr("version").get()
-        self["name"] = self.network.attr("name").get()
-        self["direction"] = self.network.attr("direction").get(asString=True)
-        self["index"] = self.network.attr("index").get()
+        self["comp_type"] = self.network.attr("comp_type").get()
+        self["comp_name"] = self.network.attr("comp_name").get()
+        self["comp_direction"] = self.network.attr("comp_direction").get(asString=True)
+        self["comp_index"] = self.network.attr("comp_index").get()
+        self["ui_host"] = self.network.attr("ui_host").get()
         self["joint_rig"] = self.network.attr("joint_rig").get()
         self["joint_settings"] = zip([x for x in self.network.attr("primary_axis").get()],
                                      [x for x in self.network.attr("secondary_axis").get()],
@@ -743,11 +783,12 @@ class SubBlock(AbstractBlock):
 
     def to_network(self):
         self.network.attr("oid").set(self["oid"])
-        self.network.attr("component").set(self["component"])
         self.network.attr("version").set(self["version"])
-        self.network.attr("name").set(self["name"])
-        self.network.attr("direction").set(self["direction"])
-        self.network.attr("index").set(self["index"])
+        self.network.attr("comp_type").set(self["comp_type"])
+        self.network.attr("comp_name").set(self["comp_name"])
+        self.network.attr("comp_direction").set(self["comp_direction"])
+        self.network.attr("comp_index").set(self["comp_index"])
+        self.network.attr("ui_host").set(self["ui_host"])
         self.network.attr("joint_rig").set(self["joint_rig"])
         [self.network.attr("primary_axis")[i].set(settings[0]) for i, settings in enumerate(self["joint_settings"])]
         [self.network.attr("secondary_axis")[i].set(settings[1]) for i, settings in enumerate(self["joint_settings"])]
@@ -762,11 +803,13 @@ class SubBlock(AbstractBlock):
         attribute.addAttribute(n, "oid", "string", self["oid"])
         attribute.addAttribute(n, "guide", "message")
         attribute.addAttribute(n, "rig", "message")
-        attribute.addAttribute(n, "component", "string", self["component"])
-        attribute.addAttribute(n, "name", "string", self["name"])
         attribute.addAttribute(n, "version", "string", self["version"])
-        attribute.addEnumAttribute(n, "direction", self["direction"], ["center", "left", "right"], keyable=False)
-        attribute.addAttribute(n, "index", "long", self["index"], keyable=False)
+        attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
+        attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
+        attribute.addEnumAttribute(n, "comp_direction", self["comp_direction"],
+                                   ["center", "left", "right"], keyable=False)
+        attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
+        attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
         attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
         add_attribute(n, "primary_axis", "string", multi=True)
         add_attribute(n, "secondary_axis", "string", multi=True)
@@ -804,8 +847,7 @@ class Instance(dict):
         return self._name
 
 
-class PreScripts:
-    order = 0
+class PreScript:
 
     def __init__(self):
         self.msg = f"Process {self.__module__}.{self.__class__}"
@@ -887,7 +929,7 @@ class AdditionalFunc:
 
     def cleanup(self, context):
 
-        def __network(_block):
+        def _connect_network(_block):
             _ins = context.instance(_block.ins_name)
             pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"))
             if _block.parent:
@@ -899,11 +941,11 @@ class AdditionalFunc:
                 for index, jnt in enumerate(_ins["joints"]):
                     pm.connectAttr(jnt.attr("message"), _block.network.attr("joints")[index])
             for _b in _block["blocks"]:
-                __controller(_b)
+                _connect_network(_b)
 
-        __network(self.blueprint)
+        _connect_network(self.blueprint)
 
-        def __set(_block):
+        def _create_set(_block):
             _ins = context.instance(_block.ins_name)
             _top_ins = context.instance(_block.top.ins_name)
             if _ins.get("controls") is not None:
@@ -911,31 +953,37 @@ class AdditionalFunc:
             if _ins.get("joints") is not None:
                 pm.sets(_top_ins["deformer_set"], addElement=_ins["joints"])
             for _b in _block["blocks"]:
-                __set(_b)
+                _create_set(_b)
 
-        __set(self.blueprint)
+        _create_set(self.blueprint)
 
-        def __controller(_block):
+        def _hirearchy_controller(_block):
             if _block.parent:
                 _ins = context.instance(_block.ins_name)
                 _parent_ins = context.instance(_block.parent.ins_name)
                 pm.controller([x for x in _ins["controls"] if pm.controller(x, query=True, parent=True)],
                               _parent_ins["controls"][-1], parent=True)
             for _b in _block["blocks"]:
-                __controller(_b)
+                _hirearchy_controller(_b)
 
-        __controller(self.blueprint)
+        _hirearchy_controller(self.blueprint)
 
-        def __joints(_block):
+        def _cleanup_joints(_block):
             if _block.parent:
                 _top_ins = context.instance(_block.top.ins_name)
                 _ins = context.instance(_block.ins_name)
                 if _ins.get("joints"):
-                    _convention = _block.top["joint_convention"].split("_")
+                    _convention = _block.top["joint_name_rule"].split("_")
                     _description_index = None
                     for _i, _c in enumerate(_convention.split("_")):
                         if "description" in _c:
                             _description_index = _i
+                    if _block["direction"] == "left":
+                        replace_direction = _block.top["joint_left_name"]
+                    elif _block["direction"] == "right":
+                        replace_direction = _block.top["joint_right_name"]
+                    elif _block["direction"] == "center":
+                        replace_direction = _block.top["joint_center_name"]
                     for _jnt in _ins["joints"]:
                         _description = _jnt.split("_")[_description_index]
                         _label = f"{_block['name']}_{_block['index']}_{_description}"
@@ -943,11 +991,12 @@ class AdditionalFunc:
                         _jnt.attr("type").set("Other")
                         _jnt.attr("otherType").set(_label)
                         _jnt.attr("radius").set(0.5)
+                        _jnt.attr("segmentScaleCompensate").set(False)
                         pm.connectAttr(_top_ins["root"].attr("joints_label_vis"), _jnt.attr("drawLabel"))
             for _b in _block["blocks"]:
-                __joints(_b)
+                _cleanup_joints(_b)
 
-        __joints(self.blueprint)
+        _cleanup_joints(self.blueprint)
 
     def draw_controls_shape(self, context):
         pass
@@ -962,8 +1011,7 @@ class AdditionalFunc:
         pass
 
 
-class PostScripts:
-    order = 0
+class PostScript:
 
     def __init__(self):
         self.msg = f"Process {self.__module__}.{self.__class__}"
