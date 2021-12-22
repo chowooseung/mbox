@@ -25,9 +25,9 @@ def add_cns_curve(parent, name, centers, degree=1):
     for index, center in enumerate(centers):
         mult = pm.createNode("multMatrix")
         decompose = pm.createNode("decomposeMatrix")
-        center.worldMatrix >> mult.matrixIn[0]
-        node.worldInverseMatrix >> mult.matrixIn[1]
-        mult.matrixSum >> decompose.inputMatrix
-        decompose.outputTranslate >> node.controlPoints[index]
+        pm.connectAttr(center.attr("worldMatrix")[0], mult.attr("matrixIn")[0])
+        pm.connectAttr(node.attr("worldInverseMatrix")[0], mult.attr("matrixIn")[1])
+        pm.connectAttr(mult.attr("matrixSum"), decompose.attr("inputMatrix"))
+        pm.connectAttr(decompose.attr("outputTranslate"), node.attr("controlPoints")[index])
 
     return node

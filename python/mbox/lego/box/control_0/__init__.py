@@ -22,10 +22,10 @@ class Objects(AbstractObjects):
 
     def process(self, context):
         super(Objects, self).process(context=context)
-        n_kwargs = {"name": self.block["name"], "direction": self.block["direction"], "index": self.block["index"]}
+        n_kwargs = {"name": self.block["comp_name"], "side": self.block["comp_side"], "index": self.block["comp_index"]}
         root_name = self.block.top.controls_name(**n_kwargs, description="", extension="root")
         npo_name = self.block.top.controls_name(**n_kwargs, description="", extension="npo")
-        con_name = self.block.top.controls_name(**n_kwargs, description="", extension=self.block.top["controls_extension"])
+        con_name = self.block.top.controls_name(**n_kwargs, description="", extension=self.block.top["ctl_name_ext"])
         ref_name = self.block.top.controls_name(**n_kwargs, description="", extension="ref")
 
         root_m = self.parent_ins["ref"][self.block["controls_ref_index"]].getMatrix(worldSpace=True)

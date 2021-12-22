@@ -18,7 +18,8 @@ from . import naming_rules_ui as name_ui
 from . import custom_step_ui as custom_step_ui
 from . import root_settings_ui as root_ui
 from . import block_settings_ui as block_ui
-from mbox.lego import utils, naming
+from . import joint_names_ui as joint_name_ui
+from mbox.lego import naming, lib
 
 # mgear
 from mgear.core import pyqt, string
@@ -29,37 +30,36 @@ ROOT_TYPE = "mbox_guide_root"
 BLOCK_TYPE = "mbox_guide_block"
 
 
-class RootMainTab(QtWidgets.QDialog, root_ui.Ui_Form):
+class RootMainTabUI(QtWidgets.QDialog, root_ui.Ui_Form):
 
     def __init__(self, parent=None):
-        super(RootMainTab, self).__init__(parent)
+        super(RootMainTabUI, self).__init__(parent)
         self.setupUi(self)
 
 
-class RootCustomStepTab(QtWidgets.QDialog, custom_step_ui.Ui_Form):
+class RootCustomStepTabUI(QtWidgets.QDialog, custom_step_ui.Ui_Form):
 
     def __init__(self, parent=None):
-        super(RootCustomStepTab, self).__init__(parent)
+        super(RootCustomStepTabUI, self).__init__(parent)
         self.setupUi(self)
 
 
-class RootNameTab(QtWidgets.QDialog, name_ui.Ui_Form):
+class RootNameTabUI(QtWidgets.QDialog, name_ui.Ui_Form):
 
     def __init__(self, parent=None):
-        super(RootNameTab, self).__init__(parent)
+        super(RootNameTabUI, self).__init__(parent)
         self.setupUi(self)
 
 
 class HelperSlots:
 
     def update_host_ui(self, l_edit, target_attr):
-        try:
-            selected = utils.select_guide()
-            if selected.hasAttr("is_guide_component") or selected.hasAttr("is_guide_root"):
-                self._network.attr(target_attr).set(l_edit.text())
-            else:
-                pm.displayWarning("")
-        except AssertionError as e:
+        guide = lib.get_component_guide(pm.selected(type="transform")[0])
+        if guide:
+            network = guide[0].message.outputs(type="network")[0]
+            l_edit.setText(guide[0].name())
+            self._network.attr(target_attr).set("{},{}".format(guide[0].name(), network.attr("oid").get()))
+        else:
             if l_edit.text():
                 l_edit.clear()
                 self._network.attr(target_attr).set("")
@@ -171,19 +171,38 @@ class HelperSlots:
         self._network.attr(target_attr).set(new_value)
 
     def update_component_name(self):
-        newName = self.main_tab.name_lineEdit.text()
-        # remove invalid characters in the name and update
-        # newName = string.removeInvalidCharacter(newName)
-        newName = string.normalize2(newName)
-        self.main_tab.name_lineEdit.setText(newName)
-        direction_set = ["center", "left", "right"]
-        direction_index = self.main_tab.direction_comboBox.currentIndex()
-        new_direction = direction_set[direction_index]
-        new_index = self.main_tab.index_spinBox.value()
-        # rename
-        # sync index
-        self.main_tab.index_spinBox.setValue(
-            self._network.attr("index").get())
+        with pm.UndoChunk():
+            side_set = ["center", "left", "right"]
+
+            line_name = self.main_tab.name_lineEdit.text()
+            new_name = string.normalize2(line_name)
+            if line_name != new_name:
+                self.main_tab.name_lineEdit.setText(new_name)
+                return
+
+            side_index = self.main_tab.side_comboBox.currentIndex()
+            new_side = side_set[side_index]
+
+            index = self.main_tab.componentIndex_spinBox.value()
+            blueprint = lib.blueprint_from_guide(self._guide.getParent(generations=-1))
+            block = blueprint.find_block_with_oid(self._network.attr("oid").get())
+            new_index = blueprint.solve_index(new_name, new_side, index, block["comp_index"])
+
+            rename_check = False
+            if self._network.attr("comp_name").get() != new_name \
+                    or self._network.attr("comp_side").get(asString=True) != new_side \
+                    or self._network.attr("comp_index").get() != new_index:
+                rename_check = True
+
+            if rename_check:
+                block["comp_name"] = new_name
+                block["comp_side"] = new_side
+                block["comp_index"] = new_index
+                block.to_network()
+                block.update_guide()
+
+            if self._network.attr("comp_index").get() != self.main_tab.componentIndex_spinBox.value():
+                self.main_tab.componentIndex_spinBox.setValue(self._network.attr("comp_index").get())
 
     def update_connector(self, source_widget, items_list, *args):
         self._network.attr("connector").set(items_list[source_widget.currentIndex()])
@@ -277,7 +296,7 @@ class HelperSlots:
 
         return fullpath
 
-    def editFile(self, widgetList):
+    def edit_file(self, widgetList):
         try:
             cs_data = widgetList.selectedItems()[0].text()
             fullpath = self.get_cs_file_fullpath(cs_data)
@@ -443,9 +462,9 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
         # component root before open the settings dialog
         self._network = pm.selected(type="transform")[0].message.outputs(type="network")[0]
 
-        self.main_tab = RootMainTab()
-        self.custom_step_tab = RootCustomStepTab()
-        self.naming_rule_tab = RootNameTab()
+        self.main_tab = RootMainTabUI()
+        self.custom_step_tab = RootCustomStepTabUI()
+        self.naming_rule_tab = RootNameTabUI()
 
         self.mayaMainWindow = pyqt.maya_main_window()
 
@@ -535,8 +554,8 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
             self.main_tab.jointRig_checkBox, "joint_rig")
         self.populate_check(
             self.main_tab.force_uniScale_checkBox, "force_uni_scale")
-        # self.populate_check(
-        #     self.main_tab.connect_joints_checkBox, "connect_joints")
+        self.populate_check(
+            self.main_tab.connect_joints_checkBox, "connect_joints")
         # self.populateAvailableSynopticTabs()
 
         # for item in self._network.attr("synoptic").get().split(","):
@@ -727,10 +746,10 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
             partial(self.update_check,
                     tap.force_uniScale_checkBox,
                     "force_uni_scale"))
-        # tap.connect_joints_checkBox.stateChanged.connect(
-        #     partial(self.updateCheck,
-        #             tap.connect_joints_checkBox,
-        #             "connect_joints"))
+        tap.connect_joints_checkBox.stateChanged.connect(
+            partial(self.update_check,
+                    tap.connect_joints_checkBox,
+                    "connect_joints"))
         # tap.addTab_pushButton.clicked.connect(
         #     partial(self.moveFromListWidget2ListWidget,
         #             tap.available_listWidget,
@@ -826,7 +845,7 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
             partial(self.run_manual_step,
                     csTap.preCustomStep_listWidget))
         csTap.preCustomStepEdit_pushButton.clicked.connect(
-            partial(self.editFile,
+            partial(self.edit_file,
                     csTap.preCustomStep_listWidget))
 
         csTap.postCustomStep_checkBox.stateChanged.connect(
@@ -852,7 +871,7 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
             partial(self.run_manual_step,
                     csTap.postCustomStep_listWidget))
         csTap.postCustomStepEdit_pushButton.clicked.connect(
-            partial(self.editFile,
+            partial(self.edit_file,
                     csTap.postCustomStep_listWidget))
 
         # right click menus
@@ -1590,50 +1609,323 @@ class CustomStep(lib.{pre_post}):
                                searchText)
 
 
-class BlockMainTab(QtWidgets.QDialog, block_ui.Ui_Form):
+class BlockMainTabUI(QtWidgets.QDialog, block_ui.Ui_Form):
 
     def __init__(self):
-        super(BlockMainTab, self).__init__()
+        super(BlockMainTabUI, self).__init__()
         self.setupUi(self)
 
 
 class BlockSettings(QtWidgets.QDialog, HelperSlots):
 
-    def __init__(self, parent=None):
-        pyqt.deleteInstances(self, MayaQDockWidget)
-        super(BlockSettings, self).__init__(parent=parent)
-        self.toolName = BLOCK_TYPE
-        self.setObjectName(self.toolName)
-        self.mayaMainWindow = pyqt.maya_main_window()
+    valueChanged = QtCore.Signal(int)
 
-        self._guide = pm.selected(type="transform")[0]
+    def __init__(self, parent=None):
+        super(BlockSettings, self).__init__()
+        # the inspectSettings function set the current selection to the
+        # component root before open the settings dialog
+        self._guide = lib.get_component_guide(pm.selected(type="transform")[0])[0]
         self._network = self._guide.message.outputs(type="network")[0]
 
-        self.setWindowFlags(QtCore.Qt.Window)
-        self.setWindowTitle(self.toolName)
-
-        self.main_tab = BlockMainTab()
+        self.main_tab = BlockMainTabUI()
 
         self.create_controls()
-        self.create_layouts()
+        self.populate_controls()
+        self.create_layout()
         self.create_connections()
 
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+
     def create_controls(self):
+        """
+        Create the controls for the component base
+
+        """
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.setObjectName("block_settings_tab")
 
-        self.tabs.insertTab(0, self.main_tab, "Block Main Settings")
+        # Close Button
+        self.close_button = QtWidgets.QPushButton("Close")
 
     def populate_controls(self):
-        pass
+        """Populate Controls attribute values
 
-    def create_layouts(self):
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addWidget(self.tabs)
+        Populate the controls values from the custom attributes
+        of the component.
 
-        self.close_button = QtWidgets.QPushButton("Close")
-        self.layout.addWidget(self.close_button)
-        self.setLayout(self.layout)
+        """
+        # populate tab
+        self.tabs.insertTab(0, self.main_tab, "Main Settings")
+
+        # populate main settings
+        self.main_tab.name_lineEdit.setText(
+            self._network.attr("comp_name").get())
+        sideSet = ["center", "left", "right"]
+        sideIndex = sideSet.index(self._network.attr("comp_side").get(asString=True))
+        self.main_tab.side_comboBox.setCurrentIndex(sideIndex)
+        self.main_tab.componentIndex_spinBox.setValue(
+            self._network.attr("comp_index").get())
+        # if self._network.attr("useIndex").get():
+        #     self.main_tab.useJointIndex_checkBox.setCheckState(
+        #         QtCore.Qt.Checked)
+        # else:
+        #     self.main_tab.useJointIndex_checkBox.setCheckState(
+        #         QtCore.Qt.Unchecked)
+        # self.main_tab.parentJointIndex_spinBox.setValue(
+        #     self._network.attr("parentJointIndex").get())
+        self.main_tab.host_lineEdit.setText(
+            self._network.attr("ui_host").get().split(",")[0])
+        # self.main_tab.subGroup_lineEdit.setText(
+        #     self._network.attr("ctlGrp").get())
+        # self.main_tab.joint_offset_x_doubleSpinBox.setValue(
+        #     self._network.attr("joint_rot_offset_x").get())
+        # self.main_tab.joint_offset_y_doubleSpinBox.setValue(
+        #     self._network.attr("joint_rot_offset_y").get())
+        # self.main_tab.joint_offset_z_doubleSpinBox.setValue(
+        #     self._network.attr("joint_rot_offset_z").get())
+
+        # testing adding custom color per component
+        self.main_tab.overrideColors_checkBox.setCheckState(
+            QtCore.Qt.Checked if self._network.attr("override_color").get()
+            else QtCore.Qt.Unchecked)
+
+        self.main_tab.useRGB_checkBox.setCheckState(
+            QtCore.Qt.Checked if self._network.attr("use_RGB_color").get()
+            else QtCore.Qt.Unchecked)
+
+        tab = self.main_tab
+
+        index_widgets = ((tab.color_fk_spinBox,
+                          tab.color_fk_label,
+                          "color_fk"),
+                         (tab.color_ik_spinBox,
+                          tab.color_ik_label,
+                          "color_ik"))
+
+        rgb_widgets = ((tab.RGB_fk_pushButton, tab.RGB_fk_slider, "RGB_fk"),
+                       (tab.RGB_ik_pushButton, tab.RGB_ik_slider, "RGB_ik"))
+
+        for spinBox, label, source_attr in index_widgets:
+            color_index = self._network.attr(source_attr).get()
+            spinBox.setValue(color_index)
+            self.update_widget_style_sheet(
+                label, [i / 255.0 for i in MAYA_OVERRIDE_COLOR[color_index]])
+
+        for button, slider, source_attr in rgb_widgets:
+            self.update_rgb_color_widgets(
+                button, self._network.attr(source_attr).get(), slider)
+
+        # forceing the size of the color buttons/label to keep ui clean
+        for widget in tuple(i[0] for i in rgb_widgets) + tuple(
+                i[1] for i in index_widgets):
+            widget.setFixedSize(pyqt.dpi_scale(30), pyqt.dpi_scale(20))
+
+        self.toggle_rgb_index_widgets(tab.useRGB_checkBox,
+                                      (w for i in index_widgets for w in i[:2]),
+                                      (w for i in rgb_widgets for w in i[:2]),
+                                      "use_RGB_color",
+                                      tab.useRGB_checkBox.checkState())
+
+        self.refresh_controls()
+
+    def refresh_controls(self):
+        joint_names = [name.strip() for name in
+                       self._network.attr("joint_names").get().split(",")]
+        if any(joint_names):
+            summary = "<b>({0} set)</b>".format(sum(map(bool, joint_names)))
+        else:
+            summary = "(None)"
+        self.main_tab.jointNames_label.setText("Joint Names " + summary)
+
+    def create_layout(self):
+        """
+        Create the layout for the component base settings
+
+        """
+        return
 
     def create_connections(self):
+        """
+        Create the slots connections to the controls functions
+
+        """
         self.close_button.clicked.connect(self.close_settings)
+
+        self.main_tab.name_lineEdit.editingFinished.connect(
+            self.update_component_name)
+        self.main_tab.side_comboBox.currentIndexChanged.connect(
+            self.update_component_name)
+        self.main_tab.componentIndex_spinBox.valueChanged.connect(
+            self.update_component_name)
+        # self.main_tab.useJointIndex_checkBox.stateChanged.connect(
+        #     partial(self.update_check,
+        #             self.main_tab.useJointIndex_checkBox,
+        #             "useIndex"))
+        # self.main_tab.parentJointIndex_spinBox.valueChanged.connect(
+        #     partial(self.update_spin_box,
+        #             self.main_tab.parentJointIndex_spinBox,
+        #             "parentJointIndex"))
+        self.main_tab.host_pushButton.clicked.connect(
+            partial(self.update_host_ui,
+                    self.main_tab.host_lineEdit,
+                    "ui_host"))
+        # self.main_tab.subGroup_lineEdit.editingFinished.connect(
+        #     partial(self.update_line_edit,
+        #             self.main_tab.subGroup_lineEdit,
+        #             "ctlGrp"))
+        self.main_tab.jointNames_pushButton.clicked.connect(
+            self.joint_names_dialog)
+
+        # self.main_tab.joint_offset_x_doubleSpinBox.valueChanged.connect(
+        #     partial(self.update_spin_box,
+        #             self.main_tab.joint_offset_x_doubleSpinBox,
+        #             "joint_rot_offset_x"))
+        # self.main_tab.joint_offset_y_doubleSpinBox.valueChanged.connect(
+        #     partial(self.update_spin_box,
+        #             self.main_tab.joint_offset_y_doubleSpinBox,
+        #             "joint_rot_offset_y"))
+        # self.main_tab.joint_offset_z_doubleSpinBox.valueChanged.connect(
+        #     partial(self.update_spin_box,
+        #             self.main_tab.joint_offset_z_doubleSpinBox,
+        #             "joint_rot_offset_z"))
+
+        tab = self.main_tab
+
+        index_widgets = ((tab.color_fk_spinBox,
+                          tab.color_fk_label,
+                          "color_fk"),
+                         (tab.color_ik_spinBox,
+                          tab.color_ik_label,
+                          "color_ik"))
+
+        rgb_widgets = ((tab.RGB_fk_pushButton, tab.RGB_fk_slider, "RGB_fk"),
+                       (tab.RGB_ik_pushButton, tab.RGB_ik_slider, "RGB_ik"))
+
+        for spinBox, label, source_attr in index_widgets:
+            spinBox.valueChanged.connect(
+                partial(self.update_index_color_widgets,
+                        spinBox,
+                        source_attr,
+                        label))
+
+        for button, slider, source_attr in rgb_widgets:
+            button.clicked.connect(
+                partial(self.rgb_color_editor, button, source_attr, slider))
+            slider.valueChanged.connect(
+                partial(self.rgb_slider_value_changed, button, source_attr))
+
+        tab.useRGB_checkBox.stateChanged.connect(
+            partial(self.toggle_rgb_index_widgets,
+                    tab.useRGB_checkBox,
+                    tuple(w for i in index_widgets for w in i[:2]),
+                    tuple(w for i in rgb_widgets for w in i[:2]),
+                    "use_RGB_color"))
+
+        tab.overrideColors_checkBox.stateChanged.connect(
+            partial(self.update_check,
+                    tab.overrideColors_checkBox,
+                    "override_color"))
+
+    def joint_names_dialog(self):
+        dialog = JointNames(self._network, self)
+        dialog.setWindowTitle(self.windowTitle())
+        dialog.attributeChanged.connect(self.refresh_controls)
+        dialog.show()
+
+
+class JointNames(QtWidgets.QDialog, joint_name_ui.Ui_Form):
+    attributeChanged = QtCore.Signal()
+
+    def __init__(self, network, parent=None):
+        super(JointNames, self).__init__(parent)
+        self._network = network
+
+        self.setupUi(self)
+
+        self.populate_controls()
+        self.apply_names()
+        self.create_connections()
+
+    def populate_controls(self):
+        jointNames = self._network.attr("joint_names").get().split(",")
+        if jointNames[-1]:
+            jointNames.append("")
+
+        self.jointNamesList.clearContents()
+        self.jointNamesList.setRowCount(0)
+
+        for i, name in enumerate(jointNames):
+            self.jointNamesList.insertRow(i)
+            item = QtWidgets.QTableWidgetItem(name.strip())
+            self.jointNamesList.setItem(i, 0, item)
+
+    def create_connections(self):
+        self.jointNamesList.cellChanged.connect(self.update_name)
+        self.jointNamesList.itemActivated.connect(self.jointNamesList.editItem)
+
+        self.add_pushButton.clicked.connect(self.add)
+        self.remove_pushButton.clicked.connect(self.remove)
+        self.removeAll_pushButton.clicked.connect(self.remove_all)
+
+        self.moveUp_pushButton.clicked.connect(lambda: self.move(-1))
+        self.moveDown_pushButton.clicked.connect(lambda: self.move(1))
+
+    def apply_names(self):
+        jointNames = []
+        for i in range(self.jointNamesList.rowCount()):
+            item = self.jointNamesList.item(i, 0)
+            jointNames.append(item.text())
+
+        value = ",".join(jointNames[0:-1])
+        self._network.attr("joint_names").set(value)
+
+        self.jointNamesList.setVerticalHeaderLabels(
+            [str(i) for i in range(len(jointNames))])
+
+        self.attributeChanged.emit()
+
+    def add(self):
+        row = max(0, self.jointNamesList.currentRow() or 0)
+        self.jointNamesList.insertRow(row)
+        item = QtWidgets.QTableWidgetItem("")
+        self.jointNamesList.setItem(row, 0, item)
+        self.jointNamesList.setCurrentCell(row, 0)
+        self.apply_names()
+
+    def remove(self):
+        row = self.jointNamesList.currentRow()
+        if row + 1 < self.jointNamesList.rowCount() > 1:
+            self.jointNamesList.removeRow(row)
+            self.apply_names()
+            self.jointNamesList.setCurrentCell(row, 0)
+
+    def remove_all(self):
+        self.jointNamesList.clearContents()
+        self.jointNamesList.setRowCount(0)
+        self.jointNamesList.insertRow(0)
+        self.jointNamesList.setItem(0, 0, QtWidgets.QTableWidgetItem(""))
+        self.jointNamesList.setCurrentCell(0, 0)
+        self.apply_names()
+
+    def move(self, step):
+        row = self.jointNamesList.currentRow()
+        if row + step < 0:
+            return
+        item1 = self.jointNamesList.item(row, 0).text()
+        item2 = self.jointNamesList.item(row + step, 0).text()
+        self.jointNamesList.item(row, 0).setText(item2)
+        self.jointNamesList.item(row + step, 0).setText(item1)
+        self.jointNamesList.setCurrentCell(row + step, 0)
+
+    def update_name(self, row, column):
+        item = self.jointNamesList.item(row, column)
+        if row == self.jointNamesList.rowCount() - 1 and item.text():
+            self.jointNamesList.insertRow(row + 1)
+            self.jointNamesList.setItem(
+                row + 1, 0, QtWidgets.QTableWidgetItem(""))
+        self.apply_names()
+        self.jointNamesList.setCurrentCell(row + 1, 0)
+        self.jointNamesList.editItem(self.jointNamesList.currentItem())
+
+    def keyPressEvent(self):
+        pass

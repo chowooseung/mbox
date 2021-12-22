@@ -3,30 +3,15 @@
 # maya
 import maya.api.OpenMaya as om
 import pymel.core as pm
-import pymel.util as pmu
 from pymel.core import datatypes
 
 #
 import math
 
-# mbox
-from mbox.core.attribute import add_attribute
-from mbox.core.curve import add_cns_curve
-
 # mgear
 from mgear.core.icon import null, cube, square, sphere
 from mgear.core import attribute
 from mgear.core import curve
-
-
-def connection_display_curve(parent, name, centers=list(), degree=1):
-    """from mgear.core.icon.connection_display_curve
-    edit curve.addCnsCurve(mgear) -> add_cns_curve(mbox)"""
-    crv = add_cns_curve(parent, name, centers, degree)
-    crv.attr("overrideEnabled").set(True)
-    crv.attr("overrideDisplayType").set(True)
-
-    return crv
 
 
 def guide_root_icon(parent=None,

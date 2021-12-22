@@ -5,7 +5,6 @@ import pymel.core as pm
 
 # mbox
 import mbox
-from mbox.core.attribute import add_attribute
 from mbox.lego import utils, naming
 
 #
@@ -166,20 +165,18 @@ def draw_specify_component_guide(parent, component):
 
         blueprint = blueprint_from_guide(parent.getParent(generations=-1))
         mod = utils.load_block_module(component, guide=True)
+        comp_index = blueprint.solve_index(mod.NAME, "center")
 
-        if parent.hasAttr("is_guide_root"):
-            block = mod.Block(blueprint)
-        else:
-            parent_network = parent.message.outputs(type="network")[0]
-            parent_block = blueprint.find_block_with_oid(parent_network.attr("oid").get())
-            block = mod.Block(parent_block)
+        parent_network = parent.message.outputs(type="network")[0]
+        parent_block = blueprint.find_block_with_oid(parent_network.attr("oid").get())
+        block = mod.Block(parent_block)
+        block["comp_index"] = comp_index
 
-            # translation offset
-            offset_t = parent.getTranslation(space="world")
-            for index, t in enumerate(block["transforms"]):
-                block["transforms"][index] = transform.setMatrixPosition(t, offset_t)
+        # translation offset
+        offset_t = parent.getTranslation(space="world")
+        for index, t in enumerate(block["transforms"]):
+            block["transforms"][index] = transform.setMatrixPosition(t, offset_t)
 
-        block["comp_index"] = blueprint.solve_index(block["comp_name"], block["comp_direction"])
         pm.select(block.guide())
 
 
@@ -402,6 +399,15 @@ class AbstractBlock(dict):
 
         return node
 
+    def add_ctl(self):
+        pass
+
+    def add_jnt(self):
+        pass
+
+    def add_root(self):
+        pass
+
 
 class TopBlock(AbstractBlock):
 
@@ -453,6 +459,7 @@ class TopBlock(AbstractBlock):
 
         # joint rig
         self["joint_rig"] = True
+        self["connect_joints"] = False
 
         # uni scale
         self["force_uni_scale"] = False
@@ -480,12 +487,12 @@ class TopBlock(AbstractBlock):
         self["use_RGB_color"] = False
 
         # controls RGB color
-        self["l_RGB_fk"] = [0, 0, 1]
-        self["l_RGB_ik"] = [0, 0.25, 1]
-        self["r_RGB_fk"] = [1, 0, 0]
-        self["r_RGB_ik"] = [1, 0.1, 0.25]
-        self["c_RGB_fk"] = [1, 1, 0]
-        self["c_RGB_ik"] = [0, 0.6, 0]
+        self["l_RGB_fk"] = (0, 0, 1)
+        self["l_RGB_ik"] = (0, 0.25, 1)
+        self["r_RGB_fk"] = (1, 0, 0)
+        self["r_RGB_ik"] = (1, 0.1, 0.25)
+        self["c_RGB_fk"] = (1, 1, 0)
+        self["c_RGB_ik"] = (0, 0.6, 0)
 
         # notes
         self["notes"] = ""
@@ -494,7 +501,7 @@ class TopBlock(AbstractBlock):
     def ins_name(self):
         return f"{self['comp_type']}"
 
-    def control_name(self, name="", direction="", index="", description="", extension=""):
+    def control_name(self, name="", side="", index="", description="", extension=""):
         index = str(index).zfill(self["ctl_index_padding"])
         if self["ctl_description_letter_case"] == "lower":
             description = description.lower()
@@ -503,11 +510,11 @@ class TopBlock(AbstractBlock):
         elif self["ctl_description_letter_case"] == "capitalize":
             description = description.capitalize()
         rename = self["ctl_name_rule"].format(
-            name=name, direction=direction, index=index, description=description, extension=extension)
+            name=name, side=side, index=index, description=description, extension=extension)
         c_name = "_".join([x for x in rename.split("_") if x])
         return c_name
 
-    def joint_name(self, name="", direction="", index="", description="", extension=""):
+    def joint_name(self, name="", side="", index="", description="", extension=""):
         index = str(index).zfill(self["joint_index_padding"])
         if self["joint_description_letter_case"] == "lower":
             description = description.lower()
@@ -516,7 +523,7 @@ class TopBlock(AbstractBlock):
         elif self["joint_description_letter_case"] == "capitalize":
             description = description.capitalize()
         rename = self["joint_name_rule"].format(
-            name=name, direction=direction, index=index, description=description, extension=extension)
+            name=name, side=side, index=index, description=description, extension=extension)
         j_name = "_".join([x for x in rename.split("_") if x])
         return j_name
 
@@ -545,6 +552,7 @@ class TopBlock(AbstractBlock):
         self["world_ctl"] = self.network.attr("world_ctl").get()
         self["world_ctl_name"] = self.network.attr("world_ctl_name").get()
         self["joint_rig"] = self.network.attr("joint_rig").get()
+        self["connect_joints"] = self.network.attr("connect_joints").get()
         self["force_uni_scale"] = self.network.attr("force_uni_scale").get()
         self["run_pre_custom_step"] = self.network.attr("run_pre_custom_step").get()
         self["pre_custom_step"] = self.network.attr("pre_custom_step").get()
@@ -591,6 +599,7 @@ class TopBlock(AbstractBlock):
         self.network.attr("world_ctl").set(self["world_ctl"])
         self.network.attr("world_ctl_name").set(self["world_ctl_name"])
         self.network.attr("joint_rig").set(self["joint_rig"])
+        self.network.attr("connect_joints").set(self["connect_joints"])
         self.network.attr("force_uni_scale").set(self["force_uni_scale"])
         self.network.attr("run_pre_custom_step").set(self["run_pre_custom_step"])
         self.network.attr("pre_custom_step").set(self["pre_custom_step"])
@@ -646,6 +655,7 @@ class TopBlock(AbstractBlock):
         attribute.addAttribute(n, "world_ctl", "bool", self["world_ctl"], keyable=False)
         attribute.addAttribute(n, "world_ctl_name", "string", self["world_ctl_name"])
         attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
+        attribute.addAttribute(n, "connect_joints", "bool", self["connect_joints"], keyable=False)
         attribute.addAttribute(n, "force_uni_scale", "bool", self["force_uni_scale"], keyable=False)
         attribute.addAttribute(n, "run_pre_custom_step", "bool", self["run_pre_custom_step"], keyable=False)
         attribute.addAttribute(n, "pre_custom_step", "string", self["pre_custom_step"])
@@ -705,18 +715,21 @@ class TopBlock(AbstractBlock):
 
         return _find(self, ins_name)
 
-    def solve_index(self, name, direction, number=0):
+    def solve_index(self, name, side, number=0, ben=None):
         indexes = list()
 
-        def _solve_index(_block, _indexes, _name, _direction):
-            if _block["comp_name"] == _name and _block["comp_direction"] == _direction:
+        def _solve_index(_block, _indexes, _name, _side):
+            if _block["comp_name"] == _name and _block["comp_side"] == _side:
                 _indexes.append(_block["comp_index"])
 
             for _b in _block["blocks"]:
-                _solve_index(_b, _indexes, _name, _direction)
+                _solve_index(_b, _indexes, _name, _side)
 
         for block in self["blocks"]:
-            _solve_index(block, indexes, name, direction)
+            _solve_index(block, indexes, name, side)
+
+        if ben:
+            indexes.remove(ben)
 
         while True:
             if number not in indexes:
@@ -740,16 +753,29 @@ class SubBlock(AbstractBlock):
         self["comp_name"] = None
 
         # "center", "left", "right"
-        self["comp_direction"] = "center"
+        self["comp_side"] = "center"
 
         # index
         self["comp_index"] = 0
 
         # ui host
-        self["ui_host"] = ""
+        self["ui_host"] = str()
 
         # True - create joint / False
         self["joint_rig"] = True
+        self["joint_names"] = str()
+
+        # gimmick joint
+        self["blend_joint"] = str()
+        self["support_joint"] = str()
+
+        # ctl color
+        self["override_color"] = False
+        self["use_RGB_color"] = False
+        self["color_fk"] = 6
+        self["color_ik"] = 18
+        self["RGB_fk"] = (0.0, 0.0, 1.0)
+        self["RGB_ik"] = (0.0, 0.25, 1.0)
 
         # primary axis, secondary axis, offset XYZ
         # self["joint_settings"] = [["x", "y", (0, 0, 0)], ]
@@ -761,41 +787,83 @@ class SubBlock(AbstractBlock):
         self["controls_ref_index"] = -1
         self["joint_ref_index"] = -1
 
+        # ctl shapes
+        self["ctl_shapes"] = dict()
+
     @property
     def ins_name(self):
-        return f"{self['comp_name']}.{self['comp_direction']}.{self['comp_index']}"
+        return f"{self['comp_name']}.{self['comp_side']}.{self['comp_index']}"
 
     def from_network(self):
         self["oid"] = self.network.attr("oid").get()
         self["version"] = self.network.attr("version").get()
         self["comp_type"] = self.network.attr("comp_type").get()
         self["comp_name"] = self.network.attr("comp_name").get()
-        self["comp_direction"] = self.network.attr("comp_direction").get(asString=True)
+        self["comp_side"] = self.network.attr("comp_side").get(asString=True)
         self["comp_index"] = self.network.attr("comp_index").get()
         self["ui_host"] = self.network.attr("ui_host").get()
         self["joint_rig"] = self.network.attr("joint_rig").get()
-        self["joint_settings"] = zip([x for x in self.network.attr("primary_axis").get()],
-                                     [x for x in self.network.attr("secondary_axis").get()],
-                                     [x for x in self.network.attr("offset_XYZ").get()])
+        self["joint_names"] = self.network.attr("joint_names").get()
+        self["blend_joint"] = self.network.attr("blend_joint").get()
+        self["support_joint"] = self.network.attr("support_joint").get()
+        self["use_RGB_color"] = self.network.attr("use_RGB_color").get()
+        self["override_color"] = self.network.attr("override_color").get()
+        self["color_fk"] = self.network.attr("color_fk").get()
+        self["color_ik"] = self.network.attr("color_ik").get()
+        self["RGB_fk"] = self.network.attr("RGB_fk").get()
+        self["RGB_ik"] = self.network.attr("RGB_ik").get()
         self["transforms"] = [x.tolist() for x in self.network.attr("transforms").get()]
-        self["controls_ref_index"] = self.network.attr("controls_ref_index").get()
-        self["joint_ref_index"] = self.network.attr("joint_ref_index").get()
+        if self.network.attr("controls").elements():
+            shape_dict = dict()
+            for index, attr in enumerate(self.network.attr("controls").elements()):
+                shapes_network = self.network.attr(attr).outputs(type="network")
+                if shapes_network:
+                    shape_dict[index] = dict()
+                for shape_index, network in enumerate(sorted(shapes_network, key=lambda x: x.attr("order"))):
+                    shape_dict[index][shape_index] = dict()
+                    shape_dict[index][shape_index]["degree"] = 3
+                    shape_dict[index][shape_index]["form"] = 0
+                    shape_dict[index][shape_index]["form_id"] = 0
+                    shape_dict[index][shape_index]["points"] = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
+                    shape_dict[index][shape_index]["knots"] = []
+            self["ctl_shapes"] = shape_dict
+        else:
+            self["ctl_shapes"] = dict()
 
     def to_network(self):
         self.network.attr("oid").set(self["oid"])
         self.network.attr("version").set(self["version"])
         self.network.attr("comp_type").set(self["comp_type"])
         self.network.attr("comp_name").set(self["comp_name"])
-        self.network.attr("comp_direction").set(self["comp_direction"])
+        self.network.attr("comp_side").set(self["comp_side"])
         self.network.attr("comp_index").set(self["comp_index"])
         self.network.attr("ui_host").set(self["ui_host"])
         self.network.attr("joint_rig").set(self["joint_rig"])
-        [self.network.attr("primary_axis")[i].set(settings[0]) for i, settings in enumerate(self["joint_settings"])]
-        [self.network.attr("secondary_axis")[i].set(settings[1]) for i, settings in enumerate(self["joint_settings"])]
-        [self.network.attr("offset_XYZ")[i].set(settings[2]) for i, settings in enumerate(self["joint_settings"])]
-        [self.network.attr("transforms")[i].set(t) for i, t in enumerate(self["transforms"])]
-        self.network.attr("controls_ref_index").set(self["controls_ref_index"])
-        self.network.attr("joint_ref_index").set(self["joint_ref_index"])
+        self.network.attr("joint_names").set(self["joint_names"])
+        self.network.attr("blend_joint").set(self["blend_joint"])
+        self.network.attr("support_joint").set(self["support_joint"])
+        self.network.attr("override_color").set(self["override_color"])
+        self.network.attr("use_RGB_color").set(self["use_RGB_color"])
+        self.network.attr("color_fk").set(self["color_fk"])
+        self.network.attr("color_ik").set(self["color_ik"])
+        self.network.attr("RGB_fk").set(self["RGB_fk"])
+        self.network.attr("RGB_ik").set(self["RGB_ik"])
+        [self.network.attr("transforms")[i].set(t)
+         if not self.network.attr("transforms")[i].inputs()
+         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
+         for i, t in enumerate(self["transforms"])]
+        shapes_network = self.network.attr("controls").outputs(type="network")
+        pm.delete(shapes_network) if shapes_network else None
+        for index in sorted(list(self["ctl_shapes"].keys())):
+            for order in sorted(list(self["ctl_shapes"][index].keys())):
+                data = self["ctl_shapes"][index][order]
+                network = pm.createNode("network")
+                attribute.addAttribute(network, "order", "long", order, keyable=False)
+                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
+                attribute.addAttribute(network, "points", "string", data["points"])
+                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
+                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
+                attribute.addAttribute(network, "knots", "string", data["knots"])
 
     def guide(self):
         self.network = pm.createNode("network")
@@ -806,19 +874,46 @@ class SubBlock(AbstractBlock):
         attribute.addAttribute(n, "version", "string", self["version"])
         attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
         attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
-        attribute.addEnumAttribute(n, "comp_direction", self["comp_direction"],
+        attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
                                    ["center", "left", "right"], keyable=False)
         attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
         attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
         attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
-        add_attribute(n, "primary_axis", "string", multi=True)
-        add_attribute(n, "secondary_axis", "string", multi=True)
-        n.addAttr("offset_XYZ", type="double3", multi=True, keyable=False)
-        add_attribute(n, "transforms", "matrix", multi=True)
-        attribute.addAttribute(n, "controls_ref_index", "long", self["controls_ref_index"], keyable=False)
-        attribute.addAttribute(n, "joint_ref_index", "long", self["joint_ref_index"], keyable=False)
-        add_attribute(n, "controls", "message", multi=True)
-        add_attribute(n, "joints", "message", multi=True)
+        attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
+        attribute.addAttribute(n, "blend_joint", "string", self["blend_joint"])
+        attribute.addAttribute(n, "support_joint", "string", self["support_joint"])
+        attribute.addAttribute(n, "override_color", "bool", self["override_color"], keyable=False)
+        attribute.addAttribute(n, "use_RGB_color", "bool", self["use_RGB_color"], keyable=False)
+        attribute.addAttribute(n, "color_fk", "long", self["color_fk"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "color_ik", "long", self["color_ik"], minValue=0, maxValue=31, keyable=False)
+        attribute.addColorAttribute(n, "RGB_fk", self["RGB_fk"], keyable=False)
+        attribute.addColorAttribute(n, "RGB_ik", self["RGB_ik"], keyable=False)
+        pm.addAttr(n, longName="transforms", type="matrix", multi=True)
+        pm.addAttr(n, longName="controls", type="message", multi=True)
+        pm.addAttr(n, longName="joints", type="message", multi=True)
+        for index in sorted(list(self["ctl_shapes"].keys())):
+            for order in sorted(list(self["ctl_shapes"][index].keys())):
+                data = self["ctl_shapes"][index][order]
+                network = pm.createNode("network")
+                attribute.addAttribute(network, "order", "long", order, keyable=False)
+                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
+                attribute.addAttribute(network, "points", "string", data["points"])
+                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
+                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
+                attribute.addAttribute(network, "knots", "string", data["knots"])
+
+    def update_guide(self):
+        guide = self.network.attr("guide").inputs(type="transform")
+        if not guide:
+            return
+
+        guides = get_component_guide(guide[0])
+        for guide in guides:
+            suffix_list = guide.nodeName().split("_")[2:]
+            suffix = "_".join(suffix_list)
+            name = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}"
+            guide.rename(f"{name}_{suffix}")
+        pm.select(guides[0])
 
 
 class Context(list):
@@ -957,37 +1052,27 @@ class AdditionalFunc:
 
         _create_set(self.blueprint)
 
-        def _hirearchy_controller(_block):
+        def _cleanup_controller(_block):
             if _block.parent:
                 _ins = context.instance(_block.ins_name)
                 _parent_ins = context.instance(_block.parent.ins_name)
                 pm.controller([x for x in _ins["controls"] if pm.controller(x, query=True, parent=True)],
                               _parent_ins["controls"][-1], parent=True)
             for _b in _block["blocks"]:
-                _hirearchy_controller(_b)
+                _cleanup_controller(_b)
 
-        _hirearchy_controller(self.blueprint)
+        _cleanup_controller(self.blueprint)
 
         def _cleanup_joints(_block):
             if _block.parent:
                 _top_ins = context.instance(_block.top.ins_name)
                 _ins = context.instance(_block.ins_name)
                 if _ins.get("joints"):
-                    _convention = _block.top["joint_name_rule"].split("_")
-                    _description_index = None
-                    for _i, _c in enumerate(_convention.split("_")):
-                        if "description" in _c:
-                            _description_index = _i
-                    if _block["direction"] == "left":
-                        replace_direction = _block.top["joint_left_name"]
-                    elif _block["direction"] == "right":
-                        replace_direction = _block.top["joint_right_name"]
-                    elif _block["direction"] == "center":
-                        replace_direction = _block.top["joint_center_name"]
-                    for _jnt in _ins["joints"]:
-                        _description = _jnt.split("_")[_description_index]
-                        _label = f"{_block['name']}_{_block['index']}_{_description}"
-                        _jnt.attr("side").set(_block["direction"])
+                    for _index, _jnt in enumerate(_ins["joints"]):
+                        _label = f"{_block['comp_name']}_center{_block['comp_index']}_{_index}" \
+                            if _block["comp_side"] == "center" \
+                            else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
+                        _jnt.attr("side").set(_block["comp_side"])
                         _jnt.attr("type").set("Other")
                         _jnt.attr("otherType").set(_label)
                         _jnt.attr("radius").set(0.5)
@@ -999,10 +1084,11 @@ class AdditionalFunc:
         _cleanup_joints(self.blueprint)
 
     def draw_controls_shape(self, context):
-        pass
-
-    def support_joint(self, context):
-        pass
+        top_ins = context.instance(self.blueprint.top.ins_name)
+        for member in top_ins["controller_set"].members():
+            for index, shape in enumerate(member.getShapes()):
+                shape.rename(f"{shape.getParent().nodeName()}{index}")
+                shape.attr("isHistoricallyInteresting").set(0)
 
     def skinning(self, context):
         pass
