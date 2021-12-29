@@ -196,10 +196,12 @@ class HelperSlots:
                     or (self._network.attr("comp_side").get(asString=True) != new_side) \
                     or (self._network.attr("comp_index").get() != new_index) \
                     or (self._network.attr("comp_index").get() == index
-                        and self._network.attr("comp_name") == new_name
-                        and self._network.attr("comp_side") == new_side):
+                        and self._network.attr("comp_name").get() == new_name
+                        and self._network.attr("comp_side").get() == new_side):
                 rename_check = True
-
+            print(self._network.attr("comp_index").get() == index, self._network.attr("comp_index").get(), index)
+            print(self._network.attr("comp_name").get() == self._network.attr("comp_name").get(), new_name)
+            print(self._network.attr("comp_side").get() == self._network.attr("comp_side").get(), new_side)
             if rename_check:
                 block["comp_name"] = new_name
                 block["comp_side"] = new_side
