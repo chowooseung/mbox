@@ -730,7 +730,7 @@ class TopBlock(AbstractBlock):
         
         print(block)
         print(indexes)
-        print(self.find_block_with_ins_name(f"{block['comp_name']}.{block['comp_side']}.{block['comp_index']}")
+        print(self.find_block_with_ins_name(f"{block['comp_name']}.{block['comp_side']}.{block['comp_index']}"))
         
         while True:
             if number not in indexes:
