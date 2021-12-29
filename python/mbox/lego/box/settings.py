@@ -192,22 +192,14 @@ class HelperSlots:
             new_index = blueprint.solve_index(new_name, new_side, index, block)
 
             rename_check = False
-            if (self._network.attr("comp_name").get() != new_name) \
-                    or (self._network.attr("comp_side").get(asString=True) != new_side) \
-                    or (self._network.attr("comp_index").get() != new_index) \
-                    or (self._network.attr("comp_index").get() == index
-                        and self._network.attr("comp_name").get() == new_name
-                        and self._network.attr("comp_side").get() == new_side):
+            if self._network.attr("comp_name").get() != new_name \
+                    or self._network.attr("comp_side").get(asString=True) != new_side \
+                    or self._network.attr("comp_index").get() != new_index:
                 rename_check = True
 
-            print("if check")
-            print(self._network.attr("comp_index").get(), index)
-            print(self._network.attr("comp_name").get(), new_name)
-            print(self._network.attr("comp_side").get(), new_side)
-            if self._network.attr("comp_index").get() == index \
-                    and self._network.attr("comp_name").get() == new_name \
-                    and self._network.attr("comp_side").get() == new_side:
-                print("same return")
+            if self._network.attr("comp_name").get() == new_name \
+                    and self._network.attr("comp_side").get(asString=True) == new_side \
+                    and self._network.attr("comp_index").get() == index:
                 return
 
             if rename_check:
