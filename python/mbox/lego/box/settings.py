@@ -204,8 +204,8 @@ class HelperSlots:
                 block.to_network()
                 block.update_guide()
 
-            if self._network.attr("comp_index").get() != self.main_tab.componentIndex_spinBox.value():
-                self.main_tab.componentIndex_spinBox.setValue(self._network.attr("comp_index").get())
+            #  if self._network.attr("comp_index").get() != self.main_tab.componentIndex_spinBox.value():
+                #  self.main_tab.componentIndex_spinBox.setValue(self._network.attr("comp_index").get())
 
     def update_connector(self, source_widget, items_list, *args):
         self._network.attr("connector").set(items_list[source_widget.currentIndex()])

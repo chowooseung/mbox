@@ -728,10 +728,11 @@ class TopBlock(AbstractBlock):
 
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
-        
+        print(indexes)
         if target_block:
             if target_block["comp_index"] in indexes:
                 indexes.remove(target_block["comp_index"])
+        print(indexes)
         print("solve_index1")
         while True:
             if number not in indexes:
