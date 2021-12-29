@@ -201,6 +201,9 @@ class HelperSlots:
                 rename_check = True
 
             print("if check")
+            print(self._network.attr("comp_index").get(), index)
+            print(self._network.attr("comp_name").get(), new_name)
+            print(self._network.attr("comp_side").get(), new_side)
             if self._network.attr("comp_index").get() == index \
                     and self._network.attr("comp_name").get() == new_name \
                     and self._network.attr("comp_side").get() == new_side:
