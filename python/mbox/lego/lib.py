@@ -738,7 +738,7 @@ class TopBlock(AbstractBlock):
             number += 1
         
         while True:
-            if self.find_block_with_ins_name(f"{name}.{side}.{number}"):
+            if not self.find_block_with_ins_name(f"{name}.{side}.{number}"):
                 break
             number += 1
 
