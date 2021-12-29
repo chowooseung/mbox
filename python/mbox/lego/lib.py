@@ -720,17 +720,14 @@ class TopBlock(AbstractBlock):
 
         def _solve_index(_block, _indexes, _name, _side):
             if _block["comp_name"] == _name and _block["comp_side"] == _side:
-                _indexes.append(_block["comp_index"])
+                if _block != target_block:
+                    _indexes.append(_block["comp_index"])
 
             for _b in _block["blocks"]:
                 _solve_index(_b, _indexes, _name, _side)
 
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
-        
-        if target_block:
-            if target_block["comp_index"] in indexes:
-                indexes.remove(target_block["comp_index"])
         
         while True:
             if number not in indexes:
