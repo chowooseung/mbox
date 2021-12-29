@@ -53,6 +53,9 @@ class RootNameTabUI(QtWidgets.QDialog, name_ui.Ui_Form):
 
 class HelperSlots:
 
+    def __init__(self):
+        self._network = None # 
+
     def update_host_ui(self, l_edit, target_attr):
         guide = lib.get_component_guide(pm.selected(type="transform")[0])
         if guide:
@@ -280,10 +283,6 @@ class HelperSlots:
     def set_profile(self):
         pm.select(self._network, r=True)
         pm.runtime.GraphEditor()
-
-    def close_settings(self):
-        self.close()
-        pyqt.deleteInstances(self, MayaQDockWidget)
 
     def get_cs_file_fullpath(self, cs_data):
         filepath = cs_data.split("|")[-1][1:]

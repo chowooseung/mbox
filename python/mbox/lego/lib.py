@@ -728,7 +728,7 @@ class TopBlock(AbstractBlock):
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
 
-        if ben:
+        if ben and (ben in indexes):
             indexes.remove(ben)
 
         while True:

@@ -12,7 +12,12 @@ import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 # mbox
-from mbox.lego import blocks_ui, lib, utils, build
+from mbox.lego import (
+    blocks_ui, 
+    lib, 
+    utils, 
+    build
+)
 
 # mgear
 from mgear.core import pyqt
