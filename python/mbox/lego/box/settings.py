@@ -203,7 +203,7 @@ class HelperSlots:
             if self._network.attr("comp_index").get() == index \
                     and self._network.attr("comp_name").get() == new_name \
                     and self._network.attr("comp_side").get() == new_side:
-                rename_check = False
+                return
 
             if rename_check:
                 block["comp_name"] = new_name
