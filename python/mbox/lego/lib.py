@@ -736,6 +736,10 @@ class TopBlock(AbstractBlock):
             if number not in indexes:
                 break
             number += 1
+
+        already_block = self.find_block_with_ins_name(f"{block['comp_name']}.{block['comp_side']}.{number}")
+        if already_block:
+            number += 1 
         return number
 
 
