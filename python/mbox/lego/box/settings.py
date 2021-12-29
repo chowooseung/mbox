@@ -190,11 +190,14 @@ class HelperSlots:
             blueprint = lib.blueprint_from_guide(self._guide.getParent(generations=-1))
             block = blueprint.find_block_with_oid(self._network.attr("oid").get())
             new_index = blueprint.solve_index(new_name, new_side, index, block)
-            print(new_index)
+
             rename_check = False
-            if self._network.attr("comp_name").get() != new_name \
-                    or self._network.attr("comp_side").get(asString=True) != new_side \
-                    or self._network.attr("comp_index").get() != new_index:
+            if (self._network.attr("comp_name").get() != new_name) \
+                    or (self._network.attr("comp_side").get(asString=True) != new_side) \
+                    or (self._network.attr("comp_index").get() != new_index) \
+                    or (self._network.attr("comp_index").get() == index
+                        and self._network.attr("comp_name") == new_name
+                        and self._network.attr("comp_side") == new_side):
                 rename_check = True
 
             if rename_check:
