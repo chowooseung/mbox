@@ -736,12 +736,12 @@ class TopBlock(AbstractBlock):
             if number not in indexes:
                 break
             number += 1
-
+        print(number)
         while True:
             if not self.find_block_with_ins_name(f"{name}.{side}.{number}"):
                 break
             number += 1
-
+        print(number)
         return number
 
 
