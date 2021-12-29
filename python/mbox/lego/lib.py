@@ -728,18 +728,15 @@ class TopBlock(AbstractBlock):
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
         
-        if block:
-            if block["comp_name"] == name and block["comp_side"] == side:
-                indexes.remove(block["comp_index"])
+        print(block)
+        print(indexes)
+        print(self.find_block_with_ins_name(f"{block['comp_name']}.{block['comp_side']}.{block['comp_index']}")
         
         while True:
             if number not in indexes:
                 break
             number += 1
 
-        already_block = self.find_block_with_ins_name(f"{block['comp_name']}.{block['comp_side']}.{number}")
-        if already_block:
-            number += 1 
         return number
 
 
