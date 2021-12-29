@@ -190,7 +190,7 @@ class HelperSlots:
             blueprint = lib.blueprint_from_guide(self._guide.getParent(generations=-1))
             block = blueprint.find_block_with_oid(self._network.attr("oid").get())
             new_index = blueprint.solve_index(new_name, new_side, index, block)
-
+            print(new_index)
             rename_check = False
             if self._network.attr("comp_name").get() != new_name \
                     or self._network.attr("comp_side").get(asString=True) != new_side \
@@ -204,8 +204,8 @@ class HelperSlots:
                 block.to_network()
                 block.update_guide()
 
-            #  if self._network.attr("comp_index").get() != self.main_tab.componentIndex_spinBox.value():
-                #  self.main_tab.componentIndex_spinBox.setValue(self._network.attr("comp_index").get())
+            if self._network.attr("comp_index").get() != self.main_tab.componentIndex_spinBox.value():
+                self.main_tab.componentIndex_spinBox.setValue(self._network.attr("comp_index").get())
 
     def update_connector(self, source_widget, items_list, *args):
         self._network.attr("connector").set(items_list[source_widget.currentIndex()])
