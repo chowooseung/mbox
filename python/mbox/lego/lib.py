@@ -715,7 +715,7 @@ class TopBlock(AbstractBlock):
 
         return _find(self, ins_name)
 
-    def solve_index(self, name, side, number=0, ben=None):
+    def solve_index(self, name, side, number=0, block=None):
         indexes = list()
 
         def _solve_index(_block, _indexes, _name, _side):
@@ -727,10 +727,11 @@ class TopBlock(AbstractBlock):
 
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
-
-        if ben and (ben in indexes):
-            indexes.remove(ben)
-
+        
+        if block:
+            if block["comp_name"] == name and block["comp_side"] == side:
+                indexes.remove(block["comp_index"])
+        
         while True:
             if number not in indexes:
                 break

@@ -189,7 +189,7 @@ class HelperSlots:
             index = self.main_tab.componentIndex_spinBox.value()
             blueprint = lib.blueprint_from_guide(self._guide.getParent(generations=-1))
             block = blueprint.find_block_with_oid(self._network.attr("oid").get())
-            new_index = blueprint.solve_index(new_name, new_side, index, block["comp_index"])
+            new_index = blueprint.solve_index(new_name, new_side, index, block)
 
             rename_check = False
             if self._network.attr("comp_name").get() != new_name \
