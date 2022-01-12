@@ -37,9 +37,9 @@ class Objects(AbstractObjects):
         con = icon.circle(npo, con_name, m=m)
         ref = primitive.addTransform(con, ref_name, m)
 
-        self.ins["root"] = root # block root. use build connect network
-        self.ins["controls"] = [con] # block controls. use build connect controllers
-        self.ins["refs"] = [ref] # block reference transform. sub block parent matrix
+        self.ins["root"] = root  # block root. use build connect network
+        self.ins["controls"] = [con]  # block controls. use build connect controllers
+        self.ins["refs"] = [ref]  # block reference transform. sub block parent matrix
         # self.ins["joints"] = [jnt] # block joint. use build connect joint
 
 
@@ -68,4 +68,3 @@ class Connection(AbstractConnection):
 
     def process(self, context):
         super(Connection, self).process(context=context)
-

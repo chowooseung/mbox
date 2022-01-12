@@ -11,7 +11,7 @@ from maya.app.general.mayaMixin import MayaQDockWidget
 # mbox
 from mbox.core import icon
 from mbox.lego.lib import (
-    TopBlock,
+    RootBlock,
     SubBlock
 )
 from mbox.lego.box import settings
@@ -69,7 +69,7 @@ class Block(SubBlock):
         attribute.addAttribute(self.network, "ctl_size", "float", self["ctl_size"], keyable=False)
 
         name_format = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}_%s"
-        if isinstance(self.parent, TopBlock):
+        if isinstance(self.parent, RootBlock):
             parent = self.parent.network.attr("guide").inputs(type="transform")[0]
         else:
             parent = self.parent.network.attr("transforms").inputs(type="transform")[-1]

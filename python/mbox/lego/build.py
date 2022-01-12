@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#
+# built-in
 import importlib.util
 import os
 
@@ -37,10 +37,12 @@ def guide(blueprint, block, parent, showUI):
 
 
 def duplicate_guide():
+    """TODO: build/ duplicate guide """
     selected = utils.select_guide()
 
 
 def mirror_guide():
+    """TODO: build/ mirror guide"""
     selected = utils.select_guide()
 
 
@@ -48,13 +50,14 @@ def rig(blueprint: AbstractBlock or None) -> Context:
     if not blueprint:
         blueprint = blueprint_from_guide(utils.select_guide())
 
-    context = Context()
+    context = Context(blueprint)
     pre_scripts = list()
     objects = list()
     attributes = list()
     operators = list()
     connection = list()
-    additional_func = [AdditionalFunc(blueprint)]
+    add_func = AdditionalFunc()
+    additional_func = [add_func]
     post_scripts = list()
 
     def get_build_step(_blueprint: AbstractBlock):
@@ -75,10 +78,11 @@ def rig(blueprint: AbstractBlock or None) -> Context:
         spec.loader.exec_module(mod)
         for cls_name in dir(mod):
             cls = getattr(mod, cls_name)
+            ins = cls()
             if issubclass(type(cls), PreScript):
-                pre_scripts.append(cls())
+                pre_scripts.append(ins)
             elif issubclass(type(cls), PostScript):
-                post_scripts.append(cls())
+                post_scripts.append(ins)
 
     logger.debug("mbox build system")
     logger.debug("counting ... [???/???]")

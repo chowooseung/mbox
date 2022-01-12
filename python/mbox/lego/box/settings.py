@@ -174,34 +174,40 @@ class HelperSlots:
         self._network.attr(target_attr).set(new_value)
 
     def update_component_name(self):
+        """update guide at settings ui change"""
         with pm.UndoChunk():
-            side_set = ["center", "left", "right"]
-
+            # name string check
             line_name = self.main_tab.name_lineEdit.text()
             new_name = string.normalize2(line_name)
             if line_name != new_name:
                 self.main_tab.name_lineEdit.setText(new_name)
                 return
 
+            # get side
+            side_set = ["center", "left", "right"]
             side_index = self.main_tab.side_comboBox.currentIndex()
             new_side = side_set[side_index]
 
+            # get index
             index = self.main_tab.componentIndex_spinBox.value()
             blueprint = lib.blueprint_from_guide(self._guide.getParent(generations=-1))
             block = blueprint.find_block_with_oid(self._network.attr("oid").get())
             new_index = blueprint.solve_index(new_name, new_side, index, block)
 
+            # rename check
             rename_check = False
             if self._network.attr("comp_name").get() != new_name \
                     or self._network.attr("comp_side").get(asString=True) != new_side \
                     or self._network.attr("comp_index").get() != new_index:
                 rename_check = True
 
+            # old attr == new attr -> return
             if self._network.attr("comp_name").get() == new_name \
                     and self._network.attr("comp_side").get(asString=True) == new_side \
                     and self._network.attr("comp_index").get() == index:
                 return
 
+            # block update
             if rename_check:
                 block["comp_name"] = new_name
                 block["comp_side"] = new_side
@@ -209,6 +215,7 @@ class HelperSlots:
                 block.to_network()
                 block.update_guide()
 
+            # sync network attribute and settings ui
             if self._network.attr("comp_index").get() != self.main_tab.componentIndex_spinBox.value():
                 self.main_tab.componentIndex_spinBox.setValue(self._network.attr("comp_index").get())
 

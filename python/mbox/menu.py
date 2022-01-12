@@ -3,10 +3,6 @@
 # maya
 import pymel.core as pm
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 def create(menuId):
     """from mgear.menu.create"""

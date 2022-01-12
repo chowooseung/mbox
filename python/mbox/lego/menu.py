@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# maya
-import pymel.core as pm
-
 # mbox
 import mbox
 
 # mgear
 import mgear.menu
-
-#
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def install():

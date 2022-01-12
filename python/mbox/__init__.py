@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 
 #
-import logging
 import os
 
 # mbox
@@ -10,8 +9,6 @@ from mbox import menu
 
 # maya
 import pymel.core as pm
-
-logger = logging.getLogger(__name__)
 
 menu_id = "mBox"
 

@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
 
-#
+# built-in
 import os
 import sys
 import importlib
 from types import ModuleType
 
-# may
+# maya
 import pymel.core as pm
 
+# mbox
+from mbox.lego.lib import (
+    RootBlock,
+    SubBlock
+)
 
+# mbox.__init__.py
 MBOX_ROOT = os.getenv("MBOX_ROOT")
 MBOX_BOX = os.getenv("MBOX_BOX")
 MBOX_CUSTOM_BOX = os.getenv("MBOX_CUSTOM_BOX")
 
-sys.path.append(MBOX_BOX)
+# sys path append
+# load_block_module import component
+if MBOX_BOX not in sys.path:
+    sys.path.append(MBOX_BOX)
 for path in MBOX_CUSTOM_BOX.split(";"):
-    sys.path.append(path)
+    if path not in sys.path:
+        sys.path.append(path)
 
 
 def get_blocks_directory() -> dict:
@@ -42,11 +52,11 @@ def load_block_module(component: str, guide: bool) -> ModuleType:
         if component in blocks:
             check = True
     assert check is True, f"{component} don't exists in box"
-    mod = importlib.import_module(f"{component}.blueprint" if guide else f"{component}")
+    mod = importlib.import_module(f"{component}.guide" if guide else f"{component}")
     return mod
 
 
-def load_build_step(block) -> tuple:
+def load_build_step(block: RootBlock or SubBlock) -> tuple:
     mod = load_block_module(block["component"], guide=False)
     objects = mod.Objects(block)
     attributes = mod.Attributes(block)
@@ -55,12 +65,12 @@ def load_build_step(block) -> tuple:
     return objects, attributes, operators, connection
 
 
-def select_guide():
+def select_guide() -> pm.nodetypes.Transform:
     msg = "selected node is not mbox guide node"
     selected = pm.selected(type="transform")
     assert len(selected) > 0, msg
-    assert selected[0].hasAttr("is_guide") is True \
-           or selected[0].hasAttr("is_guide_component") is True \
-           or selected[0].hasAttr("is_guide_root") is True, msg
+    assert selected[0].hasAttr("is_guide") is True, msg
+    assert selected[0].hasAttr("is_guide_component") is True, msg
+    assert selected[0].hasAttr("is_guide_root") is True, msg
     return selected[0]
 

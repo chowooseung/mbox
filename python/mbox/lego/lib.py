@@ -5,17 +5,27 @@ import pymel.core as pm
 
 # mbox
 import mbox
-from mbox.lego import utils, naming
+from mbox.lego import (
+    utils,
+    naming
+)
 
-#
-import uuid
+# built-in
 import os
+import uuid
 import logging
-from collections import OrderedDict
 import itertools
+from collections import OrderedDict
 
 # mgear
-from mgear.core import pyqt, attribute, primitive, transform
+from mgear.core import (
+    pyqt,
+    attribute,
+    primitive,
+    transform,
+    icon,
+    node,
+)
 
 # json
 import json
@@ -96,6 +106,7 @@ def blueprint_from_guide(selected):
 
 
 def blueprint_from_network(hierarchy):
+    # recursive
     def get_blueprint(_p_block, _network, children):
         mod = utils.load_block_module(_network.attr("comp_type").get(), guide=True)
         block = mod.Block(parent=_p_block)
@@ -104,8 +115,10 @@ def blueprint_from_network(hierarchy):
             for _key, _value in children.items():
                 get_blueprint(block, _key, _value)
 
+    #   ----
+
     network = next(itertools.islice(hierarchy.keys(), 1))
-    blueprint = TopBlock()
+    blueprint = RootBlock()
     blueprint.network = network
 
     for key, value in hierarchy[network].items():
@@ -124,6 +137,7 @@ def blueprint_from_rig():
 
 
 def blueprint_from_file(path):
+    """TODO: get blueprint from file"""
     check = True
     if not os.path.exists(path):
         logger.info(f"Don't exists path : {path}")
@@ -138,13 +152,16 @@ def blueprint_from_file(path):
     with open(path, "r") as f:
         data = json.load(f)
 
+    # recursive
     def get_blueprint(_block, _data):
         for child in _data["blocks"]:
             mod = utils.load_block_module(child["comp_type"], guide=True)
             _b = mod.Block(_block)
             get_blueprint(_b, child)
 
-    blueprint = TopBlock()
+    #   ----
+
+    blueprint = RootBlock()
     get_blueprint(blueprint, data)
     blueprint.update(data)
     return blueprint
@@ -153,7 +170,7 @@ def blueprint_from_file(path):
 def draw_specify_component_guide(parent, component):
     if not parent:
         # root block
-        blueprint = TopBlock()
+        blueprint = RootBlock()
 
         # component block
         mod = utils.load_block_module(component, guide=True)
@@ -234,17 +251,17 @@ def log_window():
         pm.showWindow(log_window_name)
 
 
-def export_blueprint(node, path):
-    """blueprint json file export"""
+def export_blueprint(guide, path):
+    """TODO:blueprint json file export"""
     if not path:
         path = _file_dialog(path, mode=0)
         if not path:
             pm.displayWarning("File path None")
             return
-    if not node:
+    if not guide:
         try:
-            selected = pm.selected(type="transform")[0]
-            if not selected.hasAttr("is_guide_root"):
+            guide = pm.selected(type="transform")[0]
+            if not guide.hasAttr("is_guide_root"):
                 raise RuntimeError("select mbox root guide")
         except IndexError as e:
             pm.displayWarning(e)
@@ -252,15 +269,13 @@ def export_blueprint(node, path):
         except RuntimeError as e:
             pm.displayWarning(e)
             return
-    else:
-        selected = node
 
-    root_block = blueprint_from_guide(selected)
+    root_block = blueprint_from_guide(guide)
     root_block.save(root_block, path)
 
 
 def import_blueprint(path, draw=True):
-    """blueprint json file import"""
+    """TODO:blueprint json file import"""
     if not path:
         path = _file_dialog(path, mode=1)
         if not path:
@@ -295,6 +310,39 @@ class _List(list):
         super(_List, self).append(obj)
 
 
+class Context(list):
+
+    def __init__(self, blueprint):
+        self._blueprint = blueprint
+
+    def instance(self, name):
+        for ins in self:
+            if name == ins.name:
+                return ins
+        ins = Instance(name)
+        self.append(ins)
+        return ins
+
+    @property
+    def blueprint(self):
+        return self._blueprint
+
+
+class Instance(dict):
+
+    def __init__(self, name):
+        assert isinstance(name, str)
+
+        self._name = name
+
+    def __repr__(self):
+        return f"ins(\"{self.name}\")"
+
+    @property
+    def name(self):
+        return self._name
+
+
 class AbstractBlock(dict):
 
     def __init__(self, parent=None):
@@ -312,10 +360,8 @@ class AbstractBlock(dict):
         super().__setitem__(key, value)
 
     def update(self, _d, **kwargs):
-        for key, value in kwargs.items():
-            _d[key] = value
-
-        def __recursive(_block, _dict):
+        # recursive
+        def _update(_block, _dict):
             for k, v in _dict.items():
                 if k == "blocks":
                     continue
@@ -324,9 +370,13 @@ class AbstractBlock(dict):
             for index, b_data in enumerate(_dict["blocks"]):
                 mod = utils.load_block_module(b_data["comp_type"], guide=True)
                 _block["blocks"].append(mod.Block(_block))
-                __recursive(_block["blocks"][index], b_data)
+                _update(_block["blocks"][index], b_data)
 
-        __recursive(self, _d)
+        #   ----
+        for key, value in kwargs.items():
+            _d[key] = value
+
+        _update(self, _d)
 
     @property
     def network(self):
@@ -361,43 +411,49 @@ class AbstractBlock(dict):
         self._parent["blocks"].append(self)
 
     def from_network(self):
-
-        def __recursive(_block):
+        # recursive
+        def _from_network(_block):
             _block.from_network()
 
             for _b in _block["blocks"]:
-                __recursive(_b)
+                _from_network(_b)
+
+        #   ----
 
         for block in self["blocks"]:
-            __recursive(block)
+            _from_network(block)
 
     def to_network(self):
-
-        def __recursive(_block):
+        # recursive
+        def _to_network(_block):
             _block.to_netwrok()
 
             for _b in _block["blocks"]:
-                __recursive(_b)
+                _to_network(_b)
+
+        #   ----
 
         for block in self["blocks"]:
-            __recursive(block)
+            _to_network(block)
 
     def guide(self):
-
-        def __recursive(_block):
+        # recursive
+        def _guide(_block):
             root = _block.guide()
 
             if not _block["blocks"]:
                 return root
 
             for _b in _block["blocks"]:
-                return __recursive(_b)
+                return _guide(_b)
 
-        node = None
+        #   ----
+
+        root = None
         for block in self["blocks"]:
-            node = __recursive(block)
+            root = _guide(block)
 
-        return node
+        return root
 
     def add_ctl(self):
         pass
@@ -409,10 +465,324 @@ class AbstractBlock(dict):
         pass
 
 
-class TopBlock(AbstractBlock):
+class SubBlock(AbstractBlock):
+
+    def __init__(self, parent=None):
+        super(SubBlock, self).__init__(parent=parent)
+
+        # block version
+        self["version"] = None
+
+        # what kind of block
+        self["comp_type"] = None
+
+        # module name # arm... leg... spine...
+        self["comp_name"] = None
+
+        # "center", "left", "right"
+        self["comp_side"] = "center"
+
+        # index
+        self["comp_index"] = 0
+
+        # ui host
+        self["ui_host"] = str()
+
+        # True - create joint / False
+        self["joint_rig"] = True
+        self["joint_names"] = str()
+
+        # gimmick joint
+        self["blend_joint"] = str()
+        self["support_joint"] = str()
+
+        # ctl color
+        self["override_color"] = False
+        self["use_RGB_color"] = False
+        self["color_fk"] = 6
+        self["color_ik"] = 18
+        self["RGB_fk"] = (0.0, 0.0, 1.0)
+        self["RGB_ik"] = (0.0, 0.25, 1.0)
+
+        # primary axis, secondary axis, offset XYZ
+        # self["joint_settings"] = [["x", "y", (0, 0, 0)], ]
+
+        # guide transform matrix list
+        # self["transforms"] = list()
+
+        # parent node name
+        self["ref_index"] = -1
+
+        # ctl shapes
+        self["ctl_shapes"] = dict()
+
+        # Joints Axis
+        self["joints_axis"] = list()
+
+    @property
+    def ins_name(self):
+        return f"{self['comp_name']}.{self['comp_side']}.{self['comp_index']}"
+
+    def get_name(self,
+                 typ: bool,
+                 description: str = "",
+                 extension: str = "") -> str:
+        root_block = self.top
+        if typ:
+            rule = root_block["joint_name_rule"]
+            padding = root_block["joint_index_padding"]
+            description_letter_case = root_block["joint_description_letter_case"]
+            if not extension:
+                extension = root_block["joint_name_ext"]
+        else:
+            rule = root_block["ctl_name_rule"]
+            padding = root_block["ctl_index_padding"]
+            description_letter_case = root_block["ctl_description_letter_case"]
+            if not extension:
+                extension = root_block["ctl_name_ext"]
+
+        if description_letter_case == "lower":
+            description = description.lower()
+        elif description_letter_case == "upper":
+            description = description.upper()
+        elif description_letter_case == "capitalize":
+            description = description.capitalize()
+        rename = rule.format(name=self["comp_name"],
+                             side=self["comp_side"],
+                             index=str(self["index"]).zfill(padding),
+                             description=description,
+                             extension=extension)
+        name = "_".join([x for x in rename.split("_") if x])
+        return name
+
+    def create_root(self,
+                    context: Context,
+                    parent: None or pm.nodetypes.Transform,
+                    ref_m: pm.nodetypes.Transform,
+                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+        instance = context.instance(self.ins_name)
+        root = primitive.addTransform(parent, self.get_name(False, extension="root"), m)
+        decompose = pm.createNode("decomposeMatrix")
+        pm.connectAttr(ref_m.attr("worldMatrix"), decompose.attr("inputMatrix"))
+        pm.connectAttr(decompose.attr("outputTranslate"), root.attr("translate"))
+        pm.connectAttr(decompose.attr("outputRotate"), root.attr("rotate"))
+        pm.connectAttr(decompose.attr("outputScale"), root.attr("scale"))
+        pm.connectAttr(decompose.attr("outputShear"), root.attr("shear"))
+        attribute.setNotKeyableAttributes(root)
+
+        instance["root"] = root
+        return root
+
+    def create_ctl(self,
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   m: pm.datatypes.Matrix,
+                   parent_ctl: None or pm.nodetypes.Transform,
+                   color: list or int,
+                   ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
+                   npo_attr: list = [],
+                   description: str = "",
+                   size: float = 1.0,
+                   shape: str = "cube") -> pm.nodetypes.Transform:
+        instance = context.instance(self.ins_name)
+        if not instance["controls"]:
+            instance["controls"] = list()
+        npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
+        ctl = icon.create(npo,
+                          self.get_name(False, description=description, extension=self.top["ctl_name_ext"]),
+                          m=m,
+                          color=color,
+                          icon=shape,
+                          w=size,
+                          h=size,
+                          d=size)
+        attribute.setKeyableAttributes(ctl, ctl_attr)
+        attribute.setKeyableAttributes(npo, npo_attr)
+
+        pm.controller(ctl)
+        if parent_ctl:
+            node.add_controller_tag(ctl, parent_ctl)
+        instance["controls"].append(ctl)
+        return ctl
+
+    def create_ref(self,
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   description: str,
+                   m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+        instance = context.instance(self.ins_name)
+        if not instance["refs"]:
+            instance["refs"] = list()
+        ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
+        attribute.setNotKeyableAttributes(ref)
+
+        instance["refs"].append(ref)
+        return ref
+
+    def create_jnt(self,
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   description: str or None,
+                   extension: str or None,
+                   m: pm.datatypes.Matrix,
+                   replace_name: str = "",
+                   skin: bool = False) -> pm.nodetypes.Joint:
+        instance = context.instance(self.ins_name)
+        if not instance["joints"]:
+            instance["joints"] = list()
+
+        if replace_name:
+            name = replace_name
+        else:
+            extension = self.top["joint_name_ext"] if skin else extension
+            name = self.get_name(skin, description=description, extension=extension)
+        jnt = primitive.addJoint(parent, name, m=m)
+        attribute.setKeyableAttributes(jnt)
+
+        if skin:
+            instance["joints"].append(jnt)
+        return jnt
+
+    def from_network(self):
+        self["oid"] = self.network.attr("oid").get()
+        self["version"] = self.network.attr("version").get()
+        self["comp_type"] = self.network.attr("comp_type").get()
+        self["comp_name"] = self.network.attr("comp_name").get()
+        self["comp_side"] = self.network.attr("comp_side").get(asString=True)
+        self["comp_index"] = self.network.attr("comp_index").get()
+        self["ui_host"] = self.network.attr("ui_host").get()
+        self["joint_rig"] = self.network.attr("joint_rig").get()
+        self["joint_names"] = self.network.attr("joint_names").get()
+        self["blend_joint"] = self.network.attr("blend_joint").get()
+        self["support_joint"] = self.network.attr("support_joint").get()
+        self["use_RGB_color"] = self.network.attr("use_RGB_color").get()
+        self["override_color"] = self.network.attr("override_color").get()
+        self["color_fk"] = self.network.attr("color_fk").get()
+        self["color_ik"] = self.network.attr("color_ik").get()
+        self["RGB_fk"] = self.network.attr("RGB_fk").get()
+        self["RGB_ik"] = self.network.attr("RGB_ik").get()
+        self["transforms"] = [x.tolist() for x in self.network.attr("transforms").get()]
+        # TODO: control shapes curve info
+        if self.network.attr("controls").elements():
+            shape_dict = dict()
+            for index, attr in enumerate(self.network.attr("controls").elements()):
+                shapes_network = self.network.attr(attr).outputs(type="network")
+                if shapes_network:
+                    shape_dict[index] = dict()
+                for shape_index, network in enumerate(sorted(shapes_network, key=lambda x: x.attr("order"))):
+                    shape_dict[index][shape_index] = dict()
+                    shape_dict[index][shape_index]["degree"] = 3
+                    shape_dict[index][shape_index]["form"] = 0
+                    shape_dict[index][shape_index]["form_id"] = 0
+                    shape_dict[index][shape_index]["points"] = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
+                    shape_dict[index][shape_index]["knots"] = []
+            self["ctl_shapes"] = shape_dict
+        else:
+            self["ctl_shapes"] = dict()
+        # TODO: specify joints axis
+        self["joints_axis"] = [x.tolist() if x else list() for x in self.network.attr("joints_axis").get().split(",")]
+
+    def to_network(self):
+        self.network.attr("oid").set(self["oid"])
+        self.network.attr("version").set(self["version"])
+        self.network.attr("comp_type").set(self["comp_type"])
+        self.network.attr("comp_name").set(self["comp_name"])
+        self.network.attr("comp_side").set(self["comp_side"])
+        self.network.attr("comp_index").set(self["comp_index"])
+        self.network.attr("ui_host").set(self["ui_host"])
+        self.network.attr("joint_rig").set(self["joint_rig"])
+        self.network.attr("joint_names").set(self["joint_names"])
+        self.network.attr("blend_joint").set(self["blend_joint"])
+        self.network.attr("support_joint").set(self["support_joint"])
+        self.network.attr("override_color").set(self["override_color"])
+        self.network.attr("use_RGB_color").set(self["use_RGB_color"])
+        self.network.attr("color_fk").set(self["color_fk"])
+        self.network.attr("color_ik").set(self["color_ik"])
+        self.network.attr("RGB_fk").set(self["RGB_fk"])
+        self.network.attr("RGB_ik").set(self["RGB_ik"])
+        [self.network.attr("transforms")[i].set(t)
+         if not self.network.attr("transforms")[i].inputs()
+         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
+         for i, t in enumerate(self["transforms"])]
+        # TODO: control shapes curve info
+        shapes_network = self.network.attr("controls").outputs(type="network")
+        pm.delete(shapes_network) if shapes_network else None
+        for index in sorted(list(self["ctl_shapes"].keys())):
+            for order in sorted(list(self["ctl_shapes"][index].keys())):
+                data = self["ctl_shapes"][index][order]
+                network = pm.createNode("network")
+                attribute.addAttribute(network, "order", "long", order, keyable=False)
+                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
+                attribute.addAttribute(network, "points", "string", data["points"])
+                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
+                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
+                attribute.addAttribute(network, "knots", "string", data["knots"])
+        # TODO: specify joints axis
+        joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
+        joints_axis = ",".join(joints_axis)
+        self.network.attr("joints_axis").set(joints_axis)
+
+    def guide(self):
+        self.network = pm.createNode("network")
+        n = self.network
+        attribute.addAttribute(n, "oid", "string", self["oid"])
+        attribute.addAttribute(n, "guide", "message")
+        attribute.addAttribute(n, "rig", "message")
+        attribute.addAttribute(n, "version", "string", self["version"])
+        attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
+        attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
+        attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
+                                   ["center", "left", "right"], keyable=False)
+        attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
+        attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
+        attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
+        attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
+        attribute.addAttribute(n, "blend_joint", "string", self["blend_joint"])
+        attribute.addAttribute(n, "support_joint", "string", self["support_joint"])
+        attribute.addAttribute(n, "override_color", "bool", self["override_color"], keyable=False)
+        attribute.addAttribute(n, "use_RGB_color", "bool", self["use_RGB_color"], keyable=False)
+        attribute.addAttribute(n, "color_fk", "long", self["color_fk"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "color_ik", "long", self["color_ik"], minValue=0, maxValue=31, keyable=False)
+        attribute.addColorAttribute(n, "RGB_fk", self["RGB_fk"], keyable=False)
+        attribute.addColorAttribute(n, "RGB_ik", self["RGB_ik"], keyable=False)
+        pm.addAttr(n, longName="transforms", type="matrix", multi=True)
+        pm.addAttr(n, longName="controls", type="message", multi=True)
+        pm.addAttr(n, longName="joints", type="message", multi=True)
+        # TODO: control shapes curve info
+        for index in sorted(list(self["ctl_shapes"].keys())):
+            for order in sorted(list(self["ctl_shapes"][index].keys())):
+                data = self["ctl_shapes"][index][order]
+                network = pm.createNode("network")
+                attribute.addAttribute(network, "order", "long", order, keyable=False)
+                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
+                attribute.addAttribute(network, "points", "string", data["points"])
+                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
+                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
+                attribute.addAttribute(network, "knots", "string", data["knots"])
+        # TODO: specify joints axis
+        joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
+        joints_axis = ",".join(joints_axis)
+        attribute.addAttribute(n, "joints_axis", "string", joints_axis)
+
+    def update_guide(self):
+        """update guide naming"""
+        guide = self.network.attr("guide").inputs(type="transform")
+        if not guide:
+            return
+
+        guides = get_component_guide(guide[0])
+        for guide in guides:
+            suffix_list = guide.nodeName().split("_")[2:]
+            suffix = "_".join(suffix_list)
+            name = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}"
+            guide.rename(f"{name}_{suffix}")
+        pm.select(guides[0])
+
+
+class RootBlock(AbstractBlock):
 
     def __init__(self):
-        super(TopBlock, self).__init__(parent=None)
+        super(RootBlock, self).__init__(parent=None)
 
         # component
         self["comp_type"] = "mbox"
@@ -429,7 +799,7 @@ class TopBlock(AbstractBlock):
         # Asset name
         self["name"] = "rig"
 
-        # Direction string
+        # Name side
         self["joint_left_name"] = naming.DEFAULT_JOINT_SIDE_L_NAME
         self["joint_right_name"] = naming.DEFAULT_JOINT_SIDE_R_NAME
         self["joint_center_name"] = naming.DEFAULT_JOINT_SIDE_C_NAME
@@ -437,7 +807,7 @@ class TopBlock(AbstractBlock):
         self["ctl_right_name"] = naming.DEFAULT_SIDE_R_NAME
         self["ctl_center_name"] = naming.DEFAULT_SIDE_C_NAME
 
-        # Extension
+        # Name extension
         self["joint_name_ext"] = naming.DEFAULT_JOINT_EXT_NAME
         self["ctl_name_ext"] = naming.DEFAULT_CTL_EXT_NAME
 
@@ -573,7 +943,8 @@ class TopBlock(AbstractBlock):
         self["c_RGB_ik"] = self.network.attr("c_RGB_ik").get()
         self["notes"] = self.network.attr("notes").get()
 
-        super(TopBlock, self).from_network()
+        # recursive block
+        super(RootBlock, self).from_network()
 
     def to_network(self):
         self.network.attr("oid").set(self["oid"])
@@ -620,7 +991,8 @@ class TopBlock(AbstractBlock):
         self.network.attr("c_RGB_ik").set(self["c_RGB_ik"])
         self.network.attr("notes").set(self["notes"])
 
-        super(TopBlock, self).to_network()
+        # recursive block
+        super(RootBlock, self).to_network()
 
     def guide(self):
         self.network = pm.createNode("network")
@@ -686,11 +1058,14 @@ class TopBlock(AbstractBlock):
         # connection
         pm.connectAttr(guide.message, n.guide, force=True)
 
-        sel = super(TopBlock, self).guide()
+        # recursive block
+        sel = super(RootBlock, self).guide()
+
+        # last created block select
         pm.select(sel)
 
-    def find_block_with_oid(self, oid):
-
+    def find_block_with_oid(self, oid) -> SubBlock or None:
+        # recursive
         def _find(_block, _oid):
             if _block["oid"] == _oid:
                 return _block
@@ -700,10 +1075,19 @@ class TopBlock(AbstractBlock):
                 if __b:
                     return __b
 
-        return _find(self, oid)
+        #   ----
 
-    def find_block_with_ins_name(self, ins_name):
+        sub_block = None
+        for block in self["blocks"]:
+            sub_block = _find(block, oid)
 
+            if sub_block:
+                break
+
+        return sub_block
+
+    def find_block_with_ins_name(self, ins_name) -> SubBlock or None:
+        # recursive
         def _find(_block, _ins_name):
             if _block.ins_name == _ins_name:
                 return _block
@@ -713,232 +1097,44 @@ class TopBlock(AbstractBlock):
                 if __b:
                     return __b
 
-        return _find(self, ins_name)
+        #   ----
 
-    def solve_index(self, name, side, number=0, target_block=None):
+        sub_block = None
+        for block in self["blocks"]:
+            sub_block = _find(block, ins_name)
+
+            if sub_block:
+                break
+
+        return sub_block
+
+    def solve_index(self, name, side, index=0, target_block=None) -> int:
         indexes = list()
 
+        # get index list
+        # recursive
         def _solve_index(_block, _indexes, _name, _side):
             if _block["comp_name"] == _name and _block["comp_side"] == _side:
+                # target block index remove
+                # in case already exists target block
                 if _block != target_block:
                     _indexes.append(_block["comp_index"])
 
             for _b in _block["blocks"]:
                 _solve_index(_b, _indexes, _name, _side)
 
+        #   ----
+
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
-        
+
+        # next index
         while True:
-            if number not in indexes:
+            if index not in indexes:
                 break
-            number += 1
+            index += 1
 
-        return number
-
-
-class SubBlock(AbstractBlock):
-
-    def __init__(self, parent=None):
-        super(SubBlock, self).__init__(parent=parent)
-
-        # block version
-        self["version"] = None
-
-        # what kind of block
-        self["comp_type"] = None
-
-        # module name # arm... leg... spine...
-        self["comp_name"] = None
-
-        # "center", "left", "right"
-        self["comp_side"] = "center"
-
-        # index
-        self["comp_index"] = 0
-
-        # ui host
-        self["ui_host"] = str()
-
-        # True - create joint / False
-        self["joint_rig"] = True
-        self["joint_names"] = str()
-
-        # gimmick joint
-        self["blend_joint"] = str()
-        self["support_joint"] = str()
-
-        # ctl color
-        self["override_color"] = False
-        self["use_RGB_color"] = False
-        self["color_fk"] = 6
-        self["color_ik"] = 18
-        self["RGB_fk"] = (0.0, 0.0, 1.0)
-        self["RGB_ik"] = (0.0, 0.25, 1.0)
-
-        # primary axis, secondary axis, offset XYZ
-        # self["joint_settings"] = [["x", "y", (0, 0, 0)], ]
-
-        # guide transform matrix list
-        # self["transforms"] = list()
-
-        # parent node name
-        self["controls_ref_index"] = -1
-        self["joint_ref_index"] = -1
-
-        # ctl shapes
-        self["ctl_shapes"] = dict()
-
-    @property
-    def ins_name(self):
-        return f"{self['comp_name']}.{self['comp_side']}.{self['comp_index']}"
-
-    def from_network(self):
-        self["oid"] = self.network.attr("oid").get()
-        self["version"] = self.network.attr("version").get()
-        self["comp_type"] = self.network.attr("comp_type").get()
-        self["comp_name"] = self.network.attr("comp_name").get()
-        self["comp_side"] = self.network.attr("comp_side").get(asString=True)
-        self["comp_index"] = self.network.attr("comp_index").get()
-        self["ui_host"] = self.network.attr("ui_host").get()
-        self["joint_rig"] = self.network.attr("joint_rig").get()
-        self["joint_names"] = self.network.attr("joint_names").get()
-        self["blend_joint"] = self.network.attr("blend_joint").get()
-        self["support_joint"] = self.network.attr("support_joint").get()
-        self["use_RGB_color"] = self.network.attr("use_RGB_color").get()
-        self["override_color"] = self.network.attr("override_color").get()
-        self["color_fk"] = self.network.attr("color_fk").get()
-        self["color_ik"] = self.network.attr("color_ik").get()
-        self["RGB_fk"] = self.network.attr("RGB_fk").get()
-        self["RGB_ik"] = self.network.attr("RGB_ik").get()
-        self["transforms"] = [x.tolist() for x in self.network.attr("transforms").get()]
-        if self.network.attr("controls").elements():
-            shape_dict = dict()
-            for index, attr in enumerate(self.network.attr("controls").elements()):
-                shapes_network = self.network.attr(attr).outputs(type="network")
-                if shapes_network:
-                    shape_dict[index] = dict()
-                for shape_index, network in enumerate(sorted(shapes_network, key=lambda x: x.attr("order"))):
-                    shape_dict[index][shape_index] = dict()
-                    shape_dict[index][shape_index]["degree"] = 3
-                    shape_dict[index][shape_index]["form"] = 0
-                    shape_dict[index][shape_index]["form_id"] = 0
-                    shape_dict[index][shape_index]["points"] = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
-                    shape_dict[index][shape_index]["knots"] = []
-            self["ctl_shapes"] = shape_dict
-        else:
-            self["ctl_shapes"] = dict()
-
-    def to_network(self):
-        self.network.attr("oid").set(self["oid"])
-        self.network.attr("version").set(self["version"])
-        self.network.attr("comp_type").set(self["comp_type"])
-        self.network.attr("comp_name").set(self["comp_name"])
-        self.network.attr("comp_side").set(self["comp_side"])
-        self.network.attr("comp_index").set(self["comp_index"])
-        self.network.attr("ui_host").set(self["ui_host"])
-        self.network.attr("joint_rig").set(self["joint_rig"])
-        self.network.attr("joint_names").set(self["joint_names"])
-        self.network.attr("blend_joint").set(self["blend_joint"])
-        self.network.attr("support_joint").set(self["support_joint"])
-        self.network.attr("override_color").set(self["override_color"])
-        self.network.attr("use_RGB_color").set(self["use_RGB_color"])
-        self.network.attr("color_fk").set(self["color_fk"])
-        self.network.attr("color_ik").set(self["color_ik"])
-        self.network.attr("RGB_fk").set(self["RGB_fk"])
-        self.network.attr("RGB_ik").set(self["RGB_ik"])
-        [self.network.attr("transforms")[i].set(t)
-         if not self.network.attr("transforms")[i].inputs()
-         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
-         for i, t in enumerate(self["transforms"])]
-        shapes_network = self.network.attr("controls").outputs(type="network")
-        pm.delete(shapes_network) if shapes_network else None
-        for index in sorted(list(self["ctl_shapes"].keys())):
-            for order in sorted(list(self["ctl_shapes"][index].keys())):
-                data = self["ctl_shapes"][index][order]
-                network = pm.createNode("network")
-                attribute.addAttribute(network, "order", "long", order, keyable=False)
-                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
-                attribute.addAttribute(network, "points", "string", data["points"])
-                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
-                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
-                attribute.addAttribute(network, "knots", "string", data["knots"])
-
-    def guide(self):
-        self.network = pm.createNode("network")
-        n = self.network
-        attribute.addAttribute(n, "oid", "string", self["oid"])
-        attribute.addAttribute(n, "guide", "message")
-        attribute.addAttribute(n, "rig", "message")
-        attribute.addAttribute(n, "version", "string", self["version"])
-        attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
-        attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
-        attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
-                                   ["center", "left", "right"], keyable=False)
-        attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
-        attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
-        attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
-        attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
-        attribute.addAttribute(n, "blend_joint", "string", self["blend_joint"])
-        attribute.addAttribute(n, "support_joint", "string", self["support_joint"])
-        attribute.addAttribute(n, "override_color", "bool", self["override_color"], keyable=False)
-        attribute.addAttribute(n, "use_RGB_color", "bool", self["use_RGB_color"], keyable=False)
-        attribute.addAttribute(n, "color_fk", "long", self["color_fk"], minValue=0, maxValue=31, keyable=False)
-        attribute.addAttribute(n, "color_ik", "long", self["color_ik"], minValue=0, maxValue=31, keyable=False)
-        attribute.addColorAttribute(n, "RGB_fk", self["RGB_fk"], keyable=False)
-        attribute.addColorAttribute(n, "RGB_ik", self["RGB_ik"], keyable=False)
-        pm.addAttr(n, longName="transforms", type="matrix", multi=True)
-        pm.addAttr(n, longName="controls", type="message", multi=True)
-        pm.addAttr(n, longName="joints", type="message", multi=True)
-        for index in sorted(list(self["ctl_shapes"].keys())):
-            for order in sorted(list(self["ctl_shapes"][index].keys())):
-                data = self["ctl_shapes"][index][order]
-                network = pm.createNode("network")
-                attribute.addAttribute(network, "order", "long", order, keyable=False)
-                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
-                attribute.addAttribute(network, "points", "string", data["points"])
-                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
-                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
-                attribute.addAttribute(network, "knots", "string", data["knots"])
-
-    def update_guide(self):
-        guide = self.network.attr("guide").inputs(type="transform")
-        if not guide:
-            return
-
-        guides = get_component_guide(guide[0])
-        for guide in guides:
-            suffix_list = guide.nodeName().split("_")[2:]
-            suffix = "_".join(suffix_list)
-            name = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}"
-            guide.rename(f"{name}_{suffix}")
-        pm.select(guides[0])
-
-
-class Context(list):
-
-    def instance(self, name):
-        for ins in self:
-            if name == ins.name:
-                return ins
-        ins = Instance(name)
-        self.append(ins)
-        return ins
-
-
-class Instance(dict):
-
-    def __init__(self, name):
-        assert isinstance(name, str)
-
-        self._name = name
-
-    def __repr__(self):
-        return f"ins(\"{self.name}\")"
-
-    @property
-    def name(self):
-        return self._name
+        return index
 
 
 class PreScript:
@@ -998,7 +1194,7 @@ class AbstractAttributes(AbstractRig):
 class AbstractOperators(AbstractRig):
 
     def __init__(self, block):
-        assert issubclass(type(block), AbstractRig)
+        assert issubclass(type(block), AbstractBlock)
         super(AbstractOperators, self).__init__(block=block)
 
 
@@ -1011,9 +1207,8 @@ class AbstractConnection(AbstractRig):
 
 class AdditionalFunc:
 
-    def __init__(self, blueprint):
+    def __init__(self):
         self.msg = "Process Additional Func"
-        self.blueprint = blueprint
 
     def process(self, context):
         self.cleanup(context)
@@ -1022,7 +1217,9 @@ class AdditionalFunc:
         self.deformers(context)
 
     def cleanup(self, context):
+        blueprint = context.blueprint
 
+        # recursive
         def _connect_network(_block):
             _ins = context.instance(_block.ins_name)
             pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"))
@@ -1037,31 +1234,37 @@ class AdditionalFunc:
             for _b in _block["blocks"]:
                 _connect_network(_b)
 
-        _connect_network(self.blueprint)
+        #   ----
+        _connect_network(blueprint)
 
+        # recursive
         def _create_set(_block):
             _ins = context.instance(_block.ins_name)
             _top_ins = context.instance(_block.top.ins_name)
             if _ins.get("controls") is not None:
-                pm.sets(_top_ins["controller_set"], addElement=_ins["controls"])
+                pm.sets(_top_ins["controls_set"], addElement=_ins["controls"])
             if _ins.get("joints") is not None:
-                pm.sets(_top_ins["deformer_set"], addElement=_ins["joints"])
+                pm.sets(_top_ins["deformers_set"], addElement=_ins["joints"])
             for _b in _block["blocks"]:
                 _create_set(_b)
 
-        _create_set(self.blueprint)
+        #   ----
+        _create_set(blueprint)
 
-        def _cleanup_controller(_block):
+        # recursive
+        def _cleanup_controls(_block):
             if _block.parent:
                 _ins = context.instance(_block.ins_name)
                 _parent_ins = context.instance(_block.parent.ins_name)
-                pm.controller([x for x in _ins["controls"] if pm.controller(x, query=True, parent=True)],
-                              _parent_ins["controls"][-1], parent=True)
+                for x in _ins["controls"]:
+                    node.add_controller_tag(x, _parent_ins["controls"][-1])
             for _b in _block["blocks"]:
-                _cleanup_controller(_b)
+                _cleanup_controls(_b)
 
-        _cleanup_controller(self.blueprint)
+        #   ----
+        _cleanup_controls(blueprint)
 
+        # recursive
         def _cleanup_joints(_block):
             if _block.parent:
                 _top_ins = context.instance(_block.top.ins_name)
@@ -1080,10 +1283,12 @@ class AdditionalFunc:
             for _b in _block["blocks"]:
                 _cleanup_joints(_b)
 
-        _cleanup_joints(self.blueprint)
+        #   ----
+        _cleanup_joints(blueprint)
 
     def draw_controls_shape(self, context):
-        top_ins = context.instance(self.blueprint.top.ins_name)
+        blueprint = context.blueprint
+        top_ins = context.instance(blueprint.top.ins_name)
         for member in top_ins["controller_set"].members():
             for index, shape in enumerate(member.getShapes()):
                 shape.rename(f"{shape.getParent().nodeName()}{index}")
