@@ -25,6 +25,7 @@ from mgear.core import (
     transform,
     icon,
     node,
+    curve
 )
 
 # json
@@ -373,6 +374,7 @@ class AbstractBlock(dict):
                 _update(_block["blocks"][index], b_data)
 
         #   ----
+
         for key, value in kwargs.items():
             _d[key] = value
 
@@ -409,6 +411,17 @@ class AbstractBlock(dict):
             self._parent["blocks"].remove(self)
         self._parent = parent
         self._parent["blocks"].append(self)
+
+    @property
+    def ins_name(self):
+        if isinstance(self, RootBlock):
+            return f"{self['comp_type']}"
+        elif isinstance(self, SubBlock):
+            return f"{self['comp_name']}.{self['comp_side']}.{self['comp_index']}"
+
+    @property
+    def negate(self):
+        return True if {self['comp_side']} == "right" else False
 
     def from_network(self):
         # recursive
@@ -455,14 +468,196 @@ class AbstractBlock(dict):
 
         return root
 
-    def add_ctl(self):
-        pass
+    def get_name(self,
+                 typ: bool,
+                 description: str = "",
+                 extension: str = "") -> str:
+        root_block = self.top
+        if typ:
+            rule = root_block["joint_name_rule"]
+            padding = root_block["joint_index_padding"]
+            description_letter_case = root_block["joint_description_letter_case"]
+            side_set = [root_block["joint_left_name"], root_block["joint_right_name", root_block["joint_center_name"]]]
+            if not extension:
+                extension = root_block["joint_name_ext"]
+        else:
+            rule = root_block["ctl_name_rule"]
+            padding = root_block["ctl_index_padding"]
+            description_letter_case = root_block["ctl_description_letter_case"]
+            side_set = [root_block["ctl_left_name"], root_block["ctl_right_name"], root_block["ctl_center_name"]]
+            if not extension:
+                extension = root_block["ctl_name_ext"]
 
-    def add_jnt(self):
-        pass
+        if description_letter_case == "lower":
+            description = description.lower()
+        elif description_letter_case == "upper":
+            description = description.upper()
+        elif description_letter_case == "capitalize":
+            description = description.capitalize()
 
-    def add_root(self):
-        pass
+        index_filter = ["left", "right", "center"]
+        side = side_set[index_filter.index(self["comp_side"])]
+        name = rule.format(name=self["comp_name"],
+                           side=side,
+                           index=str(self["comp_index"]).zfill(padding),
+                           description=description,
+                           extension=extension)
+        name = "_".join([x for x in name.split("_") if x])
+        return name
+
+    def get_ctl_color(self, ik_fk):
+        color = None
+        if self["override_color"]:
+            if self["use_RGB_color"]:
+                if ik_fk == "ik":
+                    color = self["RGB_ik"]
+                else:
+                    color = self["RGB_fk"]
+            else:
+                if ik_fk == "ik":
+                    color = self["color_ik"]
+                else:
+                    color = self["RGB_fk"]
+        else:
+            if self.top["use_RGB_color"]:
+                if self["comp_side"] == "left":
+                    if ik_fk == "ik":
+                        color = self.top["l_RGB_ik"]
+                    else:
+                        color = self.top["l_RGB_fk"]
+                elif self["comp_side"] == "right":
+                    if ik_fk == "ik":
+                        color = self.top["r_RGB_ik"]
+                    else:
+                        color = self.top["r_RGB_fk"]
+                elif self["comp_side"] == "center":
+                    if ik_fk == "ik":
+                        color = self.top["c_RGB_ik"]
+                    else:
+                        color = self.top["c_RGB_fk"]
+            else:
+                if self["comp_side"] == "left":
+                    if ik_fk == "ik":
+                        color = self.top["l_color_ik"]
+                    else:
+                        color = self.top["l_color_fk"]
+                elif self["comp_side"] == "right":
+                    if ik_fk == "ik":
+                        color = self.top["r_color_ik"]
+                    else:
+                        color = self.top["r_color_fk"]
+                elif self["comp_side"] == "center":
+                    if ik_fk == "ik":
+                        color = self.top["c_color_ik"]
+                    else:
+                        color = self.top["c_color_fk"]
+        return color
+
+    def create_root(self,
+                    context: Context,
+                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+        instance = context.instance(self.ins_name)
+        parent_instance = context.instance(self.parent.ins_name)
+        parent = parent_instance["blocks"] \
+            if isinstance(self.parent, RootBlock) \
+            else parent_instance["ref"][self["ref_index"]]
+        root = primitive.addTransform(parent, self.get_name(False, extension="root"), m=m)
+        attribute.setNotKeyableAttributes(root)
+
+        instance["root"] = root
+        return root
+
+    def create_ctl(self,
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   m: pm.datatypes.Matrix,
+                   parent_ctl: None or pm.nodetypes.Transform,
+                   color: list or int,
+                   ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
+                   npo_attr: list = [],
+                   description: str = "",
+                   size: float = 1.0,
+                   shape: str = "cube") -> pm.nodetypes.Transform:
+        instance = context.instance(self.ins_name)
+        if not instance["controls"]:
+            instance["controls"] = list()
+        npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
+        ctl = icon.create(npo,
+                          self.get_name(False, description=description, extension=self.top["ctl_name_ext"]),
+                          m=m,
+                          color=color,
+                          icon=shape,
+                          w=size,
+                          h=size,
+                          d=size)
+        attribute.setKeyableAttributes(ctl, ctl_attr)
+        attribute.setKeyableAttributes(npo, npo_attr)
+
+        pm.controller(ctl)
+        if parent_ctl:
+            node.add_controller_tag(ctl, parent_ctl)
+        instance["controls"].append(ctl)
+        return ctl
+
+    def create_ref(self,
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   description: str,
+                   m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+        instance = context.instance(self.ins_name)
+        if not instance["refs"]:
+            instance["refs"] = list()
+        ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
+        attribute.setKeyableAttributes(ref, [])
+
+        instance["refs"].append(ref)
+        return ref
+
+    def create_jnt(self,
+                   context: Context,
+                   parent: pm.nodetypes.Transform or pm.nodetypes.Joint,
+                   description: str,
+                   ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
+        instance = context.instance(self.ins_name)
+        if not instance["joints"]:
+            instance["joints"] = list()
+
+        joint_name = self["joint_names"].split(",")[len(instance["joints"])]
+        name = joint_name \
+            if joint_name \
+            else self.get_name(True, description=description, extension=self.top["joint_name_ext"])
+
+        if self.top["connect_joints"] and pm.objExists(name):
+            jnt = pm.PyNode(name)
+            attribute.setKeyableAttributes(ref)
+            attribute.setRotOrder(ref, jnt.attr("rotateOrder").get(asString=True).upper())
+            pm.matchTransform(ref, jnt, position=True, rotation=True, scale=True)
+            attribute.setKeyableAttributes(ref, [])
+        else:
+            jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
+
+        m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), ref.attr("parentInverseMatrix"))
+        d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
+
+        i_m = m_m.attr("matrixSum").get().inverse()
+
+        pm.connectAttr(d_m.attr("outputTranslate"), jnt.attr("t"), force=True)
+        pm.connectAttr(d_m.attr("outputRotate"), jnt.attr("r"), force=True)
+        pm.connectAttr(d_m.attr("outputScale"), jnt.attr("s"), force=True)
+
+        jnt.attr("jointOrientX").set(jnt.attr("rx").get())
+        jnt.attr("jointOrientY").set(jnt.attr("ry").get())
+        jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
+
+        m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), i_m)
+        m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
+        d_m2 = node.createDecomposeMatrixNode(m_m2.attr("matrixSum"))
+
+        pm.connectAttr(d_m2.attr("outputRotate"), jnt.attr("r"), force=True)
+
+        attribute.setNotKeyableAttributes(jnt)
+        instance["joints"].append(jnt)
+        return jnt
 
 
 class SubBlock(AbstractBlock):
@@ -518,130 +713,6 @@ class SubBlock(AbstractBlock):
 
         # Joints Axis
         self["joints_axis"] = list()
-
-    @property
-    def ins_name(self):
-        return f"{self['comp_name']}.{self['comp_side']}.{self['comp_index']}"
-
-    def get_name(self,
-                 typ: bool,
-                 description: str = "",
-                 extension: str = "") -> str:
-        root_block = self.top
-        if typ:
-            rule = root_block["joint_name_rule"]
-            padding = root_block["joint_index_padding"]
-            description_letter_case = root_block["joint_description_letter_case"]
-            if not extension:
-                extension = root_block["joint_name_ext"]
-        else:
-            rule = root_block["ctl_name_rule"]
-            padding = root_block["ctl_index_padding"]
-            description_letter_case = root_block["ctl_description_letter_case"]
-            if not extension:
-                extension = root_block["ctl_name_ext"]
-
-        if description_letter_case == "lower":
-            description = description.lower()
-        elif description_letter_case == "upper":
-            description = description.upper()
-        elif description_letter_case == "capitalize":
-            description = description.capitalize()
-        rename = rule.format(name=self["comp_name"],
-                             side=self["comp_side"],
-                             index=str(self["index"]).zfill(padding),
-                             description=description,
-                             extension=extension)
-        name = "_".join([x for x in rename.split("_") if x])
-        return name
-
-    def create_root(self,
-                    context: Context,
-                    parent: None or pm.nodetypes.Transform,
-                    ref_m: pm.nodetypes.Transform,
-                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
-        instance = context.instance(self.ins_name)
-        root = primitive.addTransform(parent, self.get_name(False, extension="root"), m)
-        decompose = pm.createNode("decomposeMatrix")
-        pm.connectAttr(ref_m.attr("worldMatrix"), decompose.attr("inputMatrix"))
-        pm.connectAttr(decompose.attr("outputTranslate"), root.attr("translate"))
-        pm.connectAttr(decompose.attr("outputRotate"), root.attr("rotate"))
-        pm.connectAttr(decompose.attr("outputScale"), root.attr("scale"))
-        pm.connectAttr(decompose.attr("outputShear"), root.attr("shear"))
-        attribute.setNotKeyableAttributes(root)
-
-        instance["root"] = root
-        return root
-
-    def create_ctl(self,
-                   context: Context,
-                   parent: None or pm.nodetypes.Transform,
-                   m: pm.datatypes.Matrix,
-                   parent_ctl: None or pm.nodetypes.Transform,
-                   color: list or int,
-                   ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
-                   npo_attr: list = [],
-                   description: str = "",
-                   size: float = 1.0,
-                   shape: str = "cube") -> pm.nodetypes.Transform:
-        instance = context.instance(self.ins_name)
-        if not instance["controls"]:
-            instance["controls"] = list()
-        npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
-        ctl = icon.create(npo,
-                          self.get_name(False, description=description, extension=self.top["ctl_name_ext"]),
-                          m=m,
-                          color=color,
-                          icon=shape,
-                          w=size,
-                          h=size,
-                          d=size)
-        attribute.setKeyableAttributes(ctl, ctl_attr)
-        attribute.setKeyableAttributes(npo, npo_attr)
-
-        pm.controller(ctl)
-        if parent_ctl:
-            node.add_controller_tag(ctl, parent_ctl)
-        instance["controls"].append(ctl)
-        return ctl
-
-    def create_ref(self,
-                   context: Context,
-                   parent: None or pm.nodetypes.Transform,
-                   description: str,
-                   m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
-        instance = context.instance(self.ins_name)
-        if not instance["refs"]:
-            instance["refs"] = list()
-        ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
-        attribute.setNotKeyableAttributes(ref)
-
-        instance["refs"].append(ref)
-        return ref
-
-    def create_jnt(self,
-                   context: Context,
-                   parent: None or pm.nodetypes.Transform,
-                   description: str or None,
-                   extension: str or None,
-                   m: pm.datatypes.Matrix,
-                   replace_name: str = "",
-                   skin: bool = False) -> pm.nodetypes.Joint:
-        instance = context.instance(self.ins_name)
-        if not instance["joints"]:
-            instance["joints"] = list()
-
-        if replace_name:
-            name = replace_name
-        else:
-            extension = self.top["joint_name_ext"] if skin else extension
-            name = self.get_name(skin, description=description, extension=extension)
-        jnt = primitive.addJoint(parent, name, m=m)
-        attribute.setKeyableAttributes(jnt)
-
-        if skin:
-            instance["joints"].append(jnt)
-        return jnt
 
     def from_network(self):
         self["oid"] = self.network.attr("oid").get()
@@ -867,36 +938,6 @@ class RootBlock(AbstractBlock):
         # notes
         self["notes"] = ""
 
-    @property
-    def ins_name(self):
-        return f"{self['comp_type']}"
-
-    def control_name(self, name="", side="", index="", description="", extension=""):
-        index = str(index).zfill(self["ctl_index_padding"])
-        if self["ctl_description_letter_case"] == "lower":
-            description = description.lower()
-        elif self["ctl_description_letter_case"] == "upper":
-            description = description.upper()
-        elif self["ctl_description_letter_case"] == "capitalize":
-            description = description.capitalize()
-        rename = self["ctl_name_rule"].format(
-            name=name, side=side, index=index, description=description, extension=extension)
-        c_name = "_".join([x for x in rename.split("_") if x])
-        return c_name
-
-    def joint_name(self, name="", side="", index="", description="", extension=""):
-        index = str(index).zfill(self["joint_index_padding"])
-        if self["joint_description_letter_case"] == "lower":
-            description = description.lower()
-        elif self["joint_description_letter_case"] == "upper":
-            description = description.upper()
-        elif self["joint_description_letter_case"] == "capitalize":
-            description = description.capitalize()
-        rename = self["joint_name_rule"].format(
-            name=name, side=side, index=index, description=description, extension=extension)
-        j_name = "_".join([x for x in rename.split("_") if x])
-        return j_name
-
     def from_network(self):
         self["oid"] = self.network.attr("oid").get()
         self["name"] = self.network.attr("name").get()
@@ -1056,7 +1097,7 @@ class RootBlock(AbstractBlock):
         attribute.addAttribute(guide, "is_guide_root", "bool", keyable=False)
 
         # connection
-        pm.connectAttr(guide.message, n.guide, force=True)
+        pm.connectAttr(guide.attr("message"), n.attr("guide"), force=True)
 
         # recursive block
         sel = super(RootBlock, self).guide()
@@ -1145,7 +1186,7 @@ class PreScript:
 
 class AbstractRig:
 
-    def __init__(self, block):
+    def __init__(self, block: SubBlock):
         self._ins = None
         self._parent_ins = None
         self._top_ins = None
@@ -1235,6 +1276,7 @@ class AdditionalFunc:
                 _connect_network(_b)
 
         #   ----
+
         _connect_network(blueprint)
 
         # recursive
@@ -1249,6 +1291,7 @@ class AdditionalFunc:
                 _create_set(_b)
 
         #   ----
+
         _create_set(blueprint)
 
         # recursive
@@ -1262,6 +1305,7 @@ class AdditionalFunc:
                 _cleanup_controls(_b)
 
         #   ----
+
         _cleanup_controls(blueprint)
 
         # recursive
@@ -1284,14 +1328,17 @@ class AdditionalFunc:
                 _cleanup_joints(_b)
 
         #   ----
+
         _cleanup_joints(blueprint)
 
     def draw_controls_shape(self, context):
         blueprint = context.blueprint
-        top_ins = context.instance(blueprint.top.ins_name)
+        top_ins = context.instance(blueprint.ins_name)
         for member in top_ins["controller_set"].members():
             for index, shape in enumerate(member.getShapes()):
-                shape.rename(f"{shape.getParent().nodeName()}{index}")
+                shape.rename(f"temp{index}")
+            for index, shape in enumerate(member.getShapes()):
+                shape.rename(f"{shape.getParent().nodeName()}{index if index else str()}")
                 shape.attr("isHistoricallyInteresting").set(0)
 
     def skinning(self, context):

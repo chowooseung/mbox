@@ -12,7 +12,9 @@ from mbox.lego.lib import (
 )
 
 # mgear
-from mgear.core import primitive, icon
+from mgear.core import (
+    transform
+)
 
 
 class Objects(AbstractObjects):
@@ -22,25 +24,37 @@ class Objects(AbstractObjects):
 
     def process(self, context):
         super(Objects, self).process(context=context)
-        n_kwargs = {"name": self.block["comp_name"], "side": self.block["comp_side"], "index": self.block["comp_index"]}
-        root_name = self.block.top.controls_name(**n_kwargs, description="", extension="root")
-        npo_name = self.block.top.controls_name(**n_kwargs, description="", extension="npo")
-        con_name = self.block.top.controls_name(**n_kwargs, description="", extension=self.block.top["ctl_name_ext"])
-        ref_name = self.block.top.controls_name(**n_kwargs, description="", extension="ref")
 
-        root_m = self.parent_ins["ref"][self.block["controls_ref_index"]].getMatrix(worldSpace=True)
-        m = pm.datatypes.Matrix(self.block["transforms"][0])
+        # matrix
+        if self.block["neutral_rotation"]:
+            m = transform.getTransformFromPos(pm.datatypes.Matrix(self.block["transforms"][0]).translate)
+        else:
+            if self.block["mirror_behaviour"] and self.block.negate:
+                scl = [1, 1, -1]
+            else:
+                scl = [1, 1, 1]
+            m = transform.setMatrixScale(pm.datatypes.Matrix(self.block["transforms"][0]), scl)
+
+        # get ctl color
+        ik_color = self.block.get_ctl_color("ik")
 
         # create
-        root = primitive.addTransform(self.top_ins["blocks"], root_name, root_m)
-        npo = primitive.addTransform(root, npo_name, m)
-        con = icon.circle(npo, con_name, m=m)
-        ref = primitive.addTransform(con, ref_name, m)
-
-        self.ins["root"] = root  # block root. use build connect network
-        self.ins["controls"] = [con]  # block controls. use build connect controllers
-        self.ins["refs"] = [ref]  # block reference transform. sub block parent matrix
-        # self.ins["joints"] = [jnt] # block joint. use build connect joint
+        root = self.block.create_root(context=context, m=m)
+        ctl = self.block.create_ctl(context=context,
+                                    parent=root,
+                                    m=m,
+                                    parent_ctl=None,
+                                    color=ik_color,
+                                    shape=self.block["icon"],
+                                    size=self.block["ctl_size"])
+        ref = self.block.create_ref(context=context,
+                                    parent=ctl,
+                                    m=m)
+        if not self.block["leaf_joint"]:
+            jnt = self.block.create_jnt(context=context,
+                                        parent=self.parent_ins["joint"][self.block["ref_index"]],
+                                        description="",
+                                        ref=ref)
 
 
 class Attributes(AbstractAttributes):

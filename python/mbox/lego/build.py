@@ -47,7 +47,9 @@ def mirror_guide():
 
 
 def rig(blueprint: AbstractBlock or None) -> Context:
+    print("rig")
     if not blueprint:
+        print("utils", utils.select_guide())
         blueprint = blueprint_from_guide(utils.select_guide())
 
     context = Context(blueprint)
@@ -87,12 +89,12 @@ def rig(blueprint: AbstractBlock or None) -> Context:
     logger.debug("mbox build system")
     logger.debug("counting ... [???/???]")
 
-    total_count = 0
-    total_count += len(pre_scripts) + len(post_scripts)
-    total_count += len(objects) + len(attributes) + len(operators) + len(connection) + len(additional_func)
+    total = 0
+    total += len(pre_scripts) + len(post_scripts)
+    total += len(objects) + len(attributes) + len(operators) + len(connection) + len(additional_func)
     count = 0
 
-    logger.debug(f"total count : [{count}/{total_count}]")
+    logger.debug(f"total count : [{count}/{total}]")
 
     process = [pre_scripts, objects, attributes, operators, connection, additional_func, post_scripts]
     stop_point = ["prescripts", "objects", "attributes", "operators", "connection", "additionalFunc", "postScripts"]
@@ -100,7 +102,7 @@ def rig(blueprint: AbstractBlock or None) -> Context:
         for runner in step:
             count += 1
             runner.process(context)
-            logger.debug("{0:<30}".format(runner.msg) + f" [{count}/{total_count}]")
+            logger.debug("{0:<30}".format(runner.msg) + f" [{count}/{total}]")
         if stop_point[index] == blueprint["step"]:
             logger.debug(f"{stop_point[index]} Stop")
             break
