@@ -476,7 +476,7 @@ class AbstractBlock(dict):
             rule = root_block["joint_name_rule"]
             padding = root_block["joint_index_padding"]
             description_letter_case = root_block["joint_description_letter_case"]
-            side_set = [root_block["joint_left_name"], root_block["joint_right_name", root_block["joint_center_name"]]]
+            side_set = [root_block["joint_left_name"], root_block["joint_right_name"], root_block["joint_center_name"]]
             if not extension:
                 extension = root_block["joint_name_ext"]
         else:
