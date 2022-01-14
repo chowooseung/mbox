@@ -29,17 +29,23 @@ class Objects(AbstractObjects):
         joints = primitive.addTransform(root, "joints")
 
         world_root = primitive.addTransform(blocks, "world_root")
-        world_npo = primitive.addTransform(world_root, "world_npo")
-        world_con = icon.create(world_npo, "world_con")
-        world_ref = primitive.addTransform(world_con, "world_ref")
+        world_ctl = self.block.create_ctl(context=context,
+                                          parent=world_root,
+                                          m=pm.datatypes.Matrix(),
+                                          parent_ctl=None,
+                                          color=(0, 0, 0))
+        world_ref = self.block.create_ref(context=context,
+                                          parent=world_ctl,
+                                          m=pm.datatypes.Matrix())
+        if False:
+            world_jnt = self.block.create_jnt(context=context,
+                                              parent=joints,
+                                              ref=world_ref)
 
         self.ins["root"] = root
         self.ins["geo_root"] = geo
         self.ins["blocks_root"] = blocks
         self.ins["joints_root"] = joints
-        self.ins["ref"] = [world_ref]
-        self.ins["joints"] = [joints]  # TODO: if world ctl joint True, edit line
-        self.ins["controls"] = [world_con]
         self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set")
         self.ins["geo_set"] = pm.sets(name="geo_set")
         self.ins["controller_set"] = pm.sets(name="controller_set")
@@ -64,7 +70,11 @@ class Attributes(AbstractAttributes):
         attribute.addAttribute(self.ins["root"], "joints_vis", "bool", False)
         attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)
         attribute.addAttribute(self.ins["root"], "is_rig_root", "bool", keyable=False)
-        [attribute.setKeyableAttributes(con) for con in self.ins["controls"]]
+
+        attribute.lockAttribute(self.ins["root"])
+        attribute.lockAttribute(self.ins["geo_root"])
+        attribute.lockAttribute(self.ins["blocks_root"])
+        attribute.lockAttribute(self.ins["joints_root"])
 
 
 class Operators(AbstractOperators):
@@ -88,15 +98,11 @@ class Connection(AbstractConnection):
         pm.connectAttr(self.ins["root"].attr("joints_vis"), self.ins["joints_root"].attr("v"))
         tag = pm.controller(self.ins["controls"][0], query=True)[0]
         condition = pm.createNode("condition")
-        pm.connectAttr(self.ins["root"].controls_mouseover, condition.firstTerm)
-        condition.secondTerm.set(1)
-        condition.operation.set(0)
-        condition.colorIfTrueR.set(2)
-        condition.colorIfFalseR.set(0)
-        pm.connectAttr(condition.outColorR, tag.visibilityMode)
+        pm.connectAttr(self.ins["root"].attr("controls_mouseover"), condition.attr("firstTerm"))
+        condition.attr("secondTerm").set(1)
+        condition.attr("operation").set(0)
+        condition.attr("colorIfTrueR").set(2)
+        condition.attr("colorIfFalseR").set(0)
+        pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
 
-        attrs = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "v"]
-        targets = [self.ins["root"], self.ins["geo_rot"], self.ins["blocks_root"], self.ins["joints_root"]]
-        [attribute.lockAttribute(node, attrs) for node in targets]
-        [attribute.setNotKeyableAttributes(node, attrs) for node in targets]
 
