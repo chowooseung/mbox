@@ -71,7 +71,7 @@ def rig(blueprint: AbstractBlock or None) -> Context:
 
     get_build_step(blueprint)
 
-    for path in blueprint["scripts"]:
+    for path in blueprint["pre_custom_step"] + blueprint["post_custom_step"]:
         name = os.path.splitext(os.path.basename(path))[0]
         spec = importlib.util.spec_from_file_location(name, path)
         mod = importlib.util.module_from_spec(spec)
