@@ -557,7 +557,7 @@ class AbstractBlock(dict):
                     m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.ins_name)
         parent_instance = context.instance(self.parent.ins_name)
-        parent = parent_instance["blocks"] \
+        parent = parent_instance["blocks_root"] \
             if isinstance(self.parent, RootBlock) \
             else parent_instance["ref"][self["ref_index"]]
         root = primitive.addTransform(parent, self.get_name(False, extension="root"), m=m)
