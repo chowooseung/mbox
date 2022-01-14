@@ -1087,6 +1087,8 @@ class RootBlock(AbstractBlock):
         attribute.addColorAttribute(n, "c_RGB_fk", self["c_RGB_fk"], keyable=False)
         attribute.addColorAttribute(n, "c_RGB_ik", self["c_RGB_ik"], keyable=False)
         attribute.addAttribute(n, "notes", "string", str(self["notes"]))
+        pm.addAttr(n, longName="controls", type="message", multi=True)
+        pm.addAttr(n, longName="joints", type="message", multi=True)
 
         guide = primitive.addTransform(None, "guide", m=pm.datatypes.Matrix())
 
