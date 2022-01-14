@@ -49,6 +49,7 @@ class Objects(AbstractObjects):
                                     size=self.block["ctl_size"])
         ref = self.block.create_ref(context=context,
                                     parent=ctl,
+                                    description="",
                                     m=m)
         if not self.block["leaf_joint"]:
             jnt = self.block.create_jnt(context=context,
