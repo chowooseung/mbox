@@ -592,7 +592,11 @@ class AbstractBlock(dict):
         attribute.setKeyableAttributes(ctl, ctl_attr)
         attribute.setKeyableAttributes(npo, npo_attr)
 
-        pm.controller(ctl)
+        tag = pm.controller(ctl)
+        top_instance = context.instance(self.top.ins_name)
+        condition = top_instance["root"].attr("controls_mouseover").outputs(type="condition")[0]
+        pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
+
         if parent_ctl:
             node.add_controller_tag(ctl, parent_ctl)
         instance["controls"].append(ctl)
@@ -1264,15 +1268,15 @@ class AdditionalFunc:
         # recursive
         def _connect_network(_block):
             _ins = context.instance(_block.ins_name)
-            pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"))
+            pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
             if _block.parent:
-                pm.connectAttr(_block.parent.network.attr("affects")[0], _block.network.attr("affectedBy")[0])
+                pm.connectAttr(_block.parent.network.attr("affects")[0], _block.network.attr("affectedBy")[0], force=True)
             if _ins.get("controls"):
                 for index, con in enumerate(_ins["controls"]):
-                    pm.connectAttr(con.attr("message"), _block.network.attr("controls")[index])
+                    pm.connectAttr(con.attr("message"), _block.network.attr("controls")[index], force=True)
             if _ins.get("joints"):
                 for index, jnt in enumerate(_ins["joints"]):
-                    pm.connectAttr(jnt.attr("message"), _block.network.attr("joints")[index])
+                    pm.connectAttr(jnt.attr("message"), _block.network.attr("joints")[index], force=True)
             for _b in _block["blocks"]:
                 _connect_network(_b)
 

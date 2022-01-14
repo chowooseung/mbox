@@ -23,16 +23,17 @@ class Objects(AbstractObjects):
     def process(self, context):
         super(Objects, self).process(context=context)
 
-        root = primitive.addTransform(None, self.block["name"])
-        geo = primitive.addTransform(root, "geo")
-        blocks = primitive.addTransform(root, "blocks")
-        joints = primitive.addTransform(root, "joints")
+        m = pm.datatypes.Matrix()
+        root = primitive.addTransform(None, self.block["name"], m=m)
+        geo = primitive.addTransform(root, "geo", m=m)
+        blocks = primitive.addTransform(root, "blocks", m=m)
+        joints = primitive.addTransform(root, "joints", m=m)
 
-        world_root = primitive.addTransform(blocks, "world_root")
-        world_npo = primitive.addTransform(world_root, "world_npo")
-        world_ctl = icon.create(world_npo, "world_ctl", icon="circle")
+        world_root = primitive.addTransform(blocks, "world_root", m=m)
+        world_npo = primitive.addTransform(world_root, "world_npo", m=m)
+        world_ctl = icon.create(world_npo, "world_ctl", icon="circle", m=m)
         pm.controller(world_ctl)
-        world_ref = primitive.addTransform(world_ctl, "world_ref")
+        world_ref = primitive.addTransform(world_ctl, "world_ref", m=m)
 
         self.ins["root"] = root
         self.ins["geo_root"] = geo
@@ -41,10 +42,10 @@ class Objects(AbstractObjects):
         self.ins["controls"] = [world_ctl]
         self.ins["refs"] = [world_ref]
         self.ins["joints"] = [joints]
-        self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set")
-        self.ins["geo_set"] = pm.sets(name="geo_set")
-        self.ins["controls_set"] = pm.sets(name="controls_set")
-        self.ins["deformer_set"] = pm.sets(name="deformer_set")
+        self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set", empty=True)
+        self.ins["geo_set"] = pm.sets(name="geo_set", empty=True)
+        self.ins["controls_set"] = pm.sets(name="controls_set", empty=True)
+        self.ins["deformer_set"] = pm.sets(name="deformer_set", empty=True)
         pm.sets(self.ins["root_set"], addElement=(self.ins["geo_set"],
                                                   self.ins["controls_set"],
                                                   self.ins["deformer_set"]))
