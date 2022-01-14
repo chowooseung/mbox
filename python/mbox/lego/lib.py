@@ -1319,7 +1319,8 @@ class AdditionalFunc:
                         _label = f"{_block['comp_name']}_center{_block['comp_index']}_{_index}" \
                             if _block["comp_side"] == "center" \
                             else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
-                        _jnt.attr("side").set(_block["comp_side"])
+
+                        _jnt.attr("side").set(side_set[_block["comp_side"]])
                         _jnt.attr("type").set("Other")
                         _jnt.attr("otherType").set(_label)
                         _jnt.attr("radius").set(0.5)
@@ -1329,7 +1330,7 @@ class AdditionalFunc:
                 _cleanup_joints(_b)
 
         #   ----
-
+        side_set = {"center": 0, "left": 1, "right": 2}
         _cleanup_joints(blueprint)
 
     def draw_controls_shape(self, context):
