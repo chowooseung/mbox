@@ -83,9 +83,9 @@ class Connection(AbstractConnection):
 
     def process(self, context):
         super(Connection, self).process(context=context)
-        pm.connectAttr(self.ins["root"].controls_vis, self.ins["blocks_root"].v)
-        pm.connectAttr(self.ins["root"].controls_on_playback_vis, self.ins["blocks_root"].hideOnPlayback)
-        pm.connectAttr(self.ins["root"].joint_vis, self.ins["joints_root"].v)
+        pm.connectAttr(self.ins["root"].attr("controls_vis"), self.ins["blocks_root"].attr("v"))
+        pm.connectAttr(self.ins["root"].attr("controls_on_playback_vis"), self.ins["blocks_root"].attr("hideOnPlayback"))
+        pm.connectAttr(self.ins["root"].attr("joints_vis"), self.ins["joints_root"].attr("v"))
         tag = pm.controller(self.ins["controls"][0], query=True)[0]
         condition = pm.createNode("condition")
         pm.connectAttr(self.ins["root"].controls_mouseover, condition.firstTerm)
