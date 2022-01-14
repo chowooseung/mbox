@@ -17,7 +17,8 @@ from mbox.lego.lib import (
     AdditionalFunc,
     PreScript,
     PostScript,
-    logger
+    logger,
+    log_window
 )
 from mbox.lego import utils
 
@@ -84,6 +85,7 @@ def rig(blueprint: AbstractBlock or None) -> Context:
             elif issubclass(type(cls), PostScript):
                 post_scripts.append(ins)
 
+    log_window()
     logger.debug("mbox build system")
     logger.debug("counting ... [???/???]")
 
