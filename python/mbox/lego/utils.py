@@ -64,8 +64,8 @@ def select_guide() -> pm.nodetypes.Transform:
     msg = "selected node is not mbox guide node"
     selected = pm.selected(type="transform")
     assert len(selected) > 0, msg
-    assert selected[0].hasAttr("is_guide") is False, msg
-    assert selected[0].hasAttr("is_guide_component") is False, msg
-    assert selected[0].hasAttr("is_guide_root") is False, msg
+    assert selected[0].hasAttr("is_guide") is True \
+           and selected[0].hasAttr("is_guide_component") is True \
+           and selected[0].hasAttr("is_guide_root") is True, msg
     return selected[0]
 
