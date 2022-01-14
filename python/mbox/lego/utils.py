@@ -9,11 +9,6 @@ from types import ModuleType
 # maya
 import pymel.core as pm
 
-# mbox
-from mbox.lego.lib import (
-    RootBlock,
-    SubBlock
-)
 
 # mbox.__init__.py
 MBOX_ROOT = os.getenv("MBOX_ROOT")
@@ -56,7 +51,7 @@ def load_block_module(component: str, guide: bool) -> ModuleType:
     return mod
 
 
-def load_build_step(block: RootBlock or SubBlock) -> tuple:
+def load_build_step(block) -> tuple:
     mod = load_block_module(block["component"], guide=False)
     objects = mod.Objects(block)
     attributes = mod.Attributes(block)

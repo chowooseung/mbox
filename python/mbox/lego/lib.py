@@ -25,7 +25,6 @@ from mgear.core import (
     transform,
     icon,
     node,
-    curve
 )
 
 # json
@@ -660,6 +659,196 @@ class AbstractBlock(dict):
         return jnt
 
 
+class SubBlock(AbstractBlock):
+
+    def __init__(self, parent=None):
+        super(SubBlock, self).__init__(parent=parent)
+
+        # block version
+        self["version"] = None
+
+        # what kind of block
+        self["comp_type"] = None
+
+        # module name # arm... leg... spine...
+        self["comp_name"] = None
+
+        # "center", "left", "right"
+        self["comp_side"] = "center"
+
+        # index
+        self["comp_index"] = 0
+
+        # ui host
+        self["ui_host"] = str()
+
+        # True - create joint / False
+        self["joint_rig"] = True
+        self["joint_names"] = str()
+
+        # gimmick joint
+        self["blend_joint"] = str()
+        self["support_joint"] = str()
+
+        # ctl color
+        self["override_color"] = False
+        self["use_RGB_color"] = False
+        self["color_fk"] = 6
+        self["color_ik"] = 18
+        self["RGB_fk"] = (0.0, 0.0, 1.0)
+        self["RGB_ik"] = (0.0, 0.25, 1.0)
+
+        # primary axis, secondary axis, offset XYZ
+        # self["joint_settings"] = [["x", "y", (0, 0, 0)], ]
+
+        # guide transform matrix list
+        # self["transforms"] = list()
+
+        # parent node name
+        self["ref_index"] = -1
+
+        # ctl shapes
+        self["ctl_shapes"] = dict()
+
+        # Joints Axis
+        self["joints_axis"] = list()
+
+    def from_network(self):
+        self["oid"] = self.network.attr("oid").get()
+        self["version"] = self.network.attr("version").get()
+        self["comp_type"] = self.network.attr("comp_type").get()
+        self["comp_name"] = self.network.attr("comp_name").get()
+        self["comp_side"] = self.network.attr("comp_side").get(asString=True)
+        self["comp_index"] = self.network.attr("comp_index").get()
+        self["ui_host"] = self.network.attr("ui_host").get()
+        self["joint_rig"] = self.network.attr("joint_rig").get()
+        self["joint_names"] = self.network.attr("joint_names").get()
+        self["blend_joint"] = self.network.attr("blend_joint").get()
+        self["support_joint"] = self.network.attr("support_joint").get()
+        self["use_RGB_color"] = self.network.attr("use_RGB_color").get()
+        self["override_color"] = self.network.attr("override_color").get()
+        self["color_fk"] = self.network.attr("color_fk").get()
+        self["color_ik"] = self.network.attr("color_ik").get()
+        self["RGB_fk"] = self.network.attr("RGB_fk").get()
+        self["RGB_ik"] = self.network.attr("RGB_ik").get()
+        self["transforms"] = [x.tolist() for x in self.network.attr("transforms").get()]
+        # TODO: control shapes curve info
+        if self.network.attr("controls").elements():
+            shape_dict = dict()
+            for index, attr in enumerate(self.network.attr("controls").elements()):
+                shapes_network = self.network.attr(attr).outputs(type="network")
+                if shapes_network:
+                    shape_dict[index] = dict()
+                for shape_index, network in enumerate(sorted(shapes_network, key=lambda x: x.attr("order"))):
+                    shape_dict[index][shape_index] = dict()
+                    shape_dict[index][shape_index]["degree"] = 3
+                    shape_dict[index][shape_index]["form"] = 0
+                    shape_dict[index][shape_index]["form_id"] = 0
+                    shape_dict[index][shape_index]["points"] = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
+                    shape_dict[index][shape_index]["knots"] = []
+            self["ctl_shapes"] = shape_dict
+        else:
+            self["ctl_shapes"] = dict()
+        # TODO: specify joints axis
+        self["joints_axis"] = [x.tolist() if x else list() for x in self.network.attr("joints_axis").get().split(",")]
+
+    def to_network(self):
+        self.network.attr("oid").set(self["oid"])
+        self.network.attr("version").set(self["version"])
+        self.network.attr("comp_type").set(self["comp_type"])
+        self.network.attr("comp_name").set(self["comp_name"])
+        self.network.attr("comp_side").set(self["comp_side"])
+        self.network.attr("comp_index").set(self["comp_index"])
+        self.network.attr("ui_host").set(self["ui_host"])
+        self.network.attr("joint_rig").set(self["joint_rig"])
+        self.network.attr("joint_names").set(self["joint_names"])
+        self.network.attr("blend_joint").set(self["blend_joint"])
+        self.network.attr("support_joint").set(self["support_joint"])
+        self.network.attr("override_color").set(self["override_color"])
+        self.network.attr("use_RGB_color").set(self["use_RGB_color"])
+        self.network.attr("color_fk").set(self["color_fk"])
+        self.network.attr("color_ik").set(self["color_ik"])
+        self.network.attr("RGB_fk").set(self["RGB_fk"])
+        self.network.attr("RGB_ik").set(self["RGB_ik"])
+        [self.network.attr("transforms")[i].set(t)
+         if not self.network.attr("transforms")[i].inputs()
+         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
+         for i, t in enumerate(self["transforms"])]
+        # TODO: control shapes curve info
+        shapes_network = self.network.attr("controls").outputs(type="network")
+        pm.delete(shapes_network) if shapes_network else None
+        for index in sorted(list(self["ctl_shapes"].keys())):
+            for order in sorted(list(self["ctl_shapes"][index].keys())):
+                data = self["ctl_shapes"][index][order]
+                network = pm.createNode("network")
+                attribute.addAttribute(network, "order", "long", order, keyable=False)
+                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
+                attribute.addAttribute(network, "points", "string", data["points"])
+                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
+                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
+                attribute.addAttribute(network, "knots", "string", data["knots"])
+        # TODO: specify joints axis
+        joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
+        joints_axis = ",".join(joints_axis)
+        self.network.attr("joints_axis").set(joints_axis)
+
+    def guide(self):
+        self.network = pm.createNode("network")
+        n = self.network
+        attribute.addAttribute(n, "oid", "string", self["oid"])
+        attribute.addAttribute(n, "guide", "message")
+        attribute.addAttribute(n, "rig", "message")
+        attribute.addAttribute(n, "version", "string", self["version"])
+        attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
+        attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
+        attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
+                                   ["center", "left", "right"], keyable=False)
+        attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
+        attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
+        attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
+        attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
+        attribute.addAttribute(n, "blend_joint", "string", self["blend_joint"])
+        attribute.addAttribute(n, "support_joint", "string", self["support_joint"])
+        attribute.addAttribute(n, "override_color", "bool", self["override_color"], keyable=False)
+        attribute.addAttribute(n, "use_RGB_color", "bool", self["use_RGB_color"], keyable=False)
+        attribute.addAttribute(n, "color_fk", "long", self["color_fk"], minValue=0, maxValue=31, keyable=False)
+        attribute.addAttribute(n, "color_ik", "long", self["color_ik"], minValue=0, maxValue=31, keyable=False)
+        attribute.addColorAttribute(n, "RGB_fk", self["RGB_fk"], keyable=False)
+        attribute.addColorAttribute(n, "RGB_ik", self["RGB_ik"], keyable=False)
+        pm.addAttr(n, longName="transforms", type="matrix", multi=True)
+        pm.addAttr(n, longName="controls", type="message", multi=True)
+        pm.addAttr(n, longName="joints", type="message", multi=True)
+        # TODO: control shapes curve info
+        for index in sorted(list(self["ctl_shapes"].keys())):
+            for order in sorted(list(self["ctl_shapes"][index].keys())):
+                data = self["ctl_shapes"][index][order]
+                network = pm.createNode("network")
+                attribute.addAttribute(network, "order", "long", order, keyable=False)
+                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
+                attribute.addAttribute(network, "points", "string", data["points"])
+                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
+                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
+                attribute.addAttribute(network, "knots", "string", data["knots"])
+        # TODO: specify joints axis
+        joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
+        joints_axis = ",".join(joints_axis)
+        attribute.addAttribute(n, "joints_axis", "string", joints_axis)
+
+    def update_guide(self):
+        """update guide naming"""
+        guide = self.network.attr("guide").inputs(type="transform")
+        if not guide:
+            return
+
+        guides = get_component_guide(guide[0])
+        for guide in guides:
+            suffix_list = guide.nodeName().split("_")[2:]
+            suffix = "_".join(suffix_list)
+            name = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}"
+            guide.rename(f"{name}_{suffix}")
+        pm.select(guides[0])
+
+
 class RootBlock(AbstractBlock):
 
     def __init__(self):
@@ -986,196 +1175,6 @@ class RootBlock(AbstractBlock):
             index += 1
 
         return index
-
-
-class SubBlock(AbstractBlock):
-
-    def __init__(self, parent=None):
-        super(SubBlock, self).__init__(parent=parent)
-
-        # block version
-        self["version"] = None
-
-        # what kind of block
-        self["comp_type"] = None
-
-        # module name # arm... leg... spine...
-        self["comp_name"] = None
-
-        # "center", "left", "right"
-        self["comp_side"] = "center"
-
-        # index
-        self["comp_index"] = 0
-
-        # ui host
-        self["ui_host"] = str()
-
-        # True - create joint / False
-        self["joint_rig"] = True
-        self["joint_names"] = str()
-
-        # gimmick joint
-        self["blend_joint"] = str()
-        self["support_joint"] = str()
-
-        # ctl color
-        self["override_color"] = False
-        self["use_RGB_color"] = False
-        self["color_fk"] = 6
-        self["color_ik"] = 18
-        self["RGB_fk"] = (0.0, 0.0, 1.0)
-        self["RGB_ik"] = (0.0, 0.25, 1.0)
-
-        # primary axis, secondary axis, offset XYZ
-        # self["joint_settings"] = [["x", "y", (0, 0, 0)], ]
-
-        # guide transform matrix list
-        # self["transforms"] = list()
-
-        # parent node name
-        self["ref_index"] = -1
-
-        # ctl shapes
-        self["ctl_shapes"] = dict()
-
-        # Joints Axis
-        self["joints_axis"] = list()
-
-    def from_network(self):
-        self["oid"] = self.network.attr("oid").get()
-        self["version"] = self.network.attr("version").get()
-        self["comp_type"] = self.network.attr("comp_type").get()
-        self["comp_name"] = self.network.attr("comp_name").get()
-        self["comp_side"] = self.network.attr("comp_side").get(asString=True)
-        self["comp_index"] = self.network.attr("comp_index").get()
-        self["ui_host"] = self.network.attr("ui_host").get()
-        self["joint_rig"] = self.network.attr("joint_rig").get()
-        self["joint_names"] = self.network.attr("joint_names").get()
-        self["blend_joint"] = self.network.attr("blend_joint").get()
-        self["support_joint"] = self.network.attr("support_joint").get()
-        self["use_RGB_color"] = self.network.attr("use_RGB_color").get()
-        self["override_color"] = self.network.attr("override_color").get()
-        self["color_fk"] = self.network.attr("color_fk").get()
-        self["color_ik"] = self.network.attr("color_ik").get()
-        self["RGB_fk"] = self.network.attr("RGB_fk").get()
-        self["RGB_ik"] = self.network.attr("RGB_ik").get()
-        self["transforms"] = [x.tolist() for x in self.network.attr("transforms").get()]
-        # TODO: control shapes curve info
-        if self.network.attr("controls").elements():
-            shape_dict = dict()
-            for index, attr in enumerate(self.network.attr("controls").elements()):
-                shapes_network = self.network.attr(attr).outputs(type="network")
-                if shapes_network:
-                    shape_dict[index] = dict()
-                for shape_index, network in enumerate(sorted(shapes_network, key=lambda x: x.attr("order"))):
-                    shape_dict[index][shape_index] = dict()
-                    shape_dict[index][shape_index]["degree"] = 3
-                    shape_dict[index][shape_index]["form"] = 0
-                    shape_dict[index][shape_index]["form_id"] = 0
-                    shape_dict[index][shape_index]["points"] = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
-                    shape_dict[index][shape_index]["knots"] = []
-            self["ctl_shapes"] = shape_dict
-        else:
-            self["ctl_shapes"] = dict()
-        # TODO: specify joints axis
-        self["joints_axis"] = [x.tolist() if x else list() for x in self.network.attr("joints_axis").get().split(",")]
-
-    def to_network(self):
-        self.network.attr("oid").set(self["oid"])
-        self.network.attr("version").set(self["version"])
-        self.network.attr("comp_type").set(self["comp_type"])
-        self.network.attr("comp_name").set(self["comp_name"])
-        self.network.attr("comp_side").set(self["comp_side"])
-        self.network.attr("comp_index").set(self["comp_index"])
-        self.network.attr("ui_host").set(self["ui_host"])
-        self.network.attr("joint_rig").set(self["joint_rig"])
-        self.network.attr("joint_names").set(self["joint_names"])
-        self.network.attr("blend_joint").set(self["blend_joint"])
-        self.network.attr("support_joint").set(self["support_joint"])
-        self.network.attr("override_color").set(self["override_color"])
-        self.network.attr("use_RGB_color").set(self["use_RGB_color"])
-        self.network.attr("color_fk").set(self["color_fk"])
-        self.network.attr("color_ik").set(self["color_ik"])
-        self.network.attr("RGB_fk").set(self["RGB_fk"])
-        self.network.attr("RGB_ik").set(self["RGB_ik"])
-        [self.network.attr("transforms")[i].set(t)
-         if not self.network.attr("transforms")[i].inputs()
-         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
-         for i, t in enumerate(self["transforms"])]
-        # TODO: control shapes curve info
-        shapes_network = self.network.attr("controls").outputs(type="network")
-        pm.delete(shapes_network) if shapes_network else None
-        for index in sorted(list(self["ctl_shapes"].keys())):
-            for order in sorted(list(self["ctl_shapes"][index].keys())):
-                data = self["ctl_shapes"][index][order]
-                network = pm.createNode("network")
-                attribute.addAttribute(network, "order", "long", order, keyable=False)
-                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
-                attribute.addAttribute(network, "points", "string", data["points"])
-                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
-                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
-                attribute.addAttribute(network, "knots", "string", data["knots"])
-        # TODO: specify joints axis
-        joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
-        joints_axis = ",".join(joints_axis)
-        self.network.attr("joints_axis").set(joints_axis)
-
-    def guide(self):
-        self.network = pm.createNode("network")
-        n = self.network
-        attribute.addAttribute(n, "oid", "string", self["oid"])
-        attribute.addAttribute(n, "guide", "message")
-        attribute.addAttribute(n, "rig", "message")
-        attribute.addAttribute(n, "version", "string", self["version"])
-        attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
-        attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
-        attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
-                                   ["center", "left", "right"], keyable=False)
-        attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
-        attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
-        attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
-        attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
-        attribute.addAttribute(n, "blend_joint", "string", self["blend_joint"])
-        attribute.addAttribute(n, "support_joint", "string", self["support_joint"])
-        attribute.addAttribute(n, "override_color", "bool", self["override_color"], keyable=False)
-        attribute.addAttribute(n, "use_RGB_color", "bool", self["use_RGB_color"], keyable=False)
-        attribute.addAttribute(n, "color_fk", "long", self["color_fk"], minValue=0, maxValue=31, keyable=False)
-        attribute.addAttribute(n, "color_ik", "long", self["color_ik"], minValue=0, maxValue=31, keyable=False)
-        attribute.addColorAttribute(n, "RGB_fk", self["RGB_fk"], keyable=False)
-        attribute.addColorAttribute(n, "RGB_ik", self["RGB_ik"], keyable=False)
-        pm.addAttr(n, longName="transforms", type="matrix", multi=True)
-        pm.addAttr(n, longName="controls", type="message", multi=True)
-        pm.addAttr(n, longName="joints", type="message", multi=True)
-        # TODO: control shapes curve info
-        for index in sorted(list(self["ctl_shapes"].keys())):
-            for order in sorted(list(self["ctl_shapes"][index].keys())):
-                data = self["ctl_shapes"][index][order]
-                network = pm.createNode("network")
-                attribute.addAttribute(network, "order", "long", order, keyable=False)
-                attribute.addAttribute(network, "degree", "long", data["degree"], keyable=False)
-                attribute.addAttribute(network, "points", "string", data["points"])
-                attribute.addAttribute(network, "form", "long", data["form"], keyable=False)
-                attribute.addAttribute(network, "form_id", "long", data["form_id"], keyable=False)
-                attribute.addAttribute(network, "knots", "string", data["knots"])
-        # TODO: specify joints axis
-        joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
-        joints_axis = ",".join(joints_axis)
-        attribute.addAttribute(n, "joints_axis", "string", joints_axis)
-
-    def update_guide(self):
-        """update guide naming"""
-        guide = self.network.attr("guide").inputs(type="transform")
-        if not guide:
-            return
-
-        guides = get_component_guide(guide[0])
-        for guide in guides:
-            suffix_list = guide.nodeName().split("_")[2:]
-            suffix = "_".join(suffix_list)
-            name = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}"
-            guide.rename(f"{name}_{suffix}")
-        pm.select(guides[0])
 
 
 class PreScript:
