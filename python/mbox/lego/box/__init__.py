@@ -58,6 +58,23 @@ class Objects(AbstractObjects):
         attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)
         attribute.addAttribute(self.ins["root"], "is_rig_root", "bool", keyable=False)
 
+        pm.connectAttr(self.ins["root"].attr("controls_vis"), self.ins["blocks_root"].attr("v"))
+        pm.connectAttr(self.ins["root"].attr("controls_on_playback_vis"), self.ins["blocks_root"].attr("hideOnPlayback"))
+        pm.connectAttr(self.ins["root"].attr("joints_vis"), self.ins["joints_root"].attr("v"))
+        tag = pm.PyNode(pm.controller(self.ins["controls"][0], query=True)[0])
+        condition = pm.createNode("condition")
+        pm.connectAttr(self.ins["root"].attr("controls_mouseover"), condition.attr("firstTerm"))
+        condition.attr("secondTerm").set(1)
+        condition.attr("operation").set(0)
+        condition.attr("colorIfTrueR").set(2)
+        condition.attr("colorIfFalseR").set(0)
+        pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
+
+        attribute.lockAttribute(self.ins["root"])
+        attribute.lockAttribute(self.ins["geo_root"])
+        attribute.lockAttribute(self.ins["blocks_root"])
+        attribute.lockAttribute(self.ins["joints_root"])
+
 
 class Attributes(AbstractAttributes):
 
@@ -84,21 +101,5 @@ class Connection(AbstractConnection):
 
     def process(self, context):
         super(Connection, self).process(context=context)
-        pm.connectAttr(self.ins["root"].attr("controls_vis"), self.ins["blocks_root"].attr("v"))
-        pm.connectAttr(self.ins["root"].attr("controls_on_playback_vis"), self.ins["blocks_root"].attr("hideOnPlayback"))
-        pm.connectAttr(self.ins["root"].attr("joints_vis"), self.ins["joints_root"].attr("v"))
-        tag = pm.PyNode(pm.controller(self.ins["controls"][0], query=True)[0])
-        condition = pm.createNode("condition")
-        pm.connectAttr(self.ins["root"].attr("controls_mouseover"), condition.attr("firstTerm"))
-        condition.attr("secondTerm").set(1)
-        condition.attr("operation").set(0)
-        condition.attr("colorIfTrueR").set(2)
-        condition.attr("colorIfFalseR").set(0)
-        pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
-
-        attribute.lockAttribute(self.ins["root"])
-        attribute.lockAttribute(self.ins["geo_root"])
-        attribute.lockAttribute(self.ins["blocks_root"])
-        attribute.lockAttribute(self.ins["joints_root"])
 
 
