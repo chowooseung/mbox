@@ -1335,7 +1335,7 @@ class AdditionalFunc:
     def draw_controls_shape(self, context):
         blueprint = context.blueprint
         top_ins = context.instance(blueprint.ins_name)
-        for member in top_ins["controller_set"].members():
+        for member in top_ins["controls_set"].members():
             for index, shape in enumerate(member.getShapes()):
                 shape.rename(f"temp{index}")
             for index, shape in enumerate(member.getShapes()):

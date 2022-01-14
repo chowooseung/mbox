@@ -43,10 +43,10 @@ class Objects(AbstractObjects):
         self.ins["joints"] = [joints]
         self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set")
         self.ins["geo_set"] = pm.sets(name="geo_set")
-        self.ins["controller_set"] = pm.sets(name="controller_set")
+        self.ins["controls_set"] = pm.sets(name="controls_set")
         self.ins["deformer_set"] = pm.sets(name="deformer_set")
         pm.sets(self.ins["root_set"], addElement=(self.ins["geo_set"],
-                                                  self.ins["controller_set"],
+                                                  self.ins["controls_set"],
                                                   self.ins["deformer_set"]))
         pm.sets(self.ins["geo_set"], addElement=geo)
 
