@@ -1287,7 +1287,7 @@ class AdditionalFunc:
             if _ins.get("controls") is not None:
                 pm.sets(_top_ins["controls_set"], addElement=_ins["controls"])
             if _ins.get("joints") is not None:
-                pm.sets(_top_ins["deformers_set"], addElement=_ins["joints"])
+                pm.sets(_top_ins["deformer_set"], addElement=_ins["joints"])
             for _b in _block["blocks"]:
                 _create_set(_b)
 
