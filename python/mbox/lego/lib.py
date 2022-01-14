@@ -578,7 +578,7 @@ class AbstractBlock(dict):
                    size: float = 1.0,
                    shape: str = "cube") -> pm.nodetypes.Transform:
         instance = context.instance(self.ins_name)
-        if not instance["controls"]:
+        if "controls" not in instance:
             instance["controls"] = list()
         npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
         ctl = icon.create(npo,
@@ -604,7 +604,7 @@ class AbstractBlock(dict):
                    description: str,
                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.ins_name)
-        if not instance["refs"]:
+        if "refs" not in instance:
             instance["refs"] = list()
         ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
         attribute.setKeyableAttributes(ref, [])
@@ -618,7 +618,7 @@ class AbstractBlock(dict):
                    description: str,
                    ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
         instance = context.instance(self.ins_name)
-        if not instance["joints"]:
+        if "joints" not in instance:
             instance["joints"] = list()
 
         joint_name = self["joint_names"].split(",")[len(instance["joints"])]
