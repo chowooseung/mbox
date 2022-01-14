@@ -51,6 +51,13 @@ class Objects(AbstractObjects):
                                                   self.ins["deformer_set"]))
         pm.sets(self.ins["geo_set"], addElement=geo)
 
+        attribute.addAttribute(self.ins["root"], "controls_vis", "bool", True)
+        attribute.addAttribute(self.ins["root"], "controls_mouseover", "bool", False)
+        attribute.addAttribute(self.ins["root"], "controls_on_playback_vis", "bool", False)
+        attribute.addAttribute(self.ins["root"], "joints_vis", "bool", False)
+        attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)
+        attribute.addAttribute(self.ins["root"], "is_rig_root", "bool", keyable=False)
+
 
 class Attributes(AbstractAttributes):
 
@@ -59,13 +66,6 @@ class Attributes(AbstractAttributes):
 
     def process(self, context):
         super(Attributes, self).process(context=context)
-
-        attribute.addAttribute(self.ins["root"], "controls_vis", "bool", True)
-        attribute.addAttribute(self.ins["root"], "controls_mouseover", "bool", False)
-        attribute.addAttribute(self.ins["root"], "controls_on_playback_vis", "bool", False)
-        attribute.addAttribute(self.ins["root"], "joints_vis", "bool", False)
-        attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)
-        attribute.addAttribute(self.ins["root"], "is_rig_root", "bool", keyable=False)
 
 
 class Operators(AbstractOperators):
