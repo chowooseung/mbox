@@ -7,11 +7,11 @@ import pymel.core as pm
 
 # default fields/tokens
 NAMING_RULE_TOKENS = ["name",
-                      "direction",
+                      "side",
                       "index",
                       "description",
                       "extension"]
-DEFAULT_NAMING_RULE = r"{name}_{direction}{index}_{description}_{extension}"
+DEFAULT_NAMING_RULE = r"{name}_{side}{index}_{description}_{extension}"
 DEFAULT_SIDE_L_NAME = "L"
 DEFAULT_SIDE_R_NAME = "R"
 DEFAULT_SIDE_C_NAME = "C"
