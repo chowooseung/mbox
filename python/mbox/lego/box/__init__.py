@@ -29,23 +29,18 @@ class Objects(AbstractObjects):
         joints = primitive.addTransform(root, "joints")
 
         world_root = primitive.addTransform(blocks, "world_root")
-        world_ctl = self.block.create_ctl(context=context,
-                                          parent=world_root,
-                                          m=pm.datatypes.Matrix(),
-                                          parent_ctl=None,
-                                          color=(0, 0, 0))
-        world_ref = self.block.create_ref(context=context,
-                                          parent=world_ctl,
-                                          m=pm.datatypes.Matrix())
-        if False:
-            world_jnt = self.block.create_jnt(context=context,
-                                              parent=joints,
-                                              ref=world_ref)
+        world_npo = primitive.addTransform(world_root, "world_npo")
+        world_ctl = icon.create(world_npo, "world_ctl", icon="circle")
+        pm.controller(world_ctl)
+        world_ref = primitive.addTransform(world_ctl, "world_ref")
 
         self.ins["root"] = root
         self.ins["geo_root"] = geo
         self.ins["blocks_root"] = blocks
         self.ins["joints_root"] = joints
+        self.ins["controls"] = [world_ctl]
+        self.ins["refs"] = [world_ref]
+        self.ins["joints"] = [joints]
         self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set")
         self.ins["geo_set"] = pm.sets(name="geo_set")
         self.ins["controller_set"] = pm.sets(name="controller_set")
