@@ -38,6 +38,7 @@ class Objects(AbstractObjects):
         self.ins["blocks_root"] = blocks
         self.ins["joints_root"] = joints
         self.ins["ref"] = [world_ref]
+        self.ins["joints"] = [joints]  # TODO: if world ctl joint True, edit line
         self.ins["controls"] = [world_con]
         self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set")
         self.ins["geo_set"] = pm.sets(name="geo_set")

@@ -53,7 +53,7 @@ class Objects(AbstractObjects):
                                     m=m)
         if not self.block["leaf_joint"]:
             jnt = self.block.create_jnt(context=context,
-                                        parent=self.parent_ins["joint"][self.block["ref_index"]],
+                                        parent=self.parent_ins["joints"][self.block["ref_index"]],
                                         description="",
                                         ref=ref)
 
