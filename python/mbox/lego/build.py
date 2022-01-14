@@ -86,15 +86,15 @@ def rig(blueprint: AbstractBlock or None) -> Context:
                 post_scripts.append(ins)
 
     log_window()
-    logger.debug("mbox build system")
-    logger.debug("counting ... [???/???]")
+    logger.info("mbox build system")
+    logger.info("counting ... [???/???]")
 
     total = 0
     total += len(pre_scripts) + len(post_scripts)
     total += len(objects) + len(attributes) + len(operators) + len(connection) + len(additional_func)
     count = 0
 
-    logger.debug(f"total count : [{count}/{total}]")
+    logger.info(f"total count : [{count}/{total}]")
 
     process = [pre_scripts, objects, attributes, operators, connection, additional_func, post_scripts]
     stop_point = ["prescripts", "objects", "attributes", "operators", "connection", "additionalFunc", "postScripts"]
@@ -102,10 +102,10 @@ def rig(blueprint: AbstractBlock or None) -> Context:
         for runner in step:
             count += 1
             runner.process(context)
-            logger.debug("{0:<30}".format(runner.msg) + f" [{count}/{total}]")
+            logger.info("{0:<30}".format(runner.msg) + f" [{count}/{total}]")
         if stop_point[index] == blueprint["step"]:
-            logger.debug(f"{stop_point[index]} Stop")
+            logger.info(f"{stop_point[index]} Stop")
             break
 
-    logger.debug("Build Success")
+    logger.info("Build Success")
     return context
