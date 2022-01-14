@@ -44,10 +44,13 @@ def load_block_module(component: str, guide: bool) -> ModuleType:
     blocks_dir = get_blocks_directory()
     check = None
     for box_path, blocks in blocks_dir.items():
-        if component in blocks:
+        if component in blocks or component == "mbox":
             check = True
-    assert check is True, f"{component} don't exists in box"
-    mod = importlib.import_module(f"{component}.guide" if guide else f"{component}")
+    assert check is True, f"'{component}' don't exists in box"
+    if component == "mbox" and guide is False:
+        mod = importlib.import_module("mbox.lego.box")
+    else:
+        mod = importlib.import_module(f"{component}.guide" if guide else f"{component}")
     return mod
 
 
