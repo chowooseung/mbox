@@ -65,7 +65,7 @@ def select_guide() -> pm.nodetypes.Transform:
     selected = pm.selected(type="transform")
     assert len(selected) > 0, msg
     assert selected[0].hasAttr("is_guide") is True \
-           and selected[0].hasAttr("is_guide_component") is True \
-           and selected[0].hasAttr("is_guide_root") is True, msg
+           or selected[0].hasAttr("is_guide_component") is True \
+           or selected[0].hasAttr("is_guide_root") is True, msg
     return selected[0]
 
