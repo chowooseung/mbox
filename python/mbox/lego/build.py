@@ -47,9 +47,7 @@ def mirror_guide():
 
 
 def rig(blueprint: AbstractBlock or None) -> Context:
-    print("rig")
     if not blueprint:
-        print("utils", utils.select_guide())
         blueprint = blueprint_from_guide(utils.select_guide())
 
     context = Context(blueprint)

@@ -52,7 +52,7 @@ def load_block_module(component: str, guide: bool) -> ModuleType:
 
 
 def load_build_step(block) -> tuple:
-    mod = load_block_module(block["component"], guide=False)
+    mod = load_block_module(block["comp_type"], guide=False)
     objects = mod.Objects(block)
     attributes = mod.Attributes(block)
     operators = mod.Operators(block)
