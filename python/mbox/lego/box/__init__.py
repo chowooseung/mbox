@@ -66,11 +66,6 @@ class Attributes(AbstractAttributes):
         attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)
         attribute.addAttribute(self.ins["root"], "is_rig_root", "bool", keyable=False)
 
-        attribute.lockAttribute(self.ins["root"])
-        attribute.lockAttribute(self.ins["geo_root"])
-        attribute.lockAttribute(self.ins["blocks_root"])
-        attribute.lockAttribute(self.ins["joints_root"])
-
 
 class Operators(AbstractOperators):
 
@@ -99,5 +94,10 @@ class Connection(AbstractConnection):
         condition.attr("colorIfTrueR").set(2)
         condition.attr("colorIfFalseR").set(0)
         pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
+
+        attribute.lockAttribute(self.ins["root"])
+        attribute.lockAttribute(self.ins["geo_root"])
+        attribute.lockAttribute(self.ins["blocks_root"])
+        attribute.lockAttribute(self.ins["joints_root"])
 
 
