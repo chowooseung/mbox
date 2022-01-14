@@ -61,7 +61,7 @@ def rig(blueprint: AbstractBlock or None) -> Context:
     post_scripts = list()
 
     def get_build_step(_blueprint: AbstractBlock):
-        _objects, _attributes, _operators, _connection = _blueprint.build_step()
+        _objects, _attributes, _operators, _connection = _blueprint.build_step
         objects.append(_objects)
         attributes.append(_attributes)
         operators.append(_operators)
