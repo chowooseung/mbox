@@ -592,7 +592,8 @@ class AbstractBlock(dict):
         attribute.setKeyableAttributes(ctl, ctl_attr)
         attribute.setKeyableAttributes(npo, npo_attr)
 
-        tag = pm.controller(ctl)
+        pm.controller(ctl)
+        tag = pm.PyNode(pm.controller(ctl, query=True))
         top_instance = context.instance(self.top.ins_name)
         condition = top_instance["root"].attr("controls_mouseover").outputs(type="condition")[0]
         pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
