@@ -74,6 +74,9 @@ class Objects(AbstractObjects):
         attribute.lockAttribute(self.ins["geo_root"])
         attribute.lockAttribute(self.ins["blocks_root"])
         attribute.lockAttribute(self.ins["joints_root"])
+        attribute.setKeyableAttributes(world_npo, [])
+        attribute.setKeyableAttributes(world_ctl)
+        attribute.lockAttribute(world_ref)
 
 
 class Attributes(AbstractAttributes):
