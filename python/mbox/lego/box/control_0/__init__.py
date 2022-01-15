@@ -58,13 +58,13 @@ class Objects(AbstractObjects):
                                         m=m)
             if self.block.top["joint_rig"] and self.block["joint_rig"]:
                 jnt = self.block.create_jnt(context=context,
-                                            parent=self.parent_ins["joints"][self.block["ref_index"]],
+                                            parent=self.parent_ins["jnts"][self.block["ref_index"]],
                                             description="",
                                             ref=ref)
         else:
             if self.block.top["joint_rig"] and self.block["joint_rig"]:
                 jnt = self.block.create_jnt(context=context,
-                                            parent=self.parent_ins["joints"][self.block["ref_index"]],
+                                            parent=self.parent_ins["jnts"][self.block["ref_index"]],
                                             description="",
                                             ref=m)
 
