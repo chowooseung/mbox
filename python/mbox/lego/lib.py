@@ -640,7 +640,7 @@ class AbstractBlock(dict):
         else:
             jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
 
-        m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), ref.attr("parentInverseMatrix"))
+        m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
         d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
 
         i_m = m_m.attr("matrixSum").get().inverse()
