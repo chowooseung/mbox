@@ -275,7 +275,7 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
             partial(self.update_check, self.settings_tab.sz_checkBox, "sz"))
 
         self.settings_tab.ro_comboBox.currentIndexChanged.connect(
-            partial(self.update_check,
+            partial(self.update_combo_box,
                     self.settings_tab.ro_comboBox,
                     "default_rotate_order"))
 
