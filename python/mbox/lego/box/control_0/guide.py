@@ -168,29 +168,29 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         # populate tab
         self.tabs.insertTab(1, self.settings_tab, "Component Settings")
 
-        self.populateCheck(self.settingsTab.joint_checkBox, "joint")
+        self.populate_check(self.settingsTab.joint_checkBox, "joint")
         self.enable_leaf_joint()
-        self.populateCheck(self.settingsTab.leafJoint_checkBox, "leaf_joint")
-        self.populateCheck(self.settingsTab.uniScale_checkBox, "uni_scale")
-        self.populateCheck(self.settingsTab.neutralRotation_checkBox,
+        self.populate_check(self.settingsTab.leafJoint_checkBox, "leaf_joint")
+        self.populate_check(self.settingsTab.uniScale_checkBox, "uni_scale")
+        self.populate_check(self.settingsTab.neutralRotation_checkBox,
                            "neutral_rotation")
-        self.populateCheck(self.settingsTab.mirrorBehaviour_checkBox,
+        self.populate_check(self.settingsTab.mirrorBehaviour_checkBox,
                            "mirror_behaviour")
         self.settingsTab.ctlSize_doubleSpinBox.setValue(
             self.root.attr("ctl_size").get())
         sideIndex = self.iconsList.index(self.root.attr("icon").get())
         self.settingsTab.controlShape_comboBox.setCurrentIndex(sideIndex)
 
-        self.populateCheck(self.settingsTab.tx_checkBox, "tx")
-        self.populateCheck(self.settingsTab.ty_checkBox, "ty")
-        self.populateCheck(self.settingsTab.tz_checkBox, "tz")
-        self.populateCheck(self.settingsTab.rx_checkBox, "rx")
-        self.populateCheck(self.settingsTab.ry_checkBox, "ry")
-        self.populateCheck(self.settingsTab.rz_checkBox, "rz")
-        self.populateCheck(self.settingsTab.ro_checkBox, "ro")
-        self.populateCheck(self.settingsTab.sx_checkBox, "sx")
-        self.populateCheck(self.settingsTab.sy_checkBox, "sy")
-        self.populateCheck(self.settingsTab.sz_checkBox, "sz")
+        self.populate_check(self.settingsTab.tx_checkBox, "tx")
+        self.populate_check(self.settingsTab.ty_checkBox, "ty")
+        self.populate_check(self.settingsTab.tz_checkBox, "tz")
+        self.populate_check(self.settingsTab.rx_checkBox, "rx")
+        self.populate_check(self.settingsTab.ry_checkBox, "ry")
+        self.populate_check(self.settingsTab.rz_checkBox, "rz")
+        self.populate_check(self.settingsTab.ro_checkBox, "ro")
+        self.populate_check(self.settingsTab.sx_checkBox, "sx")
+        self.populate_check(self.settingsTab.sy_checkBox, "sy")
+        self.populate_check(self.settingsTab.sz_checkBox, "sz")
 
         self.settingsTab.ro_comboBox.setCurrentIndex(
             self.root.attr("default_rotate_order").get())
@@ -225,74 +225,78 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         self.settingsTab.joint_checkBox.stateChanged.connect(
             self.enable_leaf_joint)
         self.settingsTab.joint_checkBox.stateChanged.connect(
-            partial(self.updateCheck,
+            partial(self.update_check,
                     self.settingsTab.joint_checkBox,
                     "joint"))
         self.settingsTab.leafJoint_checkBox.stateChanged.connect(
-            partial(self.updateCheck,
+            partial(self.update_check,
                     self.settingsTab.leafJoint_checkBox,
                     "leaf_joint"))
         self.settingsTab.uniScale_checkBox.stateChanged.connect(
-            partial(self.updateCheck,
+            partial(self.update_check,
                     self.settingsTab.uniScale_checkBox,
                     "uni_scale"))
         self.settingsTab.neutralRotation_checkBox.stateChanged.connect(
-            partial(self.updateCheck,
+            partial(self.update_check,
                     self.settingsTab.neutralRotation_checkBox,
                     "neutral_rotation"))
         self.settingsTab.mirrorBehaviour_checkBox.stateChanged.connect(
-            partial(self.updateCheck,
+            partial(self.update_check,
                     self.settingsTab.mirrorBehaviour_checkBox,
                     "mirror_behaviour"))
         self.settingsTab.ctlSize_doubleSpinBox.valueChanged.connect(
-            partial(self.updateSpinBox,
+            partial(self.update_spin_box,
                     self.settingsTab.ctlSize_doubleSpinBox,
                     "ctl_size"))
         self.settingsTab.controlShape_comboBox.currentIndexChanged.connect(
-            partial(self.updateControlShape,
+            partial(self.update_control_shape,
                     self.settingsTab.controlShape_comboBox,
                     self.iconsList, "icon"))
 
         self.settingsTab.tx_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.tx_checkBox, "tx"))
+            partial(self.update_check, self.settingsTab.tx_checkBox, "tx"))
         self.settingsTab.ty_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.ty_checkBox, "ty"))
+            partial(self.update_check, self.settingsTab.ty_checkBox, "ty"))
         self.settingsTab.tz_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.tz_checkBox, "tz"))
+            partial(self.update_check, self.settingsTab.tz_checkBox, "tz"))
         self.settingsTab.rx_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.rx_checkBox, "rx"))
+            partial(self.update_check, self.settingsTab.rx_checkBox, "rx"))
         self.settingsTab.ry_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.ry_checkBox, "ry"))
+            partial(self.update_check, self.settingsTab.ry_checkBox, "ry"))
         self.settingsTab.rz_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.rz_checkBox, "rz"))
+            partial(self.update_check, self.settingsTab.rz_checkBox, "rz"))
         self.settingsTab.ro_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.ro_checkBox, "ro"))
+            partial(self.update_check, self.settingsTab.ro_checkBox, "ro"))
         self.settingsTab.sx_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.sx_checkBox, "sx"))
+            partial(self.update_check, self.settingsTab.sx_checkBox, "sx"))
         self.settingsTab.sy_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.sy_checkBox, "sy"))
+            partial(self.update_check, self.settingsTab.sy_checkBox, "sy"))
         self.settingsTab.sz_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.sz_checkBox, "sz"))
+            partial(self.update_check, self.settingsTab.sz_checkBox, "sz"))
 
         self.settingsTab.ro_comboBox.currentIndexChanged.connect(
-            partial(self.updateComboBox,
+            partial(self.update_check,
                     self.settingsTab.ro_comboBox,
                     "default_rotate_order"))
 
         self.settingsTab.ikRefArrayAdd_pushButton.clicked.connect(
-            partial(self.addItem2listWidget,
+            partial(self.add_item_to_list_widget,
                     self.settingsTab.ikRefArray_listWidget,
                     "ik_ref_array"))
         self.settingsTab.ikRefArrayRemove_pushButton.clicked.connect(
-            partial(self.removeSelectedFromListWidget,
+            partial(self.remove_selected_from_list_widget,
                     self.settingsTab.ikRefArray_listWidget,
                     "ik_ref_array"))
         self.settingsTab.ikRefArray_listWidget.installEventFilter(self)
 
         self.mainSettingsTab.connector_comboBox.currentIndexChanged.connect(
-            partial(self.updateConnector,
+            partial(self.update_connector,
                     self.mainSettingsTab.connector_comboBox,
                     self.connector_items))
+
+    def enable_leaf_joint(self):
+        state = self.settingsTab.joint_checkBox.isChecked()
+        self.settingsTab.leafJoint_checkBox.setEnabled(state)
 
     def dockCloseEventTriggered(self):
         pyqt.deleteInstances(self, MayaQDockWidget)
