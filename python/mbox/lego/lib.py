@@ -647,6 +647,7 @@ class AbstractBlock(dict):
             jnt.attr("jointOrientX").set(jnt.attr("rx").get())
             jnt.attr("jointOrientY").set(jnt.attr("ry").get())
             jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
+            return jnt
         m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
         d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
 
