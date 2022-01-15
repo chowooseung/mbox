@@ -63,7 +63,7 @@ class Objects(AbstractObjects):
         pm.connectAttr(self.ins["root"].attr("controls_vis"), self.ins["blocks_root"].attr("v"))
         pm.connectAttr(self.ins["root"].attr("controls_on_playback_vis"), self.ins["blocks_root"].attr("hideOnPlayback"))
         pm.connectAttr(self.ins["root"].attr("joints_vis"), self.ins["joints_root"].attr("v"))
-        tag = pm.PyNode(pm.controller(self.ins["controls"][0], query=True)[0])
+        tag = pm.PyNode(pm.controller(self.ins["ctls"][0], query=True)[0])
         condition = pm.createNode("condition")
         pm.connectAttr(self.ins["root"].attr("controls_mouseover"), condition.attr("firstTerm"))
         condition.attr("secondTerm").set(1)
