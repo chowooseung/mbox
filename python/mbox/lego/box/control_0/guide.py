@@ -168,7 +168,7 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         # populate tab
         self.tabs.insertTab(1, self.settings_tab, "Component Settings")
 
-        self.populate_check(self.settings_tab.joint_checkBox, "joint")
+        self.populate_check(self.settings_tab.joint_checkBox, "joint_rig")
         self.enable_leaf_joint()
         self.populate_check(self.settings_tab.leafJoint_checkBox, "leaf_joint")
         self.populate_check(self.settings_tab.uniScale_checkBox, "uni_scale")
@@ -227,7 +227,7 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         self.settings_tab.joint_checkBox.stateChanged.connect(
             partial(self.update_check,
                     self.settings_tab.joint_checkBox,
-                    "joint"))
+                    "joint_rig"))
         self.settings_tab.leafJoint_checkBox.stateChanged.connect(
             partial(self.update_check,
                     self.settings_tab.leafJoint_checkBox,
