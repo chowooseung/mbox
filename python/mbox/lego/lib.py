@@ -658,8 +658,8 @@ class AbstractBlock(dict):
         d_m2 = node.createDecomposeMatrixNode(m_m2.attr("matrixSum"))
 
         pm.connectAttr(d_m2.attr("outputRotate"), jnt.attr("r"), force=True)
-
-        attribute.setNotKeyableAttributes(jnt)
+        attribute.lockAttribute(jnt)
+        attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
         instance["joints"].append(jnt)
         return jnt
 
