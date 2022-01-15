@@ -637,7 +637,10 @@ class AbstractBlock(dict):
             pm.matchTransform(ref, jnt, position=True, rotation=True, scale=True)
             attribute.setKeyableAttributes(ref, [])
         else:
-            jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
+            if isinstance(ref, pm.datatypes.Matrix):
+                jnt = primitive.addJoint(parent, name, ref)
+            else:
+                jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
 
         if isinstance(ref, pm.datatypes.Matrix):
             jnt.setMatrix(ref, worldSpace=True)
