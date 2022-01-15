@@ -101,8 +101,8 @@ def rig(blueprint: AbstractBlock or None) -> Context:
     for index, step in enumerate(process):
         for runner in step:
             count += 1
+            logger.info("{0:<50}".format(runner.msg) + f" [{count}/{total}]")
             runner.process(context)
-            logger.info("{0:<30}".format(runner.msg) + f" [{count}/{total}]")
         if stop_point[index] == blueprint["step"]:
             logger.info(f"{stop_point[index]} Stop")
             break

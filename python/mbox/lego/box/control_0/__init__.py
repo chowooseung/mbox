@@ -27,13 +27,13 @@ class Objects(AbstractObjects):
 
         # matrix
         if self.block["neutral_rotation"]:
-            m = transform.getTransformFromPos(pm.datatypes.Matrix(self.block["transforms"][0]).translate)
+            m = transform.getTransformFromPos(pm.datatypes.Matrix(self.block["transforms"][1]).translate)
         else:
             if self.block["mirror_behaviour"] and self.block.negate:
                 scl = [1, 1, -1]
             else:
                 scl = [1, 1, 1]
-            m = transform.setMatrixScale(pm.datatypes.Matrix(self.block["transforms"][0]), scl)
+            m = transform.setMatrixScale(pm.datatypes.Matrix(self.block["transforms"][1]), scl)
 
         # get ctl color
         ik_color = self.block.get_ctl_color("ik")
@@ -45,6 +45,7 @@ class Objects(AbstractObjects):
                                     m=m,
                                     parent_ctl=None,
                                     color=ik_color,
+                                    ctl_attr=self.block["key_able_attrs"],
                                     shape=self.block["icon"],
                                     size=self.block["ctl_size"])
         ref = self.block.create_ref(context=context,
