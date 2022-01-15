@@ -41,6 +41,7 @@ class Block(SubBlock):
         self["transforms"] = [pm.datatypes.Matrix().tolist()]
 
         # specify attr
+        self["joint_rig"] = True
         self["leaf_joint"] = False
         self["uni_scale"] = False
         self["mirror_behaviour"] = False
@@ -51,8 +52,42 @@ class Block(SubBlock):
         self["ik_ref_array"] = str()
         self["ctl_size"] = 1
 
+    def from_network(self):
+        # common attr pull
+        super(Block, self).from_network()
+
+        # specify attr pull
+        self["joint_rig"] = self.network.attr("joint_rig").get()
+        self["leaf_joint"] = self.network.attr("leaf_joint").get()
+        self["uni_scale"] = self.network.attr("uni_scale").get()
+        self["icon"] = self.network.attr("icon").get()
+        self["mirror_behaviour"] = self.network.attr("mirror_behaviour").get()
+        self["neutral_rotation"] = self.network.attr("neutral_rotation").get()
+        self["key_able_attrs"] = [k for k in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
+                                          if self.network.attr(k).get()]
+        self["default_rotate_order"] = self.network.attr("default_rotate_order").get()
+        self["ik_ref_array"] = self.network.attr("ik_ref_array").get()
+        self["ctl_size"] = self.network.attr("ctl_size").get()
+
+    def to_network(self):
+        # common attr push
+        super(Block, self).to_network()
+
+        # specify attr push
+        self.network.attr("joint_rig").set(self["joint_rig"])
+        self.network.attr("leaf_joint").set(self["leaf_joint"])
+        self.network.attr("uni_scale").set(self["uni_scale"])
+        self.network.attr("icon").set(self["icon"])
+        self.network.attr("mirror_behaviour").set(self["mirror_behaviour"])
+        self.network.attr("neutral_rotation").set(self["neutral_rotation"])
+        [self.network.attr(a).set(True if a in self["key_able_attrs"] else False)
+         for a in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]]
+        self.network.attr("default_rotate_order").set(self["default_rotate_order"])
+        self.network.attr("ik_ref_array").set(self["ik_ref_array"])
+
     def guide(self):
         super(Block, self).guide()
+        attribute.addAttribute(self.network, "joint_rig", "bool", self["joint_rig"], keyable=False)
         attribute.addAttribute(self.network, "leaf_joint", "bool", self["leaf_joint"], keyable=False)
         attribute.addAttribute(self.network, "uni_scale", "bool", self["uni_scale"], keyable=False)
         attribute.addAttribute(self.network, "mirror_behaviour", "bool", self["mirror_behaviour"], keyable=False)
@@ -81,37 +116,6 @@ class Block(SubBlock):
         pm.connectAttr(guide.attr("worldMatrix")[0], self.network.attr("transforms")[1])
 
         return guide
-
-    def from_network(self):
-        # common attr pull
-        super(Block, self).from_network()
-
-        # specify attr pull
-        self["leaf_joint"] = self.network.attr("leaf_joint").get()
-        self["uni_scale"] = self.network.attr("uni_scale").get()
-        self["icon"] = self.network.attr("icon").get()
-        self["mirror_behaviour"] = self.network.attr("mirror_behaviour").get()
-        self["neutral_rotation"] = self.network.attr("neutral_rotation").get()
-        self["key_able_attrs"] = [k for k in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
-                                          if self.network.attr(k).get()]
-        self["default_rotate_order"] = self.network.attr("default_rotate_order").get()
-        self["ik_ref_array"] = self.network.attr("ik_ref_array").get()
-        self["ctl_size"] = self.network.attr("ctl_size").get()
-
-    def to_network(self):
-        # common attr push
-        super(Block, self).to_network()
-
-        # specify attr push
-        self.network.attr("leaf_joint").set(self["leaf_joint"])
-        self.network.attr("uni_scale").set(self["uni_scale"])
-        self.network.attr("icon").set(self["icon"])
-        self.network.attr("mirror_behaviour").set(self["mirror_behaviour"])
-        self.network.attr("neutral_rotation").set(self["neutral_rotation"])
-        [self.network.attr(a).set(True if a in self["key_able_attrs"] else False)
-         for a in ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]]
-        self.network.attr("default_rotate_order").set(self["default_rotate_order"])
-        self.network.attr("ik_ref_array").set(self["ik_ref_array"])
 
 
 class BlockSettingsUI(QtWidgets.QDialog, settings_ui.Ui_Form):

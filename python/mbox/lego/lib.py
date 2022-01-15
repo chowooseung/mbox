@@ -335,6 +335,11 @@ class Instance(dict):
 
         self._name = name
 
+        self["root"] = None
+        self["ctls"] = list()
+        self["jnts"] = list()
+        self["refs"] = list()
+
     def __repr__(self):
         return f"ins(\"{self.name}\")"
 
@@ -559,7 +564,7 @@ class AbstractBlock(dict):
         parent_instance = context.instance(self.parent.ins_name)
         parent = parent_instance["refs"][0] \
             if isinstance(self.parent, RootBlock) \
-            else parent_instance["ref"][self["ref_index"]]
+            else parent_instance["refs"][self["ref_index"]]
         root = primitive.addTransform(parent, self.get_name(False, extension="root"), m=m)
         attribute.setNotKeyableAttributes(root)
 
@@ -578,8 +583,6 @@ class AbstractBlock(dict):
                    size: float = 1.0,
                    shape: str = "cube") -> pm.nodetypes.Transform:
         instance = context.instance(self.ins_name)
-        if "controls" not in instance:
-            instance["controls"] = list()
         npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
         ctl = icon.create(npo,
                           self.get_name(False, description=description, extension=self.top["ctl_name_ext"]),
@@ -600,7 +603,7 @@ class AbstractBlock(dict):
 
         if parent_ctl:
             node.add_controller_tag(ctl, parent_ctl)
-        instance["controls"].append(ctl)
+        instance["ctls"].append(ctl)
         return ctl
 
     def create_ref(self,
@@ -609,8 +612,6 @@ class AbstractBlock(dict):
                    description: str,
                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.ins_name)
-        if "refs" not in instance:
-            instance["refs"] = list()
         ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
         attribute.setKeyableAttributes(ref, [])
 
@@ -623,10 +624,8 @@ class AbstractBlock(dict):
                    description: str,
                    ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
         instance = context.instance(self.ins_name)
-        if "joints" not in instance:
-            instance["joints"] = list()
 
-        joint_name = self["joint_names"].split(",")[len(instance["joints"])]
+        joint_name = self["joint_names"].split(",")[len(instance["jnts"])]
         name = joint_name \
             if joint_name \
             else self.get_name(True, description=description, extension=self.top["joint_name_ext"])
@@ -640,6 +639,11 @@ class AbstractBlock(dict):
         else:
             jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
 
+        if isinstance(ref, pm.datatypes.Matrix):
+            jnt.setMatrix(ref, worldSpace=True)
+            jnt.attr("jointOrientX").set(jnt.attr("rx").get())
+            jnt.attr("jointOrientY").set(jnt.attr("ry").get())
+            jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
         m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
         d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
 
@@ -660,7 +664,7 @@ class AbstractBlock(dict):
         pm.connectAttr(d_m2.attr("outputRotate"), jnt.attr("r"), force=True)
         attribute.lockAttribute(jnt)
         attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
-        instance["joints"].append(jnt)
+        instance["jnts"].append(jnt)
         return jnt
 
 
@@ -687,8 +691,7 @@ class SubBlock(AbstractBlock):
         # ui host
         self["ui_host"] = str()
 
-        # True - create joint / False
-        self["joint_rig"] = True
+        #
         self["joint_names"] = str()
 
         # gimmick joint
@@ -726,7 +729,6 @@ class SubBlock(AbstractBlock):
         self["comp_side"] = self.network.attr("comp_side").get(asString=True)
         self["comp_index"] = self.network.attr("comp_index").get()
         self["ui_host"] = self.network.attr("ui_host").get()
-        self["joint_rig"] = self.network.attr("joint_rig").get()
         self["joint_names"] = self.network.attr("joint_names").get()
         self["blend_joint"] = self.network.attr("blend_joint").get()
         self["support_joint"] = self.network.attr("support_joint").get()
@@ -738,9 +740,9 @@ class SubBlock(AbstractBlock):
         self["RGB_ik"] = self.network.attr("RGB_ik").get()
         self["transforms"] = [x.tolist() for x in self.network.attr("transforms").get()]
         # TODO: control shapes curve info
-        if self.network.attr("controls").elements():
+        if self.network.attr("ctls").elements():
             shape_dict = dict()
-            for index, attr in enumerate(self.network.attr("controls").elements()):
+            for index, attr in enumerate(self.network.attr("ctls").elements()):
                 shapes_network = self.network.attr(attr).outputs(type="network")
                 if shapes_network:
                     shape_dict[index] = dict()
@@ -765,7 +767,6 @@ class SubBlock(AbstractBlock):
         self.network.attr("comp_side").set(self["comp_side"])
         self.network.attr("comp_index").set(self["comp_index"])
         self.network.attr("ui_host").set(self["ui_host"])
-        self.network.attr("joint_rig").set(self["joint_rig"])
         self.network.attr("joint_names").set(self["joint_names"])
         self.network.attr("blend_joint").set(self["blend_joint"])
         self.network.attr("support_joint").set(self["support_joint"])
@@ -780,7 +781,7 @@ class SubBlock(AbstractBlock):
          else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
          for i, t in enumerate(self["transforms"])]
         # TODO: control shapes curve info
-        shapes_network = self.network.attr("controls").outputs(type="network")
+        shapes_network = self.network.attr("ctls").outputs(type="network")
         pm.delete(shapes_network) if shapes_network else None
         for index in sorted(list(self["ctl_shapes"].keys())):
             for order in sorted(list(self["ctl_shapes"][index].keys())):
@@ -810,7 +811,6 @@ class SubBlock(AbstractBlock):
                                    ["center", "left", "right"], keyable=False)
         attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
         attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
-        attribute.addAttribute(n, "joint_rig", "bool", self["joint_rig"], keyable=False)
         attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
         attribute.addAttribute(n, "blend_joint", "string", self["blend_joint"])
         attribute.addAttribute(n, "support_joint", "string", self["support_joint"])
@@ -821,8 +821,8 @@ class SubBlock(AbstractBlock):
         attribute.addColorAttribute(n, "RGB_fk", self["RGB_fk"], keyable=False)
         attribute.addColorAttribute(n, "RGB_ik", self["RGB_ik"], keyable=False)
         pm.addAttr(n, longName="transforms", type="matrix", multi=True)
-        pm.addAttr(n, longName="controls", type="message", multi=True)
-        pm.addAttr(n, longName="joints", type="message", multi=True)
+        pm.addAttr(n, longName="ctls", type="message", multi=True)
+        pm.addAttr(n, longName="jnts", type="message", multi=True)
         # TODO: control shapes curve info
         for index in sorted(list(self["ctl_shapes"].keys())):
             for order in sorted(list(self["ctl_shapes"][index].keys())):
@@ -1092,8 +1092,8 @@ class RootBlock(AbstractBlock):
         attribute.addColorAttribute(n, "c_RGB_fk", self["c_RGB_fk"], keyable=False)
         attribute.addColorAttribute(n, "c_RGB_ik", self["c_RGB_ik"], keyable=False)
         attribute.addAttribute(n, "notes", "string", str(self["notes"]))
-        pm.addAttr(n, longName="controls", type="message", multi=True)
-        pm.addAttr(n, longName="joints", type="message", multi=True)
+        pm.addAttr(n, longName="ctls", type="message", multi=True)
+        pm.addAttr(n, longName="jnts", type="message", multi=True)
 
         guide = primitive.addTransform(None, "guide", m=pm.datatypes.Matrix())
 
@@ -1272,12 +1272,12 @@ class AdditionalFunc:
             pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
             if _block.parent:
                 pm.connectAttr(_block.parent.network.attr("affects")[0], _block.network.attr("affectedBy")[0], force=True)
-            if _ins.get("controls"):
-                for index, con in enumerate(_ins["controls"]):
-                    pm.connectAttr(con.attr("message"), _block.network.attr("controls")[index], force=True)
-            if _ins.get("joints"):
-                for index, jnt in enumerate(_ins["joints"]):
-                    pm.connectAttr(jnt.attr("message"), _block.network.attr("joints")[index], force=True)
+            if _ins.get("ctls"):
+                for index, con in enumerate(_ins["ctls"]):
+                    pm.connectAttr(con.attr("message"), _block.network.attr("ctls")[index], force=True)
+            if _ins.get("jnts"):
+                for index, jnt in enumerate(_ins["jnts"]):
+                    pm.connectAttr(jnt.attr("message"), _block.network.attr("jnts")[index], force=True)
             for _b in _block["blocks"]:
                 _connect_network(_b)
 
@@ -1289,10 +1289,10 @@ class AdditionalFunc:
         def _create_set(_block):
             _ins = context.instance(_block.ins_name)
             _top_ins = context.instance(_block.top.ins_name)
-            if _ins.get("controls") is not None:
-                pm.sets(_top_ins["controls_set"], addElement=_ins["controls"])
-            if _ins.get("joints") is not None:
-                pm.sets(_top_ins["deformer_set"], addElement=_ins["joints"])
+            if _ins.get("ctls") is not None:
+                pm.sets(_top_ins["controls_set"], addElement=_ins["ctls"])
+            if _ins.get("jnts") is not None:
+                pm.sets(_top_ins["deformer_set"], addElement=_ins["jnts"])
             for _b in _block["blocks"]:
                 _create_set(_b)
 
@@ -1305,8 +1305,8 @@ class AdditionalFunc:
             if _block.parent:
                 _ins = context.instance(_block.ins_name)
                 _parent_ins = context.instance(_block.parent.ins_name)
-                for x in _ins["controls"]:
-                    node.add_controller_tag(x, _parent_ins["controls"][-1])
+                for x in _ins["ctls"]:
+                    node.add_controller_tag(x, _parent_ins["ctls"][-1])
             for _b in _block["blocks"]:
                 _cleanup_controls(_b)
 
@@ -1319,8 +1319,8 @@ class AdditionalFunc:
             if _block.parent:
                 _top_ins = context.instance(_block.top.ins_name)
                 _ins = context.instance(_block.ins_name)
-                if _ins.get("joints"):
-                    for _index, _jnt in enumerate(_ins["joints"]):
+                if _ins.get("jnts"):
+                    for _index, _jnt in enumerate(_ins["jnts"]):
                         _label = f"{_block['comp_name']}_center{_block['comp_index']}_{_index}" \
                             if _block["comp_side"] == "center" \
                             else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
