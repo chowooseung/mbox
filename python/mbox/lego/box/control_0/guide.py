@@ -71,7 +71,7 @@ class Block(SubBlock):
             parent = self.parent.network.attr("guide").inputs(type="transform")[0]
         else:
             parent = self.parent.network.attr("transforms").inputs(type="transform")[-1]
-        guide = icon.guide__network_icon(parent, name_format % "_network", m=pm.datatypes.Matrix(self["transforms"][0]))
+        guide = icon.guide_root_icon(parent, name_format % "root", m=pm.datatypes.Matrix(self["transforms"][0]))
         size_ref_t = transform.getOffsetPosition(guide, [0, 0, 1])
         size_ref = primitive.addTransform(guide, name_format % "sizeRef", m=size_ref_t)
         attribute.lockAttribute(size_ref)
