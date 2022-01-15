@@ -78,7 +78,7 @@ class Objects(AbstractObjects):
                                                              "controls_mouseover",
                                                              "controls_on_playback_vis",
                                                              "joints_switch",
-                                                             "joint_vis",
+                                                             "joints_vis",
                                                              "joints_label_vis"])
         attribute.lockAttribute(self.ins["geo_root"])
         attribute.lockAttribute(self.ins["blocks_root"])
