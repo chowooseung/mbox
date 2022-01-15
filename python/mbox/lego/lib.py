@@ -1273,11 +1273,12 @@ class AdditionalFunc:
         def _connect_network(_block):
             _ins = context.instance(_block.ins_name)
             if _ins["root"]:
-                dfs_list = pm.connectionInfo(_ins["root"].attr("message"), destinationFromSource=True)
-                if _block.network.attr("rig").name() not in dfs_list:
-                    pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
+                pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
             if _block.parent:
-                pm.connectAttr(_block.parent.network.attr("affects")[0], _block.network.attr("affectedBy")[0], force=True)
+                dfs_list = pm.connectionInfo(_block.parent.network.attr("affects")[0], destinationFromSource=True)
+                if _block.network.attr("affectedBy")[0].name() not in dfs_list:
+                    pm.connectAttr(_block.parent.network.attr("affects")[0],
+                                   _block.network.attr("affectedBy")[0], force=True)
             if _ins.get("ctls"):
                 for index, con in enumerate(_ins["ctls"]):
                     pm.connectAttr(con.attr("message"), _block.network.attr("ctls")[index], force=True)
