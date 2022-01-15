@@ -1102,8 +1102,7 @@ class RootBlock(AbstractBlock):
         guide = primitive.addTransform(None, "guide", m=pm.datatypes.Matrix())
 
         # attribute
-        attribute.lockAttribute(guide)
-        attribute.setKeyableAttributes(guide, list())
+        attribute.lockAttribute(guide, ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"])
         attribute.addAttribute(guide, "is_guide_root", "bool", keyable=False)
 
         # connection
@@ -1274,7 +1273,9 @@ class AdditionalFunc:
         def _connect_network(_block):
             _ins = context.instance(_block.ins_name)
             if _ins["root"]:
-                pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
+                dfs_list = pm.connectionInfo(_ins["root"].attr("message"), destinationFromSource=True)
+                if _block.network.attr("rig").name() not in dfs_list:
+                    pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
             if _block.parent:
                 pm.connectAttr(_block.parent.network.attr("affects")[0], _block.network.attr("affectedBy")[0], force=True)
             if _ins.get("ctls"):
