@@ -168,51 +168,51 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         # populate tab
         self.tabs.insertTab(1, self.settings_tab, "Component Settings")
 
-        self.populate_check(self.settingsTab.joint_checkBox, "joint")
+        self.populate_check(self.settings_tab.joint_checkBox, "joint")
         self.enable_leaf_joint()
-        self.populate_check(self.settingsTab.leafJoint_checkBox, "leaf_joint")
-        self.populate_check(self.settingsTab.uniScale_checkBox, "uni_scale")
-        self.populate_check(self.settingsTab.neutralRotation_checkBox,
+        self.populate_check(self.settings_tab.leafJoint_checkBox, "leaf_joint")
+        self.populate_check(self.settings_tab.uniScale_checkBox, "uni_scale")
+        self.populate_check(self.settings_tab.neutralRotation_checkBox,
                            "neutral_rotation")
-        self.populate_check(self.settingsTab.mirrorBehaviour_checkBox,
+        self.populate_check(self.settings_tab.mirrorBehaviour_checkBox,
                            "mirror_behaviour")
-        self.settingsTab.ctlSize_doubleSpinBox.setValue(
+        self.settings_tab.ctlSize_doubleSpinBox.setValue(
             self.root.attr("ctl_size").get())
         sideIndex = self.iconsList.index(self.root.attr("icon").get())
-        self.settingsTab.controlShape_comboBox.setCurrentIndex(sideIndex)
+        self.settings_tab.controlShape_comboBox.setCurrentIndex(sideIndex)
 
-        self.populate_check(self.settingsTab.tx_checkBox, "tx")
-        self.populate_check(self.settingsTab.ty_checkBox, "ty")
-        self.populate_check(self.settingsTab.tz_checkBox, "tz")
-        self.populate_check(self.settingsTab.rx_checkBox, "rx")
-        self.populate_check(self.settingsTab.ry_checkBox, "ry")
-        self.populate_check(self.settingsTab.rz_checkBox, "rz")
-        self.populate_check(self.settingsTab.ro_checkBox, "ro")
-        self.populate_check(self.settingsTab.sx_checkBox, "sx")
-        self.populate_check(self.settingsTab.sy_checkBox, "sy")
-        self.populate_check(self.settingsTab.sz_checkBox, "sz")
+        self.populate_check(self.settings_tab.tx_checkBox, "tx")
+        self.populate_check(self.settings_tab.ty_checkBox, "ty")
+        self.populate_check(self.settings_tab.tz_checkBox, "tz")
+        self.populate_check(self.settings_tab.rx_checkBox, "rx")
+        self.populate_check(self.settings_tab.ry_checkBox, "ry")
+        self.populate_check(self.settings_tab.rz_checkBox, "rz")
+        self.populate_check(self.settings_tab.ro_checkBox, "ro")
+        self.populate_check(self.settings_tab.sx_checkBox, "sx")
+        self.populate_check(self.settings_tab.sy_checkBox, "sy")
+        self.populate_check(self.settings_tab.sz_checkBox, "sz")
 
-        self.settingsTab.ro_comboBox.setCurrentIndex(
+        self.settings_tab.ro_comboBox.setCurrentIndex(
             self.root.attr("default_rotate_order").get())
 
         ikRefArrayItems = self.root.attr("ik_ref_array").get().split(",")
         for item in ikRefArrayItems:
-            self.settingsTab.ikRefArray_listWidget.addItem(item)
+            self.settings_tab.ikRefArray_listWidget.addItem(item)
 
         # populate connections in main settings
         # for cnx in Guide.connectors:
-        #     self.mainSettingsTab.connector_comboBox.addItem(cnx)
-        # cBox = self.mainSettingsTab.connector_comboBox
+        #     self.main_tab.connector_comboBox.addItem(cnx)
+        # cBox = self.main_tab.connector_comboBox
         # self.connector_items = [cBox.itemText(i) for i in range(cBox.count())]
         # currentConnector = self.root.attr("connector").get()
         # if currentConnector not in self.connector_items:
-        #     self.mainSettingsTab.connector_comboBox.addItem(currentConnector)
+        #     self.main_tab.connector_comboBox.addItem(currentConnector)
         #     self.connector_items.append(currentConnector)
         #     pm.displayWarning("The current connector: %s, is not a valid "
         #                       "connector for this component. "
         #                       "Build will Fail!!")
         # comboIndex = self.connector_items.index(currentConnector)
-        # self.mainSettingsTab.connector_comboBox.setCurrentIndex(comboIndex)
+        # self.main_tab.connector_comboBox.setCurrentIndex(comboIndex)
 
     def create_component_layout(self):
         self.settings_layout = QtWidgets.QVBoxLayout()
@@ -222,81 +222,81 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         self.setLayout(self.settings_layout)
 
     def create_component_connections(self):
-        self.settingsTab.joint_checkBox.stateChanged.connect(
+        self.settings_tab.joint_checkBox.stateChanged.connect(
             self.enable_leaf_joint)
-        self.settingsTab.joint_checkBox.stateChanged.connect(
+        self.settings_tab.joint_checkBox.stateChanged.connect(
             partial(self.update_check,
-                    self.settingsTab.joint_checkBox,
+                    self.settings_tab.joint_checkBox,
                     "joint"))
-        self.settingsTab.leafJoint_checkBox.stateChanged.connect(
+        self.settings_tab.leafJoint_checkBox.stateChanged.connect(
             partial(self.update_check,
-                    self.settingsTab.leafJoint_checkBox,
+                    self.settings_tab.leafJoint_checkBox,
                     "leaf_joint"))
-        self.settingsTab.uniScale_checkBox.stateChanged.connect(
+        self.settings_tab.uniScale_checkBox.stateChanged.connect(
             partial(self.update_check,
-                    self.settingsTab.uniScale_checkBox,
+                    self.settings_tab.uniScale_checkBox,
                     "uni_scale"))
-        self.settingsTab.neutralRotation_checkBox.stateChanged.connect(
+        self.settings_tab.neutralRotation_checkBox.stateChanged.connect(
             partial(self.update_check,
-                    self.settingsTab.neutralRotation_checkBox,
+                    self.settings_tab.neutralRotation_checkBox,
                     "neutral_rotation"))
-        self.settingsTab.mirrorBehaviour_checkBox.stateChanged.connect(
+        self.settings_tab.mirrorBehaviour_checkBox.stateChanged.connect(
             partial(self.update_check,
-                    self.settingsTab.mirrorBehaviour_checkBox,
+                    self.settings_tab.mirrorBehaviour_checkBox,
                     "mirror_behaviour"))
-        self.settingsTab.ctlSize_doubleSpinBox.valueChanged.connect(
+        self.settings_tab.ctlSize_doubleSpinBox.valueChanged.connect(
             partial(self.update_spin_box,
-                    self.settingsTab.ctlSize_doubleSpinBox,
+                    self.settings_tab.ctlSize_doubleSpinBox,
                     "ctl_size"))
-        self.settingsTab.controlShape_comboBox.currentIndexChanged.connect(
+        self.settings_tab.controlShape_comboBox.currentIndexChanged.connect(
             partial(self.update_control_shape,
-                    self.settingsTab.controlShape_comboBox,
+                    self.settings_tab.controlShape_comboBox,
                     self.iconsList, "icon"))
 
-        self.settingsTab.tx_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.tx_checkBox, "tx"))
-        self.settingsTab.ty_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.ty_checkBox, "ty"))
-        self.settingsTab.tz_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.tz_checkBox, "tz"))
-        self.settingsTab.rx_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.rx_checkBox, "rx"))
-        self.settingsTab.ry_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.ry_checkBox, "ry"))
-        self.settingsTab.rz_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.rz_checkBox, "rz"))
-        self.settingsTab.ro_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.ro_checkBox, "ro"))
-        self.settingsTab.sx_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.sx_checkBox, "sx"))
-        self.settingsTab.sy_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.sy_checkBox, "sy"))
-        self.settingsTab.sz_checkBox.stateChanged.connect(
-            partial(self.update_check, self.settingsTab.sz_checkBox, "sz"))
+        self.settings_tab.tx_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.tx_checkBox, "tx"))
+        self.settings_tab.ty_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.ty_checkBox, "ty"))
+        self.settings_tab.tz_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.tz_checkBox, "tz"))
+        self.settings_tab.rx_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.rx_checkBox, "rx"))
+        self.settings_tab.ry_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.ry_checkBox, "ry"))
+        self.settings_tab.rz_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.rz_checkBox, "rz"))
+        self.settings_tab.ro_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.ro_checkBox, "ro"))
+        self.settings_tab.sx_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.sx_checkBox, "sx"))
+        self.settings_tab.sy_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.sy_checkBox, "sy"))
+        self.settings_tab.sz_checkBox.stateChanged.connect(
+            partial(self.update_check, self.settings_tab.sz_checkBox, "sz"))
 
-        self.settingsTab.ro_comboBox.currentIndexChanged.connect(
+        self.settings_tab.ro_comboBox.currentIndexChanged.connect(
             partial(self.update_check,
-                    self.settingsTab.ro_comboBox,
+                    self.settings_tab.ro_comboBox,
                     "default_rotate_order"))
 
-        self.settingsTab.ikRefArrayAdd_pushButton.clicked.connect(
+        self.settings_tab.ikRefArrayAdd_pushButton.clicked.connect(
             partial(self.add_item_to_list_widget,
-                    self.settingsTab.ikRefArray_listWidget,
+                    self.settings_tab.ikRefArray_listWidget,
                     "ik_ref_array"))
-        self.settingsTab.ikRefArrayRemove_pushButton.clicked.connect(
+        self.settings_tab.ikRefArrayRemove_pushButton.clicked.connect(
             partial(self.remove_selected_from_list_widget,
-                    self.settingsTab.ikRefArray_listWidget,
+                    self.settings_tab.ikRefArray_listWidget,
                     "ik_ref_array"))
-        self.settingsTab.ikRefArray_listWidget.installEventFilter(self)
+        self.settings_tab.ikRefArray_listWidget.installEventFilter(self)
 
-        self.mainSettingsTab.connector_comboBox.currentIndexChanged.connect(
+        self.main_tab.connector_comboBox.currentIndexChanged.connect(
             partial(self.update_connector,
-                    self.mainSettingsTab.connector_comboBox,
+                    self.main_tab.connector_comboBox,
                     self.connector_items))
 
     def enable_leaf_joint(self):
-        state = self.settingsTab.joint_checkBox.isChecked()
-        self.settingsTab.leafJoint_checkBox.setEnabled(state)
+        state = self.settings_tab.joint_checkBox.isChecked()
+        self.settings_tab.leafJoint_checkBox.setEnabled(state)
 
     def dockCloseEventTriggered(self):
         pyqt.deleteInstances(self, MayaQDockWidget)
