@@ -71,7 +71,7 @@ class Block(SubBlock):
             parent = self.parent.network.attr("guide").inputs(type="transform")[0]
         else:
             parent = self.parent.network.attr("transforms").inputs(type="transform")[-1]
-        guide = icon.guide_root_icon(parent, name_format % "root", m=pm.datatypes.Matrix(self["transforms"][0]))
+        guide = icon.guide__network_icon(parent, name_format % "_network", m=pm.datatypes.Matrix(self["transforms"][0]))
         size_ref_t = transform.getOffsetPosition(guide, [0, 0, 1])
         size_ref = primitive.addTransform(guide, name_format % "sizeRef", m=size_ref_t)
         attribute.lockAttribute(size_ref)
@@ -177,8 +177,8 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         self.populate_check(self.settings_tab.mirrorBehaviour_checkBox,
                            "mirror_behaviour")
         self.settings_tab.ctlSize_doubleSpinBox.setValue(
-            self.root.attr("ctl_size").get())
-        sideIndex = self.iconsList.index(self.root.attr("icon").get())
+            self._network.attr("ctl_size").get())
+        sideIndex = self.iconsList.index(self._network.attr("icon").get())
         self.settings_tab.controlShape_comboBox.setCurrentIndex(sideIndex)
 
         self.populate_check(self.settings_tab.tx_checkBox, "tx")
@@ -193,9 +193,9 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         self.populate_check(self.settings_tab.sz_checkBox, "sz")
 
         self.settings_tab.ro_comboBox.setCurrentIndex(
-            self.root.attr("default_rotate_order").get())
+            self._network.attr("default_rotate_order").get())
 
-        ikRefArrayItems = self.root.attr("ik_ref_array").get().split(",")
+        ikRefArrayItems = self._network.attr("ik_ref_array").get().split(",")
         for item in ikRefArrayItems:
             self.settings_tab.ikRefArray_listWidget.addItem(item)
 
@@ -204,7 +204,7 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         #     self.main_tab.connector_comboBox.addItem(cnx)
         # cBox = self.main_tab.connector_comboBox
         # self.connector_items = [cBox.itemText(i) for i in range(cBox.count())]
-        # currentConnector = self.root.attr("connector").get()
+        # currentConnector = self._network.attr("connector").get()
         # if currentConnector not in self.connector_items:
         #     self.main_tab.connector_comboBox.addItem(currentConnector)
         #     self.connector_items.append(currentConnector)
