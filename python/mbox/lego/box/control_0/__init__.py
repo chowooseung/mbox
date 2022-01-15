@@ -13,7 +13,8 @@ from mbox.lego.lib import (
 
 # mgear
 from mgear.core import (
-    transform
+    transform,
+    vector
 )
 
 
@@ -41,8 +42,8 @@ class Objects(AbstractObjects):
         # create
         if not self.block["leaf_joint"]:
             root = self.block.create_root(context=context, m=m)
-            distance = transform.getDistance2(pm.datatypes.Matrix(self.block["transforms"][0]).translate,
-                                              pm.datatypes.Matrix(self.block["transforms"][1]).translate)
+            distance = vector.getDistance(pm.datatypes.Matrix(self.block["transforms"][0]).translate,
+                                          pm.datatypes.Matrix(self.block["transforms"][1]).translate)
             ctl = self.block.create_ctl(context=context,
                                         parent=root,
                                         m=m,
