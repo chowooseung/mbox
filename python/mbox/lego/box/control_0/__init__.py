@@ -41,8 +41,8 @@ class Objects(AbstractObjects):
         # create
         if not self.block["leaf_joint"]:
             root = self.block.create_root(context=context, m=m)
-            distance = transform.getDistance2(self.block["transforms"][0].translate,
-                                              self.block["transforms"][1].translate)
+            distance = transform.getDistance2(pm.datatypes.Matrix(self.block["transforms"][0]).translate,
+                                              pm.datatypes.Matrix(self.block["transforms"][1]).translate)
             ctl = self.block.create_ctl(context=context,
                                         parent=root,
                                         m=m,
