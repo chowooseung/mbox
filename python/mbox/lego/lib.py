@@ -1273,7 +1273,8 @@ class AdditionalFunc:
         # recursive
         def _connect_network(_block):
             _ins = context.instance(_block.ins_name)
-            pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
+            if _ins["root"]:
+                pm.connectAttr(_ins["root"].attr("message"), _block.network.attr("rig"), force=True)
             if _block.parent:
                 pm.connectAttr(_block.parent.network.attr("affects")[0], _block.network.attr("affectedBy")[0], force=True)
             if _ins.get("ctls"):
