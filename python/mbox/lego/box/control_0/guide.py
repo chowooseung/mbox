@@ -289,10 +289,10 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
                     "ik_ref_array"))
         self.settings_tab.ikRefArray_listWidget.installEventFilter(self)
 
-        self.main_tab.connector_comboBox.currentIndexChanged.connect(
-            partial(self.update_connector,
-                    self.main_tab.connector_comboBox,
-                    self.connector_items))
+        # self.main_tab.connector_comboBox.currentIndexChanged.connect(
+        #     partial(self.update_connector,
+        #             self.main_tab.connector_comboBox,
+        #             self.connector_items))
 
     def enable_leaf_joint(self):
         state = self.settings_tab.joint_checkBox.isChecked()
