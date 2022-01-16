@@ -43,32 +43,32 @@ class Objects(AbstractObjects):
             else None
         # create
         if not self.block["leaf_joint"]:
-            root = self.block.create_root(context=context, m=m)
+            root = self.create_root(context=context, m=m)
             distance = vector.getDistance(pm.datatypes.Matrix(self.block["transforms"][0]).translate,
                                           pm.datatypes.Matrix(self.block["transforms"][1]).translate)
-            ctl = self.block.create_ctl(context=context,
-                                        parent=root,
-                                        m=m,
-                                        parent_ctl=None,
-                                        color=ik_color,
-                                        ctl_attr=self.block["key_able_attrs"],
-                                        shape=self.block["icon"],
-                                        size=self.block["ctl_size"] * distance)
-            ref = self.block.create_ref(context=context,
-                                        parent=ctl,
-                                        description="",
-                                        m=m)
+            ctl = self.create_ctl(context=context,
+                                  parent=root,
+                                  m=m,
+                                  parent_ctl=None,
+                                  color=ik_color,
+                                  ctl_attr=self.block["key_able_attrs"],
+                                  shape=self.block["icon"],
+                                  size=self.block["ctl_size"] * distance)
+            ref = self.create_ref(context=context,
+                                  parent=ctl,
+                                  description="",
+                                  m=m)
             if self.block.top["joint_rig"] and self.block["joint_rig"]:
-                jnt = self.block.create_jnt(context=context,
-                                            parent=parent_joint,
-                                            description="",
-                                            ref=ref)
+                jnt = self.create_jnt(context=context,
+                                      parent=parent_joint,
+                                      description="",
+                                      ref=ref)
         else:
             if self.block.top["joint_rig"] and self.block["joint_rig"]:
-                jnt = self.block.create_jnt(context=context,
-                                            parent=parent_joint,
-                                            description="",
-                                            ref=m)
+                jnt = self.create_jnt(context=context,
+                                      parent=parent_joint,
+                                      description="",
+                                      ref=m)
 
 
 class Attributes(AbstractAttributes):

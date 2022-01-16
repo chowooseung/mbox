@@ -33,6 +33,8 @@ DESCRIPTION = "control 0"
 
 class Block(SubBlock):
 
+    CONNECTOR = "standard"
+
     def __init__(self, parent):
         super(Block, self).__init__(parent=parent)
         self["version"] = "{}. {}. {}".format(*VERSION)
