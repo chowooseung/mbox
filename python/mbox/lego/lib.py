@@ -1226,18 +1226,22 @@ class AbstractRig:
         m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
         d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
 
-        i_m = om.MMatrix(m_m.attr("matrixSum").get()).inverse()
+        m = m_m.attr("matrixSum").get()
+        m_i = m.inverse()
+
+        tm = pm.datatypes.TransformationMatrix(m)
+        jo = pm.datatypes.degrees(tm.getRotation())
 
         pm.connectAttr(d_m.attr("outputTranslate"), jnt.attr("t"), force=True)
         pm.connectAttr(d_m.attr("outputRotate"), jnt.attr("r"), force=True)
         pm.connectAttr(d_m.attr("outputScale"), jnt.attr("s"), force=True)
 
-        jnt.attr("jointOrientX").set(jnt.attr("rx").get())
-        jnt.attr("jointOrientY").set(jnt.attr("ry").get())
-        jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
+        jnt.attr("jointOrientX").set(jo[0])
+        jnt.attr("jointOrientY").set(jo[1])
+        jnt.attr("jointOrientZ").set(jo[2])
 
-        m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), i_m)
-        # m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
+        m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), m_i)
+        m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
         d_m2 = node.createDecomposeMatrixNode(m_m2.attr("matrixSum"))
 
         pm.connectAttr(d_m2.attr("outputRotate"), jnt.attr("r"), force=True)
