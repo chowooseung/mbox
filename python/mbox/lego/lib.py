@@ -2,6 +2,7 @@
 
 # maya
 import pymel.core as pm
+import maya.api.OpenMaya as om
 
 # mbox
 import mbox
@@ -1225,7 +1226,7 @@ class AbstractRig:
         m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
         d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
 
-        i_m = m_m.attr("matrixSum").get().inverse()
+        i_m = om.MMatrix(m_m.attr("matrixSum").get()).inverse()
 
         pm.connectAttr(d_m.attr("outputTranslate"), jnt.attr("t"), force=True)
         pm.connectAttr(d_m.attr("outputRotate"), jnt.attr("r"), force=True)
