@@ -46,8 +46,8 @@ class Block(SubBlock):
         self["joint_rig"] = True
         self["leaf_joint"] = False
         self["uni_scale"] = False
-        self["mirror_behaviour"] = False
-        self["neutral_rotation"] = True
+        self["mirror_behaviour"] = True
+        self["neutral_rotation"] = False
         self["icon"] = "cube"
         self["key_able_attrs"] = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "ro"]
         self["default_rotate_order"] = 0
