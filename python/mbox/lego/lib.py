@@ -1241,6 +1241,7 @@ class AbstractRig:
         jnt.attr("jointOrientZ").set(jo[2])
 
         m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), m_i, jnt, "r")
+        m_m2.attr("matrixIn[2]").set(m_m.attr("matrixSum").get())
 
         attribute.lockAttribute(jnt)
         attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
