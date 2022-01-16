@@ -37,7 +37,7 @@ class Objects(AbstractObjects):
             m = transform.setMatrixScale(pm.datatypes.Matrix(self.block["transforms"][1]), scl)
 
         # get ctl color
-        ik_color = self.block.get_ctl_color("ik")
+        ik_color = self.get_ctl_color("ik")
 
         # create
         if not self.block["leaf_joint"]:
