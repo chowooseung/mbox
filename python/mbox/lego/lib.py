@@ -1192,9 +1192,9 @@ class AbstractRig:
             index = self.block["ref_index"]
             block = self.block
             top_ins = context.instance(self.block.top.ins_name)
-            while True:
+            while parent is None:
                 parent_b = block.parent
-                if parent_b is None:
+                if isinstance(parent_b, RootBlock):
                     parent = top_ins["joints_root"]
                     break
 
@@ -1204,8 +1204,6 @@ class AbstractRig:
                     break
 
                 block = parent_b
-                if parent is not None:
-                    break
 
         if self.block.top["connect_joints"] and pm.objExists(name):
             jnt = pm.PyNode(name)
