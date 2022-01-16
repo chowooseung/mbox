@@ -38,7 +38,9 @@ class Objects(AbstractObjects):
 
         # get ctl color
         ik_color = self.block.get_ctl_color("ik")
-
+        parent_joint = self.parent_ins["jnts"][self.block["ref_index"]] \
+            if self.parent_ins["jnts"][self.block["ref_index"]] \
+            else None
         # create
         if not self.block["leaf_joint"]:
             root = self.block.create_root(context=context, m=m)
@@ -58,13 +60,13 @@ class Objects(AbstractObjects):
                                         m=m)
             if self.block.top["joint_rig"] and self.block["joint_rig"]:
                 jnt = self.block.create_jnt(context=context,
-                                            parent=self.parent_ins["jnts"][self.block["ref_index"]],
+                                            parent=parent_joint,
                                             description="",
                                             ref=ref)
         else:
             if self.block.top["joint_rig"] and self.block["joint_rig"]:
                 jnt = self.block.create_jnt(context=context,
-                                            parent=self.parent_ins["jnts"][self.block["ref_index"]],
+                                            parent=parent_joint,
                                             description="",
                                             ref=m)
 

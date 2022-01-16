@@ -41,7 +41,7 @@ class Objects(AbstractObjects):
         self.ins["joints_root"] = joints
         self.ins["ctls"] = [world_ctl]
         self.ins["refs"] = [world_ref]
-        self.ins["jnts"] = [joints]
+        self.ins["jnts"] = None
         self.ins["root_set"] = pm.sets(name=f"{self.block['name']}_set", empty=True)
         self.ins["geo_set"] = pm.sets(name="geo_set", empty=True)
         self.ins["controls_set"] = pm.sets(name="controls_set", empty=True)

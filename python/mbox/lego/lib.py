@@ -595,14 +595,11 @@ class AbstractBlock(dict):
         attribute.setKeyableAttributes(ctl, ctl_attr)
         attribute.setKeyableAttributes(npo, npo_attr)
 
-        pm.controller(ctl)
-        tag = pm.PyNode(pm.controller(ctl, query=True)[0])
         top_instance = context.instance(self.top.ins_name)
         condition = top_instance["root"].attr("controls_mouseover").outputs(type="condition")[0]
+        tag = node.add_controller_tag(ctl, parent_ctl)
         pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
 
-        if parent_ctl:
-            node.add_controller_tag(ctl, parent_ctl)
         instance["ctls"].append(ctl)
         return ctl
 
@@ -639,15 +636,14 @@ class AbstractBlock(dict):
         else:
             if isinstance(ref, pm.datatypes.Matrix):
                 jnt = primitive.addJoint(parent, name, ref)
+                jnt.setMatrix(ref, worldSpace=True)
+                jnt.attr("jointOrientX").set(jnt.attr("rx").get())
+                jnt.attr("jointOrientY").set(jnt.attr("ry").get())
+                jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
+                return jnt
             else:
                 jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
 
-        if isinstance(ref, pm.datatypes.Matrix):
-            jnt.setMatrix(ref, worldSpace=True)
-            jnt.attr("jointOrientX").set(jnt.attr("rx").get())
-            jnt.attr("jointOrientY").set(jnt.attr("ry").get())
-            jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
-            return jnt
         m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
         d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
 
