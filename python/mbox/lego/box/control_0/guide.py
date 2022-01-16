@@ -104,9 +104,7 @@ class Block(SubBlock):
         attribute.addAttribute(self.network, "ctl_size", "float", self["ctl_size"], keyable=False)
 
         name_format = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}_%s"
-        if isinstance(self.parent, RootBlock):
-            print(self)
-            print(self.top)
+        if isinstance(self.parent, RootBlock) or self.parent is None:
             parent = self.top.network.attr("guide").inputs(type="transform")[0]
         else:
             parent = self.parent.network.attr("transforms").inputs(type="transform")[-1]
