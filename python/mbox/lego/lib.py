@@ -1199,7 +1199,7 @@ class AbstractRig:
                     break
 
                 parent_ins = context.instance(parent_b.ins_name)
-                if parent_ins["jnts"].get():
+                if parent_ins["jnts"]:
                     parent = parent_ins["jnts"][index]
                     break
 
