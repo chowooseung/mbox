@@ -1240,6 +1240,7 @@ class AbstractRig:
         jnt.attr("jointOrientY").set(jo[1])
         jnt.attr("jointOrientZ").set(jo[2])
 
+
         m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), m_i)
         m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
         d_m2 = node.createDecomposeMatrixNode(m_m2.attr("matrixSum"))
