@@ -1191,15 +1191,19 @@ class AbstractRig:
         if parent is None:
             index = self.block["ref_index"]
             block = self.block
+            top_ins = context.instance(self.block.top.ins_name)
             while True:
                 parent_b = block.parent
+                if parent_b is None:
+                    parent = top_ins["joints_root"]
+                    break
+
                 parent_ins = context.instance(parent_b.ins_name)
                 if parent_ins["jnts"].get():
                     parent = parent_ins["jnts"][index]
-                elif parent_b.parent is None:
-                    parent = parent_ins["joints_root"]
-                else:
-                    block = parent_b
+                    break
+
+                block = parent_b
                 if parent is not None:
                     break
 
