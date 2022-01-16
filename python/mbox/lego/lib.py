@@ -1236,7 +1236,7 @@ class AbstractRig:
         jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
 
         m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), i_m)
-        m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
+        # m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
         d_m2 = node.createDecomposeMatrixNode(m_m2.attr("matrixSum"))
 
         pm.connectAttr(d_m2.attr("outputRotate"), jnt.attr("r"), force=True)
