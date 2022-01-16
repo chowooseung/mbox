@@ -1061,10 +1061,10 @@ class AbstractRig:
             description = description.capitalize()
 
         index_filter = ["left", "right", "center"]
-        side = side_set[index_filter.index(self["comp_side"])]
-        name = rule.format(name=self["comp_name"],
+        side = side_set[index_filter.index(self.block["comp_side"])]
+        name = rule.format(name=self.block["comp_name"],
                            side=side,
-                           index=str(self["comp_index"]).zfill(padding),
+                           index=str(self.block["comp_index"]).zfill(padding),
                            description=description,
                            extension=extension)
         name = "_".join([x for x in name.split("_") if x])
