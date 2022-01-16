@@ -39,7 +39,7 @@ class Objects(AbstractObjects):
         # get ctl color
         ik_color = self.block.get_ctl_color("ik")
         parent_joint = self.parent_ins["jnts"][self.block["ref_index"]] \
-            if self.parent_ins["jnts"][self.block["ref_index"]] \
+            if self.parent_ins["jnts"] \
             else None
         # create
         if not self.block["leaf_joint"]:
