@@ -104,8 +104,8 @@ class Block(SubBlock):
         attribute.addAttribute(self.network, "ctl_size", "float", self["ctl_size"], keyable=False)
 
         name_format = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}_%s"
-        if isinstance(self.parent, RootBlock) or self.parent is None:
-            parent = self.parent.network.attr("guide").inputs(type="transform")[0]
+        if isinstance(self.parent, RootBlock):
+            parent = self.top.network.attr("guide").inputs(type="transform")[0]
         else:
             parent = self.parent.network.attr("transforms").inputs(type="transform")[-1]
         guide = icon.guide_root_icon(parent, name_format % "root", m=pm.datatypes.Matrix(self["transforms"][0]))
