@@ -915,7 +915,7 @@ class RootBlock(AbstractBlock):
         # last created block select
         pm.select(sel)
 
-    def find_block_with_oid(self, oid) -> SubBlock or None:
+    def find_block_with_oid(self, oid):
         # recursive
         def _find(_block, _oid):
             if _block["oid"] == _oid:
@@ -929,6 +929,9 @@ class RootBlock(AbstractBlock):
         #   ----
 
         sub_block = None
+        if self["oid"] == oid:
+            return self
+
         for block in self["blocks"]:
             sub_block = _find(block, oid)
 
@@ -937,7 +940,7 @@ class RootBlock(AbstractBlock):
 
         return sub_block
 
-    def find_block_with_ins_name(self, ins_name) -> SubBlock or None:
+    def find_block_with_ins_name(self, ins_name):
         # recursive
         def _find(_block, _ins_name):
             if _block.ins_name == _ins_name:
@@ -951,6 +954,9 @@ class RootBlock(AbstractBlock):
         #   ----
 
         sub_block = None
+        if self.ins_name == ins_name:
+            return self
+
         for block in self["blocks"]:
             sub_block = _find(block, ins_name)
 
