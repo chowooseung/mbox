@@ -1223,8 +1223,7 @@ class AbstractRig:
             else:
                 jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
 
-        m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"))
-        d_m = node.createDecomposeMatrixNode(m_m.attr("matrixSum"))
+        m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"), jnt, "st")
 
         m = m_m.attr("matrixSum").get()
         m_i = m.inverse()
@@ -1232,23 +1231,18 @@ class AbstractRig:
         tm = pm.datatypes.TransformationMatrix(m)
         jo = pm.datatypes.degrees(tm.getRotation())
 
-        pm.connectAttr(d_m.attr("outputTranslate"), jnt.attr("t"), force=True)
-        pm.connectAttr(d_m.attr("outputRotate"), jnt.attr("r"), force=True)
-        pm.connectAttr(d_m.attr("outputScale"), jnt.attr("s"), force=True)
-
         jnt.attr("jointOrientX").set(jo[0])
         jnt.attr("jointOrientY").set(jo[1])
         jnt.attr("jointOrientZ").set(jo[2])
 
         m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), m_i, jnt, "r")
-        m_m2.attr("matrixIn[2]").set(m_m2.attr("matrixSum").get().inverse())
 
         attribute.lockAttribute(jnt)
         attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
         instance["jnts"].append(jnt)
         return jnt
 
-    def connect_standard(self):
+    def connect(self):
         pass
 
 
