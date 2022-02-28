@@ -194,8 +194,8 @@ class Blocks(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         # buttons
         self.component_ui.settings_pushButton.clicked.connect(lib.inspect_settings)
         self.component_ui.build_pushButton.clicked.connect(partial(build.rig, None))
-        self.component_ui.duplicate_pushButton.clicked.connect(partial(build.duplicate_guide, False, True))
-        self.component_ui.dupSym_pushButton.clicked.connect(partial(build.duplicate_guide, True, True))
+        self.component_ui.duplicate_pushButton.clicked.connect(partial(build.duplicate_guide, None, None))
+        self.component_ui.dupSym_pushButton.clicked.connect(partial(build.mirror_guide, None, None))
         # self.component_ui.extrCtl_pushButton.clicked.connect(guide_manager.extract_controls)
         self.component_ui.draw_pushButton.clicked.connect(self.draw_comp_doubleClick)
 

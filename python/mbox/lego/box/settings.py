@@ -19,7 +19,11 @@ from . import custom_step_ui as custom_step_ui
 from . import root_settings_ui as root_ui
 from . import block_settings_ui as block_ui
 from . import joint_names_ui as joint_name_ui
-from mbox.lego import naming, lib
+from mbox.lego import (
+    naming,
+    lib,
+    utils
+)
 
 # mgear
 from mgear.core import pyqt, string
@@ -54,7 +58,7 @@ class RootNameTabUI(QtWidgets.QDialog, name_ui.Ui_Form):
 class HelperSlots:
 
     def __init__(self):
-        self._network = None # 
+        self._network = None
 
     def update_host_ui(self, l_edit, target_attr):
         guide = lib.get_component_guide(pm.selected(type="transform")[0])
@@ -106,7 +110,6 @@ class HelperSlots:
         l_edit.setPalette(Palette)
 
     def add_item_to_list_widget(self, list_widget, target_attr=None):
-
         items = pm.selected()
         items_list = [i.text() for i in list_widget.findItems(
             "", QtCore.Qt.MatchContains)]
@@ -136,11 +139,45 @@ class HelperSlots:
         if target_attr:
             self.update_list_attr(list_widget, target_attr)
 
+    def add_item_to_list_widget_m(self, list_widget, target_attr=None):
+        items = utils.select_guides()
+        items_list = [i.text() for i in list_widget.findItems(
+            "", QtCore.Qt.MatchContains)]
+        # Quick clean the first empty item
+        if items_list and not items_list[0]:
+            list_widget.takeItem(0)
+
+        for item in items:
+            root = self._guide.getParent(generations=-1)
+            blueprint = lib.blueprint_from_guide(root)
+            item_network = item.attr("message").outputs(type="network")[0]
+            block = blueprint.find_block_with_oid(item_network.attr("oid").get())
+            if block is None:
+                pm.displayWarning("Not valid obj: %s" %
+                                  item.name())
+                continue
+            if block.ins_name not in items_list:
+                new_item = QtWidgets.QListWidgetItem()
+                new_item.setText(block.ins_name)
+                new_item.setData(QtCore.Qt.UserRole, block["oid"])
+                list_widget.addItem(new_item)
+            else:
+                pm.displayWarning("The object: %s, is already in the list." %
+                                  item.name())
+        if target_attr:
+            self.update_list_attr_m(list_widget, target_attr)
+
     def remove_selected_from_list_widget(self, list_widget, target_attr=None):
         for item in list_widget.selectedItems():
             list_widget.takeItem(list_widget.row(item))
         if target_attr:
             self.update_list_attr(list_widget, target_attr)
+
+    def remove_selected_from_list_widget_m(self, list_widget, target_attr=None):
+        for item in list_widget.selectedItems():
+            list_widget.takeItem(list_widget.row(item))
+        if target_attr:
+            self.update_list_attr_m(list_widget, target_attr)
 
     def move_from_list_widget_to_list_widget(self, source_list_widget, target_list_widget,
                                              target_attr_list_widget, target_attr=None):
@@ -170,6 +207,12 @@ class HelperSlots:
     def update_list_attr(self, source_list_widget, target_attr):
         """Update the string attribute with values separated by commas"""
         new_value = ",".join([i.text() for i in source_list_widget.findItems(
+            "", QtCore.Qt.MatchContains)])
+        self._network.attr(target_attr).set(new_value)
+
+    def update_list_attr_m(self, source_list_widget, target_attr):
+        """Update the string attribute with values separated by commas"""
+        new_value = ",".join([i.data(QtCore.Qt.UserRole) for i in source_list_widget.findItems(
             "", QtCore.Qt.MatchContains)])
         self._network.attr(target_attr).set(new_value)
 
@@ -1230,7 +1273,7 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
 
         fileName = os.path.split(filePath)[1].split(".")[0]
         stepWidget.addItem(fileName + " | " + filePath)
-        self.updateListAttr(stepWidget, stepAttr)
+        self.update_list_attr(stepWidget, stepAttr)
         self.refresh_status_color(stepWidget)
 
     def new_custom_step(self, pre=True, *args):
@@ -1277,7 +1320,7 @@ class CustomStep(lib.{pre_post}):
     """Custom Step description
     """
 
-    def process(self):
+    def process(self, context):
         """Run method.
 
         Returns:

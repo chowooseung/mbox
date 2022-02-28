@@ -63,12 +63,13 @@ def load_build_step(block) -> tuple:
     return objects, attributes, operators, connection
 
 
-def select_guide() -> pm.nodetypes.Transform:
-    msg = "selected node is not mbox guide node"
+def select_guides() -> list:
     selected = pm.selected(type="transform")
-    assert len(selected) > 0, msg
-    assert selected[0].hasAttr("is_guide") is True \
-           or selected[0].hasAttr("is_guide_component") is True \
-           or selected[0].hasAttr("is_guide_root") is True, msg
-    return selected[0]
+    guides = list()
+    for sel in selected:
+        if (sel.hasAttr("is_guide") is True \
+                or sel.hasAttr("is_guide_component") is True \
+                or sel.hasAttr("is_guide_root") is True):
+            guides.append(sel)
+    return guides
 

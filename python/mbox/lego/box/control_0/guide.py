@@ -12,7 +12,8 @@ from maya.app.general.mayaMixin import MayaQDockWidget
 from mbox.core import icon
 from mbox.lego.lib import (
     RootBlock,
-    SubBlock
+    SubBlock,
+    blueprint_from_guide
 )
 from mbox.lego.box import settings
 from . import settings_ui
@@ -33,14 +34,15 @@ DESCRIPTION = "control 0"
 
 class Block(SubBlock):
 
-    CONNECTOR = "standard"
+    CONNECTOR = []
 
     def __init__(self, parent):
         super(Block, self).__init__(parent=parent)
         self["version"] = "{}. {}. {}".format(*VERSION)
         self["comp_type"] = TYPE
         self["comp_name"] = NAME
-        self["transforms"] = [pm.datatypes.Matrix().tolist()]
+        size_ref_t = transform.setMatrixPosition(pm.datatypes.Matrix(), [0, 0, 1])
+        self["transforms"] = [size_ref_t.tolist(), pm.datatypes.Matrix().tolist()]
 
         # specify attr
         self["joint_rig"] = True
@@ -108,9 +110,8 @@ class Block(SubBlock):
             parent = self.top.network.attr("guide").inputs(type="transform")[0]
         else:
             parent = self.parent.network.attr("transforms").inputs(type="transform")[-1]
-        guide = icon.guide_root_icon(parent, name_format % "root", m=pm.datatypes.Matrix(self["transforms"][0]))
-        size_ref_t = transform.getOffsetPosition(guide, [0, 0, 1])
-        size_ref = primitive.addTransform(guide, name_format % "sizeRef", m=size_ref_t)
+        guide = icon.guide_root_icon(parent, name_format % "root", m=pm.datatypes.Matrix(self["transforms"][1]))
+        size_ref = primitive.addTransform(guide, name_format % "sizeRef", m=pm.datatypes.Matrix(self["transforms"][0]))
         attribute.lockAttribute(size_ref)
         attribute.addAttribute(size_ref, "is_guide", "bool", False, keyable=False)
         pm.connectAttr(guide.attr("message"), self.network.attr("guide"))
@@ -201,24 +202,37 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         self.settings_tab.ro_comboBox.setCurrentIndex(
             self._network.attr("default_rotate_order").get())
 
+        items_list = [i.text() for i in self.settings_tab.ikRefArray_listWidget.findItems(
+            "", QtCore.Qt.MatchContains)]
+        # Quick clean the first empty item
+        if items_list and not items_list[0]:
+            self.settings_tab.ikRefArray_listWidget.takeItem(0)
+
         ikRefArrayItems = self._network.attr("ik_ref_array").get().split(",")
+        root = self._guide.getParent(generations=-1)
+        blueprint = blueprint_from_guide(root)
         for item in ikRefArrayItems:
-            self.settings_tab.ikRefArray_listWidget.addItem(item)
+            block = blueprint.find_block_with_oid(item)
+            if block is not None:
+                new_item = QtWidgets.QListWidgetItem()
+                new_item.setText(block.ins_name)
+                new_item.setData(QtCore.Qt.UserRole, block["oid"])
+                self.settings_tab.ikRefArray_listWidget.addItem(new_item)
 
         # populate connections in main settings
-        # for cnx in Guide.connectors:
-        #     self.main_tab.connector_comboBox.addItem(cnx)
-        # cBox = self.main_tab.connector_comboBox
-        # self.connector_items = [cBox.itemText(i) for i in range(cBox.count())]
-        # currentConnector = self._network.attr("connector").get()
-        # if currentConnector not in self.connector_items:
-        #     self.main_tab.connector_comboBox.addItem(currentConnector)
-        #     self.connector_items.append(currentConnector)
-        #     pm.displayWarning("The current connector: %s, is not a valid "
-        #                       "connector for this component. "
-        #                       "Build will Fail!!")
-        # comboIndex = self.connector_items.index(currentConnector)
-        # self.main_tab.connector_comboBox.setCurrentIndex(comboIndex)
+        for cnx in Block.CONNECTOR:
+           self.main_tab.connector_comboBox.addItem(cnx)
+        cBox = self.main_tab.connector_comboBox
+        self.connector_items = [cBox.itemText(i) for i in range(cBox.count())]
+        currentConnector = self._network.attr("connector").get()
+        if currentConnector not in self.connector_items:
+           self.main_tab.connector_comboBox.addItem(currentConnector)
+           self.connector_items.append(currentConnector)
+           pm.displayWarning("The current connector: %s, is not a valid "
+                             "connector for this component. "
+                             "Build will Fail!!")
+        comboIndex = self.connector_items.index(currentConnector)
+        self.main_tab.connector_comboBox.setCurrentIndex(comboIndex)
 
     def create_component_layout(self):
         self.settings_layout = QtWidgets.QVBoxLayout()
@@ -286,19 +300,19 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
                     "default_rotate_order"))
 
         self.settings_tab.ikRefArrayAdd_pushButton.clicked.connect(
-            partial(self.add_item_to_list_widget,
+            partial(self.add_item_to_list_widget_m,
                     self.settings_tab.ikRefArray_listWidget,
                     "ik_ref_array"))
         self.settings_tab.ikRefArrayRemove_pushButton.clicked.connect(
-            partial(self.remove_selected_from_list_widget,
+            partial(self.remove_selected_from_list_widget_m,
                     self.settings_tab.ikRefArray_listWidget,
                     "ik_ref_array"))
         self.settings_tab.ikRefArray_listWidget.installEventFilter(self)
 
-        # self.main_tab.connector_comboBox.currentIndexChanged.connect(
-        #     partial(self.update_connector,
-        #             self.main_tab.connector_comboBox,
-        #             self.connector_items))
+        self.main_tab.connector_comboBox.currentIndexChanged.connect(
+           partial(self.update_connector,
+                   self.main_tab.connector_comboBox,
+                   self.connector_items))
 
     def enable_leaf_joint(self):
         state = self.settings_tab.joint_checkBox.isChecked()

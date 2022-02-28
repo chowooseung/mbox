@@ -183,17 +183,19 @@ def draw_specify_component_guide(parent, component):
 
         blueprint = blueprint_from_guide(parent.getParent(generations=-1))
         mod = utils.load_block_module(component, guide=True)
-        comp_index = blueprint.solve_index(mod.NAME, "center")
-
         parent_network = parent.message.outputs(type="network")[0]
         parent_block = blueprint.find_block_with_oid(parent_network.attr("oid").get())
         block = mod.Block(parent_block)
+        if (parent_block is not blueprint):
+            block["comp_side"] = parent_block["comp_side"]
+        comp_index = blueprint.solve_index(mod.NAME, block["comp_side"], 0, block)
         block["comp_index"] = comp_index
 
         # translation offset
         offset_t = parent.getTranslation(space="world")
         for index, t in enumerate(block["transforms"]):
-            block["transforms"][index] = transform.setMatrixPosition(t, offset_t)
+            m = pm.datatypes.Matrix(t)
+            block["transforms"][index] = transform.setMatrixPosition(m, m.translate + offset_t)
 
         pm.select(block.guide())
 
@@ -358,7 +360,7 @@ class AbstractBlock(dict):
             self._parent["blocks"].append(self)
         self["oid"] = str(uuid.uuid4())
         self["blocks"] = _List()
-        self.attributes = list()
+        #  self.attributes = list()
 
     def __setitem__(self, key, value):
         if key == "blocks":
@@ -369,20 +371,21 @@ class AbstractBlock(dict):
         # recursive
         def _update(_block, _dict):
             for k, v in _dict.items():
-                if k == "blocks":
+                if k == "blocks" or k == "oid":
                     continue
                 _block[k] = v
 
             for index, b_data in enumerate(_dict["blocks"]):
                 mod = utils.load_block_module(b_data["comp_type"], guide=True)
-                _block["blocks"].append(mod.Block(_block))
-                _update(_block["blocks"][index], b_data)
+                _b = mod.Block(_block)
+                _update(_b, b_data)
 
         #   ----
 
         for key, value in kwargs.items():
             _d[key] = value
 
+        self["blocks"] = _List()
         _update(self, _d)
 
     @property
@@ -527,6 +530,9 @@ class SubBlock(AbstractBlock):
         # Joints Axis
         self["joints_axis"] = list()
 
+        # connector
+        self["connector"] = "standard"
+
     def from_network(self):
         self["oid"] = self.network.attr("oid").get()
         self["version"] = self.network.attr("version").get()
@@ -564,6 +570,7 @@ class SubBlock(AbstractBlock):
             self["ctl_shapes"] = dict()
         # TODO: specify joints axis
         self["joints_axis"] = [x.tolist() if x else list() for x in self.network.attr("joints_axis").get().split(",")]
+        self["connector"] = self.network.attr("connector").get()
 
     def to_network(self):
         self.network.attr("oid").set(self["oid"])
@@ -603,6 +610,7 @@ class SubBlock(AbstractBlock):
         joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
         joints_axis = ",".join(joints_axis)
         self.network.attr("joints_axis").set(joints_axis)
+        self.network.attr("connector").set(self["connector"])
 
     def guide(self):
         self.network = pm.createNode("network")
@@ -644,6 +652,7 @@ class SubBlock(AbstractBlock):
         joints_axis = [pm.datatypes.Matrix(x) if x else "" for x in self["joints_axis"]]
         joints_axis = ",".join(joints_axis)
         attribute.addAttribute(n, "joints_axis", "string", joints_axis)
+        attribute.addAttribute(n, "connector", "string", self["connector"])
 
     def update_guide(self):
         """update guide naming"""
@@ -658,6 +667,29 @@ class SubBlock(AbstractBlock):
             name = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}"
             guide.rename(f"{name}_{suffix}")
         pm.select(guides[0])
+
+    def duplicate(self, blueprint, parent, mirror=False):
+        mod = utils.load_block_module(self["comp_type"], guide=True)
+        copy_block = mod.Block(parent)
+        copy_block.update(self)
+
+        def _duplicate(_blueprint, _block, _mirror):
+            if _mirror and _block["comp_side"] != "center":
+                for index, m in enumerate(_block["transforms"]):
+                    m = pm.datatypes.Matrix(m)
+                    _block["transforms"][index] = transform.getSymmetricalTransform(m).tolist()
+                if _block["comp_side"] == "left":
+                    _block["comp_side"] = "right"
+                elif _block["comp_side"] == "right":
+                    _block["comp_side"] = "left"
+            index = _blueprint.solve_index(_block["comp_name"], _block["comp_side"], _block["comp_index"], _block)
+            _block["comp_index"] = index
+            guide = _block.guide()
+            for _b in _block["blocks"]:
+                _duplicate(_blueprint, _b, _mirror)
+            return guide
+
+        return _duplicate(blueprint, copy_block, mirror)
 
 
 class RootBlock(AbstractBlock):
@@ -746,7 +778,7 @@ class RootBlock(AbstractBlock):
         self["c_RGB_ik"] = (0, 0.6, 0)
 
         # notes
-        self["notes"] = ""
+        self["notes"] = "Rig Info\n\ndescription :"
 
     def from_network(self):
         self["oid"] = self.network.attr("oid").get()
@@ -975,14 +1007,13 @@ class RootBlock(AbstractBlock):
             if _block["comp_name"] == _name and _block["comp_side"] == _side:
                 # target block index remove
                 # in case already exists target block
-                if _block != target_block:
+                if _block is not target_block:
                     _indexes.append(_block["comp_index"])
 
             for _b in _block["blocks"]:
                 _solve_index(_b, _indexes, _name, _side)
 
         #   ----
-
         for block in self["blocks"]:
             _solve_index(block, indexes, name, side)
 
@@ -1123,7 +1154,12 @@ class AbstractRig:
                     context: Context,
                     m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
-        parent_instance = context.instance(self.block.parent.ins_name)
+        parent_block = self.block.parent
+        while True:
+            parent_instance = context.instance(parent_block.ins_name)
+            if parent_instance["refs"]:
+                break
+            parent_block = parent_block.parent
         parent = parent_instance["refs"][0] \
             if isinstance(self.block.parent, RootBlock) \
             else parent_instance["refs"][self.block["ref_index"]]
@@ -1208,20 +1244,33 @@ class AbstractRig:
 
         if self.block.top["connect_joints"] and pm.objExists(name):
             jnt = pm.PyNode(name)
-            attribute.setKeyableAttributes(ref)
-            attribute.setRotOrder(ref, jnt.attr("rotateOrder").get(asString=True).upper())
-            pm.matchTransform(ref, jnt, position=True, rotation=True, scale=True)
-            attribute.setKeyableAttributes(ref, [])
-        else:
-            if isinstance(ref, pm.datatypes.Matrix):
-                jnt = primitive.addJoint(parent, name, ref)
-                jnt.setMatrix(ref, worldSpace=True)
-                jnt.attr("jointOrientX").set(jnt.attr("rx").get())
-                jnt.attr("jointOrientY").set(jnt.attr("ry").get())
-                jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
+            rotate = jnt.rotate.get()
+            print(rotate)
+            assert rotate == [0, 0, 0], f"{jnt} rotation is not zero\nrotation : {rotate}"
+            pm.parent(jnt, parent)
+            if isinstance(ref, pm.nodetypes.Transform):
+                attribute.setKeyableAttributes(ref)
+                attribute.setRotOrder(ref, jnt.attr("rotateOrder").get(asString=True).upper())
+                pm.matchTransform(ref, jnt, position=True, rotation=True, scale=True)
+                attribute.setKeyableAttributes(ref, [])
+            elif isinstance(ref, pm.datatypes.Matrix):
+                attribute.lockAttribute(jnt)
+                attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
+                instance["jnts"].append(jnt)
                 return jnt
-            else:
-                jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
+        elif isinstance(ref, pm.datatypes.Matrix):
+            jnt = primitive.addJoint(parent, name, ref)
+            jnt.setMatrix(ref, worldSpace=True)
+            jnt.attr("jointOrientX").set(jnt.attr("rx").get())
+            jnt.attr("jointOrientY").set(jnt.attr("ry").get())
+            jnt.attr("jointOrientZ").set(jnt.attr("rz").get())
+            jnt.attr("rotate").set((0, 0, 0))
+            attribute.lockAttribute(jnt)
+            attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
+            instance["jnts"].append(jnt)
+            return jnt
+        else:
+            jnt = primitive.addJoint(parent, name, ref.getMatrix(worldSpace=True))
 
         m_m = node.createMultMatrixNode(ref.attr("worldMatrix"), jnt.attr("parentInverseMatrix"), jnt, "st")
 
@@ -1315,9 +1364,9 @@ class AdditionalFunc:
         def _create_set(_block):
             _ins = context.instance(_block.ins_name)
             _top_ins = context.instance(_block.top.ins_name)
-            if _ins.get("ctls") is not None:
+            if _ins.get("ctls"):
                 pm.sets(_top_ins["controls_set"], addElement=_ins["ctls"])
-            if _ins.get("jnts") is not None:
+            if _ins.get("jnts"):
                 pm.sets(_top_ins["deformer_set"], addElement=_ins["jnts"])
             for _b in _block["blocks"]:
                 _create_set(_b)
@@ -1330,7 +1379,12 @@ class AdditionalFunc:
         def _cleanup_controls(_block):
             if _block.parent:
                 _ins = context.instance(_block.ins_name)
-                _parent_ins = context.instance(_block.parent.ins_name)
+                _parent_block = _block.parent
+                while True:
+                    _parent_ins = context.instance(_parent_block.ins_name)
+                    if _parent_ins["ctls"]:
+                        break
+                    _parent_block = _parent_block.parent
                 for x in _ins["ctls"]:
                     node.add_controller_tag(x, _parent_ins["ctls"][-1])
             for _b in _block["blocks"]:
