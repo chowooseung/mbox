@@ -101,21 +101,24 @@ def rig(blueprint: AbstractBlock or None) -> Context:
     if custom_path and custom_path not in sys.path:
         sys.path.append(custom_path)
 
+    log_window()
+    logger.info("mbox build system")
+    logger.info("counting ... [???/???]")
+
     for path in bp_pre_custom_step + bp_post_custom_step:
         name = os.path.splitext(os.path.basename(path))[0]
         spec = importlib.util.spec_from_file_location(name, path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
+        if not hasattr(mod, "CustomStep"):
+            logger.warning(f"{path} don't have CustomStep class")
+            continue
         if issubclass(mod.CustomStep, PreScript):
             ins = mod.CustomStep()
             pre_scripts.append(ins)
         elif issubclass(moc.CustomStep, PostScript):
             ins = mod.CustomStep()
             post_scripts.append(ins)
-
-    log_window()
-    logger.info("mbox build system")
-    logger.info("counting ... [???/???]")
 
     total = 0
     total += len(pre_scripts) + len(post_scripts)
@@ -124,23 +127,23 @@ def rig(blueprint: AbstractBlock or None) -> Context:
 
     logger.info(f"total count : [{count}/{total}]")
 
-    try:
-        with pm.UndoChunk():
-            process = [pre_scripts, objects, attributes, operators, connection, additional_func, post_scripts]
-            stop_point = ["prescripts", "objects", "attributes", "operators", "connection", "additionalFunc", "postScripts"]
-            for index, step in enumerate(process):
-                for runner in step:
-                    count += 1
-                    logger.info("{0:<50}".format(runner.msg) + f" [{count}/{total}]")
-                    runner.process(context)
-                if stop_point[index] == blueprint["step"]:
-                    logger.info(f"{stop_point[index]} Stop")
-                    break
-    except Exception as e:
-        pm.undo()
-        logger.error(e)
-        logger.info("Build Fail")
-        return context
+    #  try:
+    with pm.UndoChunk():
+        process = [pre_scripts, objects, attributes, operators, connection, additional_func, post_scripts]
+        stop_point = ["prescripts", "objects", "attributes", "operators", "connection", "additionalFunc", "postScripts"]
+        for index, step in enumerate(process):
+            for runner in step:
+                count += 1
+                logger.info("{0:<50}".format(runner.msg) + f" [{count}/{total}]")
+                runner.process(context)
+            if stop_point[index] == blueprint["step"]:
+                logger.info(f"{stop_point[index]} Stop")
+                break
+    #  except Exception as e:
+    #      pm.undo()
+    #      logger.error(e)
+    #      logger.info("Build Fail")
+    #      return context
 
     logger.info("Build Success")
     return context

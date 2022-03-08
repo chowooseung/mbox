@@ -7,9 +7,8 @@ import maya.api.OpenMaya as om
 # mbox
 import mbox
 from mbox.lego import (
-    utils,
-    naming
-)
+        utils,
+        naming)
 
 # built-in
 import os
@@ -20,13 +19,12 @@ from collections import OrderedDict
 
 # mgear
 from mgear.core import (
-    pyqt,
-    attribute,
-    primitive,
-    transform,
-    icon,
-    node,
-)
+        pyqt,
+        attribute,
+        primitive,
+        transform,
+        icon,
+        node)
 
 # json
 import json
@@ -206,7 +204,7 @@ def inspect_settings(guide=None, network=None):
         root = selected[0]
     else:
         pm.displayWarning(
-            "please select one object from the component guide")
+                "please select one object from the component guide")
         return
 
     comp_type = False
@@ -246,7 +244,7 @@ def log_window():
         pm.columnLayout(adjustableColumn=True)
         pm.cmdScrollFieldReporter(log_window_field_reporter, width=800, height=500, clear=True)
         pm.button(label="Close",
-                  command=("import pymel.core as pm\npm.deleteUI('{logWin}', window=True)".format(logWin=logWin)))
+                command=("import pymel.core as pm\npm.deleteUI('{logWin}', window=True)".format(logWin=logWin)))
         pm.setParent('..')
         pm.showWindow(logWin)
     else:
@@ -296,9 +294,9 @@ def _file_dialog(path=None, mode=0):
     """from mgear.shifter.io._get_file
     mode [0:save, 1:open]"""
     file_path = pm.fileDialog2(
-        startingDirectory=path if path else pm.workspace(query=True, rootDirectory=True),
-        fileMode=mode,
-        fileFilter='mBox Guide Template .mbox (*%s)' % ".mbox")
+            startingDirectory=path if path else pm.workspace(query=True, rootDirectory=True),
+            fileMode=mode,
+            fileFilter='mBox Guide Template .mbox (*%s)' % ".mbox")
 
     if not file_path:
         return
@@ -342,6 +340,7 @@ class Instance(dict):
         self["ctls"] = list()
         self["jnts"] = list()
         self["refs"] = list()
+        self["script_node"] = None
 
     def __repr__(self):
         return f"ins(\"{self.name}\")"
@@ -425,7 +424,7 @@ class AbstractBlock(dict):
         if isinstance(self, RootBlock):
             return f"{self['comp_type']}"
         elif isinstance(self, SubBlock):
-            return f"{self['comp_name']}.{self['comp_side']}.{self['comp_index']}"
+            return f"{self['comp_name']}_{self['comp_side']}_{self['comp_index']}"
 
     @property
     def negate(self):
@@ -590,9 +589,9 @@ class SubBlock(AbstractBlock):
         self.network.attr("RGB_fk").set(self["RGB_fk"])
         self.network.attr("RGB_ik").set(self["RGB_ik"])
         [self.network.attr("transforms")[i].set(t)
-         if not self.network.attr("transforms")[i].inputs()
-         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
-         for i, t in enumerate(self["transforms"])]
+                if not self.network.attr("transforms")[i].inputs()
+                else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
+                for i, t in enumerate(self["transforms"])]
         # TODO: control shapes curve info
         shapes_network = self.network.attr("ctls").outputs(type="network")
         pm.delete(shapes_network) if shapes_network else None
@@ -622,7 +621,7 @@ class SubBlock(AbstractBlock):
         attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
         attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
         attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
-                                   ["center", "left", "right"], keyable=False)
+                ["center", "left", "right"], keyable=False)
         attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
         attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
         attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
@@ -653,6 +652,7 @@ class SubBlock(AbstractBlock):
         joints_axis = ",".join(joints_axis)
         attribute.addAttribute(n, "joints_axis", "string", joints_axis)
         attribute.addAttribute(n, "connector", "string", self["connector"])
+        attribute.addAttribute(n, "script_node", "message")
 
     def update_guide(self):
         """update guide naming"""
@@ -799,7 +799,7 @@ class RootBlock(AbstractBlock):
         self["ctl_name_rule"] = self.network.attr("ctl_name_rule").get()
         self["joint_description_letter_case"] = self.network.attr("joint_description_letter_case").get(asString=True)
         self["ctl_description_letter_case"] = \
-            self.network.attr("ctl_description_letter_case").get(asString=True)
+                self.network.attr("ctl_description_letter_case").get(asString=True)
         self["joint_index_padding"] = self.network.attr("joint_index_padding").get()
         self["ctl_index_padding"] = self.network.attr("ctl_index_padding").get()
         self["world_ctl"] = self.network.attr("world_ctl").get()
@@ -889,8 +889,8 @@ class RootBlock(AbstractBlock):
         attribute.addAttribute(n, "schema", "string", self["schema"])
         attribute.addEnumAttribute(n, "process", self["process"], ["WIP", "PUB"], keyable=False)
         attribute.addEnumAttribute(n, "step", self["step"],
-                                   ["all", "preScripts", "objects", "attributes", "operators", "connection",
-                                    "additionalFunc", "postScripts"], keyable=False)
+                ["all", "preScripts", "objects", "attributes", "operators", "connection",
+                    "additionalFunc", "postScripts"], keyable=False)
         attribute.addAttribute(n, "joint_left_name", "string", self["joint_left_name"])
         attribute.addAttribute(n, "joint_right_name", "string", self["joint_right_name"])
         attribute.addAttribute(n, "joint_center_name", "string", self["joint_center_name"])
@@ -902,9 +902,9 @@ class RootBlock(AbstractBlock):
         attribute.addAttribute(n, "joint_name_rule", "string", self["joint_name_rule"])
         attribute.addAttribute(n, "ctl_name_rule", "string", self["ctl_name_rule"])
         attribute.addEnumAttribute(n, "joint_description_letter_case", self["joint_description_letter_case"],
-                                   ["default", "lower", "upper", "capitalize"], keyable=False)
+                ["default", "lower", "upper", "capitalize"], keyable=False)
         attribute.addEnumAttribute(n, "ctl_description_letter_case", self["ctl_description_letter_case"],
-                                   ["default", "lower", "upper", "capitalize"], keyable=False)
+                ["default", "lower", "upper", "capitalize"], keyable=False)
         attribute.addAttribute(n, "joint_index_padding", "long", self["joint_index_padding"], keyable=False)
         attribute.addAttribute(n, "ctl_index_padding", "long", self["ctl_index_padding"], keyable=False)
         attribute.addAttribute(n, "world_ctl", "bool", self["world_ctl"], keyable=False)
@@ -932,6 +932,7 @@ class RootBlock(AbstractBlock):
         attribute.addAttribute(n, "notes", "string", str(self["notes"]))
         pm.addAttr(n, longName="ctls", type="message", multi=True)
         pm.addAttr(n, longName="jnts", type="message", multi=True)
+        attribute.addAttribute(n, "script_node", "message")
 
         guide = primitive.addTransform(None, "guide", m=pm.datatypes.Matrix())
 
@@ -1065,10 +1066,17 @@ class AbstractRig:
     def block(self):
         return self._block
 
+
+class AbstractObjects(AbstractRig):
+
+    def __init__(self, block):
+        assert issubclass(type(block), AbstractBlock)
+        super(AbstractObjects, self).__init__(block=block)
+
     def get_name(self,
-                 typ: bool,
-                 description: str = "",
-                 extension: str = "") -> str:
+            typ: bool,
+            description: str = "",
+            extension: str = "") -> str:
         root_block = self.block.top
         if typ:
             rule = root_block["joint_name_rule"]
@@ -1095,10 +1103,10 @@ class AbstractRig:
         index_filter = ["left", "right", "center"]
         side = side_set[index_filter.index(self.block["comp_side"])]
         name = rule.format(name=self.block["comp_name"],
-                           side=side,
-                           index=str(self.block["comp_index"]).zfill(padding),
-                           description=description,
-                           extension=extension)
+                side=side,
+                index=str(self.block["comp_index"]).zfill(padding),
+                description=description,
+                extension=extension)
         name = "_".join([x for x in name.split("_") if x])
         return name
 
@@ -1151,47 +1159,60 @@ class AbstractRig:
         return color
 
     def create_root(self,
-                    context: Context,
-                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+            context: Context,
+            m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
-        parent_block = self.block.parent
-        while True:
-            parent_instance = context.instance(parent_block.ins_name)
-            if parent_instance["refs"]:
-                break
-            parent_block = parent_block.parent
-        parent = parent_instance["refs"][0] \
-            if isinstance(self.block.parent, RootBlock) \
-            else parent_instance["refs"][self.block["ref_index"]]
-        root = primitive.addTransform(parent, self.get_name(False, extension="root"), m=m)
+        if self.block["comp_type"] == "mbox":
+            parent = None
+            name = self.block["name"]
+            attr_name = "is_rig_root"
+        else:
+            parent_block = self.block.parent
+            while True:
+                parent_instance = context.instance(parent_block.ins_name)
+                if parent_instance["refs"]:
+                    break
+                parent_block = parent_block.parent
+            parent = parent_instance["refs"][0] \
+                    if isinstance(self.block.parent, RootBlock) \
+                    else parent_instance["refs"][self.block["ref_index"]]
+            name = self.get_name(False, extension="root")
+            attr_name = "is_rig_component"
+        root = primitive.addTransform(parent, name, m=m)
+        attribute.addAttribute(root, attr_name, "bool", keyable=False)
         attribute.setNotKeyableAttributes(root)
 
         instance["root"] = root
         return root
 
     def create_ctl(self,
-                   context: Context,
-                   parent: None or pm.nodetypes.Transform,
-                   m: pm.datatypes.Matrix,
-                   parent_ctl: None or pm.nodetypes.Transform,
-                   color: list or int,
-                   ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
-                   npo_attr: list = [],
-                   description: str = "",
-                   size: float = 1.0,
-                   shape: str = "cube") -> pm.nodetypes.Transform:
+            context: Context,
+            parent: None or pm.nodetypes.Transform,
+            m: pm.datatypes.Matrix,
+            parent_ctl: None or pm.nodetypes.Transform,
+            color: list or int,
+            ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
+            npo_attr: list = [],
+            description: str = "",
+            size: float = 1.0,
+            shape: str = "cube",
+            cns: bool = False) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
+        if cns:
+            cns = primitive.addTransform(parent, self.get_name(False, description=description, extension="cns"), m=m)
+            parent = cns
         npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
         ctl = icon.create(npo,
-                          self.get_name(False, description=description, extension=self.block.top["ctl_name_ext"]),
-                          m=m,
-                          color=color,
-                          icon=shape,
-                          w=size,
-                          h=size,
-                          d=size)
+                self.get_name(False, description=description, extension=self.block.top["ctl_name_ext"]),
+                m=m,
+                color=color,
+                icon=shape,
+                w=size,
+                h=size,
+                d=size)
         attribute.setKeyableAttributes(ctl, ctl_attr)
         attribute.setKeyableAttributes(npo, npo_attr)
+        attribute.addAttribute(ctl, "is_ctl", "bool", keyable=False)
 
         top_instance = context.instance(self.block.top.ins_name)
         condition = top_instance["root"].attr("controls_mouseover").outputs(type="condition")[0]
@@ -1202,28 +1223,29 @@ class AbstractRig:
         return ctl
 
     def create_ref(self,
-                   context: Context,
-                   parent: None or pm.nodetypes.Transform,
-                   description: str,
-                   m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+            context: Context,
+            parent: None or pm.nodetypes.Transform,
+            description: str,
+            m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
         ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
         attribute.setKeyableAttributes(ref, [])
+        attribute.addAttribute(ref, "is_ref", "bool", keyable=False)
 
         instance["refs"].append(ref)
         return ref
 
     def create_jnt(self,
-                   context: Context,
-                   parent: None or pm.nodetypes.Joint,
-                   description: str,
-                   ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
+            context: Context,
+            parent: None or pm.nodetypes.Joint,
+            description: str,
+            ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
         instance = context.instance(self.block.ins_name)
 
         joint_name = self.block["joint_names"].split(",")[len(instance["jnts"])]
         name = joint_name \
-            if joint_name \
-            else self.get_name(True, description=description, extension=self.block.top["joint_name_ext"])
+                if joint_name \
+                else self.get_name(True, description=description, extension=self.block.top["joint_name_ext"])
 
         if parent is None:
             index = self.block["ref_index"]
@@ -1245,7 +1267,6 @@ class AbstractRig:
         if self.block.top["connect_joints"] and pm.objExists(name):
             jnt = pm.PyNode(name)
             rotate = jnt.rotate.get()
-            print(rotate)
             assert rotate == [0, 0, 0], f"{jnt} rotation is not zero\nrotation : {rotate}"
             pm.parent(jnt, parent)
             if isinstance(ref, pm.nodetypes.Transform):
@@ -1288,18 +1309,10 @@ class AbstractRig:
 
         attribute.lockAttribute(jnt)
         attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])
+        if not jnt.hasAttr("is_jnt"):
+            attribute.addAttribute(jnt, "is_jnt", "bool", keyable=False)
         instance["jnts"].append(jnt)
         return jnt
-
-    def connect(self):
-        pass
-
-
-class AbstractObjects(AbstractRig):
-
-    def __init__(self, block):
-        assert issubclass(type(block), AbstractBlock)
-        super(AbstractObjects, self).__init__(block=block)
 
 
 class AbstractAttributes(AbstractRig):
@@ -1307,6 +1320,58 @@ class AbstractAttributes(AbstractRig):
     def __init__(self, block):
         assert issubclass(type(block), AbstractBlock)
         super(AbstractAttributes, self).__init__(block=block)
+
+    def process(self, context):
+        super(AbstractAttributes, self).process(context=context)
+        if isinstance(self.block, RootBlock):
+            return
+        if self.block["ui_host"]:
+            _, index, oid = self.block["ui_host"].split(",")
+            ui_host_block = self.block.top.find_block_with_oid(oid)
+            host_instance = context.instance(ui_host_block.ins_name)
+            if host_instance["ctls"]:
+                ui_host = host_instance["ctls"][index]
+        else:
+            ui_host = self.top_ins["ctls"][0]
+        self.ins["ui_host"] = ui_host
+        attribute.addEnumAttribute(self.ins["ui_host"], self.block.ins_name, " ", [" "])
+        attribute.setNotKeyableAttributes(self.ins["ui_host"], [self.block.ins_name])
+
+    def create_attr(self, context, longName, attType, \
+            value, niceName=None, minValue=None, maxValue=None, keyable=True, \
+            readable=True, storable=True, writable=True, uihost=None):
+        if not uihost:
+            uihost = self.ins["ui_host"]
+        if uihost.hasAttr(longName):
+            attr = uihost.attr(longName)
+        else:
+            attr = attribute.addAttribute(uihost,
+                    longName, attType,
+                    value, niceName, None,
+                    minValue=minValue,
+                    maxValue=maxValue,
+                    keyable=keyable,
+                    readable=readable,
+                    storable=storable,
+                    writable=writable)
+        return attr
+
+    def create_enum_attr(self, context, longName, value, \
+            enum, niceName=None, keyable=True, readable=True, \
+            storable=True, writable=True, uihost=None):
+        if not uihost:
+            uihost = self.ins["ui_host"]
+        if uihost.hasAttr(longName):
+            attr = uihost.attr(longName)
+        else:
+            attr = attribute.addEnumAttribute(uihost,
+                    longName, value,
+                    enum, niceName, None,
+                    keyable=keyable,
+                    readable=readable,
+                    storable=storable,
+                    writable=writable)
+        return attr
 
 
 class AbstractOperators(AbstractRig):
@@ -1322,6 +1387,9 @@ class AbstractConnection(AbstractRig):
         assert issubclass(type(block), AbstractBlock)
         super(AbstractConnection, self).__init__(block=block)
 
+    def connect_ik_ref(self, context):
+        pass
+
 
 class AdditionalFunc:
 
@@ -1329,9 +1397,15 @@ class AdditionalFunc:
         self.msg = "Process Additional Func"
 
     def process(self, context):
+        logger.info("{0:<50}".format(self.msg + "(clean up)"))
         self.cleanup(context)
+        logger.info("{0:<50}".format(self.msg + "(draw controls shape)"))
         self.draw_controls_shape(context)
+        logger.info("{0:<50}".format(self.msg + "(script node)"))
+        self.script_node(context)
+        logger.info("{0:<50}".format(self.msg + "(skinning)"))
         self.skinning(context)
+        logger.info("{0:<50}".format(self.msg + "(deformer)"))
         self.deformers(context)
 
     def cleanup(self, context):
@@ -1346,7 +1420,7 @@ class AdditionalFunc:
                 dfs_list = pm.connectionInfo(_block.parent.network.attr("affects")[0], destinationFromSource=True)
                 if _block.network.attr("affectedBy")[0].name() not in dfs_list:
                     pm.connectAttr(_block.parent.network.attr("affects")[0],
-                                   _block.network.attr("affectedBy")[0], force=True)
+                            _block.network.attr("affectedBy")[0], force=True)
             if _ins.get("ctls"):
                 for index, con in enumerate(_ins["ctls"]):
                     pm.connectAttr(con.attr("message"), _block.network.attr("ctls")[index], force=True)
@@ -1402,8 +1476,8 @@ class AdditionalFunc:
                 if _ins.get("jnts"):
                     for _index, _jnt in enumerate(_ins["jnts"]):
                         _label = f"{_block['comp_name']}_center{_block['comp_index']}_{_index}" \
-                            if _block["comp_side"] == "center" \
-                            else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
+                                if _block["comp_side"] == "center" \
+                                else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
 
                         _jnt.attr("side").set(side_set[_block["comp_side"]])
                         _jnt.attr("type").set("Other")
@@ -1427,6 +1501,142 @@ class AdditionalFunc:
             for index, shape in enumerate(member.getShapes()):
                 shape.rename(f"{shape.getParent().nodeName()}{index if index else str()}")
                 shape.attr("isHistoricallyInteresting").set(0)
+
+    def script_node(self, context):
+        blueprint = context.blueprint
+        if blueprint.network.attr("script_node").outputs():
+            root_script_node = blueprint.network.attr("script_node").outputs()[0]
+            block_script_node = root_script_node.attr("script_node").outputs()
+            pm.delete([root_script_node] + block_script_node)
+
+        script_nodes = list()
+
+        def _get_script_node(_block):
+            _ins = context.instance(_block.ins_name)
+            if _ins.get("script_node"):
+                script_nodes.append(_ins.get("script_node"))
+            for __b in _block["blocks"]:
+                _get_script_node(__b)
+
+        _get_script_node(blueprint)
+
+        if not script_nodes:
+            return
+        root_script_node = pm.createNode("script", name="root_sc")
+        root_script_node.attr("sourceType").set(1)
+        root_script_node.attr("scriptType").set(1)
+        attribute.addAttribute(root_script_node, "script_node", "message")
+        for node in script_nodes:
+            pm.connectAttr(root_script_node.attr("script_node"), node.attr("script_node"))
+        pm.connectAttr(blueprint.network.attr("script_node"), root_script_node.attr("script_node"))
+        before_script_code = f"""import pymel.core as pm
+import maya.api.OpenMaya as om2
+import traceback
+import logging
+
+logger = logging.getLogger()
+
+def destory_cb(*args): # all callback clear
+    global mbox_destory_new_id
+    global mbox_destory_open_id
+    global mbox_destory_remove_ref_id
+    global mbox_destory_unload_ref_id
+    global mbox_character_cb_registry
+    global mbox_character_namespace_registry
+    logger.info("destory_cb")
+
+    try:
+        for array in mbox_character_cb_registry:
+            om2.MNodeMessage.removeCallback(array[1])
+        om2.MSceneMessage.removeCallback(mbox_destory_new_id)
+        om2.MSceneMessage.removeCallback(mbox_destory_open_id)
+        om2.MSceneMessage.removeCallback(mbox_destory_remove_ref_id)
+        om2.MSceneMessage.removeCallback(mbox_destory_unload_ref_id)
+        del mbox_character_cb_registry
+        del mbox_character_namespace_registry
+        del mbox_destory_new_id
+        del mbox_destory_open_id
+        del mbox_destory_remove_ref_id
+        del mbox_destory_unload_ref_id
+    except:
+        logger.error("destory_cb")
+        traceback.print_exc()
+
+
+def refresh_registry(*argc): # refresh registry at reference unload, remove
+    global mbox_character_cb_registry
+    global mbox_character_namespace_registry
+
+    remove_list = list()
+    for ns in mbox_character_namespace_registry:
+        if not pm.namespaceInfo(ns, listNamespace=True):
+            remove_list.append(ns)
+    for rm in remove_list:
+        mbox_character_namespace_registry.remove(rm)
+
+    for array in mbox_character_cb_registry:
+        if array[0].fullPathName == "":
+            om2.MNodeMessage.removeCallback(array[1])
+    mbox_character_cb_registry = [x for x in mbox_character_cb_registry if x[0].fullPathName() != ""]
+
+
+def run_script_node():
+    global mbox_destory_id
+    global mbox_character_cb_registry
+    global mbox_character_namespace_registry
+
+    try:
+        mbox_character_namespace_registry
+    except:
+        mbox_character_namespace_registry = list()
+
+    oid = '{blueprint["oid"]}'
+    all_network = [network for network in pm.ls(type="network") if network.hasAttr("oid")]
+    networks = [network for network in all_network if network.attr("oid").get() == oid]
+    namespaces = pm.namespaceInfo(listOnlyNamespaces=True, recurse=True)
+    if "" in mbox_character_namespace_registry:
+        mbox_character_namespace_registry.remove("")
+    if not networks:
+        return
+    for network in networks:
+        this_node = network.attr("script_node").outputs(type="script")
+        namespace = network.namespace()
+        if namespace:
+            namespace = namespace[:-1]
+        if this_node and namespace not in mbox_character_namespace_registry:
+            block_scripts = this_node[0].attr("script_node").outputs(type="script")
+            for sn in block_scripts:
+                pm.scriptNode(sn, executeBefore=True)
+            mbox_character_namespace_registry.append(namespace)
+
+run_script_node()
+
+try:
+    om2.MSceneMessage.removeCallback(mbox_destory_new_id)
+except:
+    pass
+finally:
+    mbox_destory_new_id = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterNew, destory_cb)
+try:
+    om2.MSceneMessage.removeCallback(mbox_destory_open_id)
+except:
+    pass
+finally:
+    mbox_destory_open_id = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterOpen, destory_cb)
+try:
+    om2.MSceneMessage.removeCallback(mbox_destory_remove_ref_id)
+except:
+    pass
+finally:
+    mbox_destory_remove_ref_id = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterRemoveReference, refresh_registry)
+try:
+    om2.MSceneMessage.removeCallback(mbox_destory_unload_ref_id)
+except:
+    pass
+finally:
+    mbox_destory_unload_ref_id = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterUnloadReference, refresh_registry)"""
+        pm.scriptNode(root_script_node, edit=True, beforeScript=before_script_code)
+        pm.scriptNode(root_script_node, executeBefore=True)
 
     def skinning(self, context):
         pass

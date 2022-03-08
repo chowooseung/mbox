@@ -72,6 +72,26 @@ class HelperSlots:
                 self._network.attr(target_attr).set("")
                 pm.displayWarning("")
 
+    def update_host_ui_m(self, l_edit, target_attr):
+        selected = utils.select_guides() if utils.select_guides() else utils.select_ctls()
+        if selected:
+            network = utils.get_network(selected[0])
+            root = self._guide.getParent(generations=-1)
+            blueprint = lib.blueprint_from_guide(root)
+            oid = network.attr("oid").get()
+            block = blueprint.find_block_with_oid(oid)
+            l_edit.setText(block.ins_name)
+            if utils.selected_ctls():
+                index = utils.get_ctl_index(selected[0])
+            else:
+                index = 0
+            self._network.attr(target_attr).set("{block.ins_name},{index},{oid}")
+        else:
+            if l_edit.text():
+                l_edit.clear()
+                self._network.attr(target_attr).set("")
+                pm.displayWarning("")
+
     def update_line_edit(self, l_edit, target_attr):
         name = string.removeInvalidCharacter(l_edit.text())
         l_edit.setText(name)
@@ -140,7 +160,7 @@ class HelperSlots:
             self.update_list_attr(list_widget, target_attr)
 
     def add_item_to_list_widget_m(self, list_widget, target_attr=None):
-        items = utils.select_guides()
+        items = utils.select_ctls()
         items_list = [i.text() for i in list_widget.findItems(
             "", QtCore.Qt.MatchContains)]
         # Quick clean the first empty item
@@ -150,7 +170,8 @@ class HelperSlots:
         for item in items:
             root = self._guide.getParent(generations=-1)
             blueprint = lib.blueprint_from_guide(root)
-            item_network = item.attr("message").outputs(type="network")[0]
+            index = utils.get_ctl_index(item)
+            item_network = utils.get_network(item)
             block = blueprint.find_block_with_oid(item_network.attr("oid").get())
             if block is None:
                 pm.displayWarning("Not valid obj: %s" %
@@ -159,7 +180,7 @@ class HelperSlots:
             if block.ins_name not in items_list:
                 new_item = QtWidgets.QListWidgetItem()
                 new_item.setText(block.ins_name)
-                new_item.setData(QtCore.Qt.UserRole, block["oid"])
+                new_item.setData(QtCore.Qt.UserRole, f"{index} | {block['oid']}")
                 list_widget.addItem(new_item)
             else:
                 pm.displayWarning("The object: %s, is already in the list." %
@@ -1820,7 +1841,7 @@ class BlockSettings(QtWidgets.QDialog, HelperSlots):
         #             self.main_tab.parentJointIndex_spinBox,
         #             "parentJointIndex"))
         self.main_tab.host_pushButton.clicked.connect(
-            partial(self.update_host_ui,
+            partial(self.update_host_ui_m,
                     self.main_tab.host_lineEdit,
                     "ui_host"))
         # self.main_tab.subGroup_lineEdit.editingFinished.connect(

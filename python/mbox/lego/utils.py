@@ -73,3 +73,22 @@ def select_guides() -> list:
             guides.append(sel)
     return guides
 
+def select_ctls():
+    selected = pm.selected(type="transform")
+    return [sel for sel in selected if sel.hasAttr("is_ctl")]
+
+def select_jnts():
+    selected = pm.selected(type="joint")
+    return [sel for sel in selected if sel.hasAttr("is_jnt")]
+
+def get_network(node):
+    network = node.attr("message").outputs(type="network")
+    return network[0] if network else None
+
+def get_ctl_index(ctl):
+    plug = ctl.attr("message").outputs(type="network", plugs=True)
+    return plug[0].index() if plug else None
+
+def get_jnt_index(jnt):
+    plug = jnt.attr("message").outputs(type="network", plugs=True)
+    return plug[0].index() if plug else None
