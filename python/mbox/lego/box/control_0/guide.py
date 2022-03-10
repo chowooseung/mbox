@@ -208,16 +208,18 @@ class BlockSettings(MayaQWidgetDockableMixin, settings.BlockSettings):
         if items_list and not items_list[0]:
             self.settings_tab.ikRefArray_listWidget.takeItem(0)
 
-        ikRefArrayItems = self._network.attr("ik_ref_array").get().split(",")
-        root = self._guide.getParent(generations=-1)
-        blueprint = blueprint_from_guide(root)
-        for item in ikRefArrayItems:
-            block = blueprint.find_block_with_oid(item)
-            if block is not None:
-                new_item = QtWidgets.QListWidgetItem()
-                new_item.setText(block.ins_name)
-                new_item.setData(QtCore.Qt.UserRole, block["oid"])
-                self.settings_tab.ikRefArray_listWidget.addItem(new_item)
+        if self._network.attr("ik_ref_array").get():
+            ikRefArrayItems = self._network.attr("ik_ref_array").get().split(",")
+            items = [x.split(" | ") for x in ikRefArrayItems]
+            root = self._guide.getParent(generations=-1)
+            blueprint = blueprint_from_guide(root)
+            for index, oid in items:
+                block = blueprint.find_block_with_oid(oid)
+                if block is not None:
+                    new_item = QtWidgets.QListWidgetItem()
+                    new_item.setText(block.ins_name)
+                    new_item.setData(QtCore.Qt.UserRole, f"{index} | {oid}")
+                    self.settings_tab.ikRefArray_listWidget.addItem(new_item)
 
         # populate connections in main settings
         for cnx in Block.CONNECTOR:

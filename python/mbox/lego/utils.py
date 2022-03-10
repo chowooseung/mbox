@@ -86,9 +86,9 @@ def get_network(node):
     return network[0] if network else None
 
 def get_ctl_index(ctl):
-    plug = ctl.attr("message").outputs(type="network", plugs=True)
+    plug = [x for x in ctl.attr("message").outputs(type="network", plugs=True) if x.attrName() == "ctls"]
     return plug[0].index() if plug else None
 
 def get_jnt_index(jnt):
-    plug = jnt.attr("message").outputs(type="network", plugs=True)
+    plug = [x for x in ctl.attr("message").outputs(type="network", plugs=True) if x.attrName() == "jnts"]
     return plug[0].index() if plug else None

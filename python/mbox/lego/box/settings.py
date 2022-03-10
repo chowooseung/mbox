@@ -73,7 +73,8 @@ class HelperSlots:
                 pm.displayWarning("")
 
     def update_host_ui_m(self, l_edit, target_attr):
-        selected = utils.select_guides() if utils.select_guides() else utils.select_ctls()
+        _guide = utils.select_guides()
+        selected = _guide if _guide else utils.select_ctls()
         if selected:
             network = utils.get_network(selected[0])
             root = self._guide.getParent(generations=-1)
@@ -81,11 +82,11 @@ class HelperSlots:
             oid = network.attr("oid").get()
             block = blueprint.find_block_with_oid(oid)
             l_edit.setText(block.ins_name)
-            if utils.selected_ctls():
+            if selected[0].hasAttr("is_ctl"):
                 index = utils.get_ctl_index(selected[0])
             else:
                 index = 0
-            self._network.attr(target_attr).set("{block.ins_name},{index},{oid}")
+            self._network.attr(target_attr).set(f"{block.ins_name},{index},{oid}")
         else:
             if l_edit.text():
                 l_edit.clear()
@@ -546,7 +547,6 @@ class RootSettings(MayaQWidgetDockableMixin, QtWidgets.QDialog, HelperSlots):
         self.setObjectName(self.toolName)
         self.setWindowFlags(QtCore.Qt.Window)
         self.setWindowTitle(ROOT_TYPE)
-        self.resize(500, 615)
 
         self.create_controls()
         self.populate_controls()
@@ -1710,6 +1710,7 @@ class BlockSettings(QtWidgets.QDialog, HelperSlots):
         self.create_connections()
 
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+        self.resize(310, 500)
 
     def create_controls(self):
         """

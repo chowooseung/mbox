@@ -340,7 +340,7 @@ class Instance(dict):
         self["ctls"] = list()
         self["jnts"] = list()
         self["refs"] = list()
-        self["script_node"] = None
+        self["script_node"] = list()
 
     def __repr__(self):
         return f"ins(\"{self.name}\")"
@@ -1180,7 +1180,7 @@ class AbstractObjects(AbstractRig):
             attr_name = "is_rig_component"
         root = primitive.addTransform(parent, name, m=m)
         attribute.addAttribute(root, attr_name, "bool", keyable=False)
-        attribute.setNotKeyableAttributes(root)
+        attribute.setKeyableAttributes(root, [])
 
         instance["root"] = root
         return root
@@ -1330,12 +1330,18 @@ class AbstractAttributes(AbstractRig):
             ui_host_block = self.block.top.find_block_with_oid(oid)
             host_instance = context.instance(ui_host_block.ins_name)
             if host_instance["ctls"]:
-                ui_host = host_instance["ctls"][index]
+                ui_host = host_instance["ctls"][int(index)]
         else:
             ui_host = self.top_ins["ctls"][0]
         self.ins["ui_host"] = ui_host
         attribute.addEnumAttribute(self.ins["ui_host"], self.block.ins_name, " ", [" "])
         attribute.setNotKeyableAttributes(self.ins["ui_host"], [self.block.ins_name])
+
+        if self.ins["script_node"]:
+            attribute.addAttribute(self.ins["script_node"], "oid", "string")
+            attribute.addAttribute(self.ins["script_node"], "target", "message")
+            attribute.addAttribute(self.ins["script_node"], "script_node", "message")
+            self.ins["script_node"].attr("oid").set(self.block["oid"])
 
     def create_attr(self, context, longName, attType, \
             value, niceName=None, minValue=None, maxValue=None, keyable=True, \
@@ -1380,6 +1386,128 @@ class AbstractOperators(AbstractRig):
         assert issubclass(type(block), AbstractBlock)
         super(AbstractOperators, self).__init__(block=block)
 
+    def process(self, context):
+        super(AbstractOperators, self).process(context=context)
+
+    def space_switch(self, context, target, attr_name):
+        script_node = pm.createNode("script", name=f"{self.block.ins_name}_sc")
+        self.ins["script_node"].append(script_node)
+
+        attribute.addAttribute(script_node, "oid", "string")
+        attribute.addAttribute(script_node, "target", "message")
+        attribute.addAttribute(script_node, "script_node", "message")
+        script_node.attr("oid").set(self.block["oid"])
+        script_node.attr("sourceType").set(1)
+        script_node.attr("scriptType").set(0)
+        match_attr_name = f"{attr_name}_match"
+        array = [x.split(" | ") for x in self.block["ik_ref_array"].split(",")]
+        ik_ref_ctls = list()
+        for index, oid in array:
+            block = self.block.top.find_block_with_oid(oid)
+            target_instance = context.instance(block.ins_name)
+            ik_ref_ctls.append(target_instance["ctls"][int(index)])
+        enum = [x.nodeName() for x in ik_ref_ctls]
+        attribute.addEnumAttribute(target,
+                                   attr_name,
+                                   value="self",
+                                   enum=["self"] + enum,
+                                   keyable=True)
+        attribute.addEnumAttribute(target,
+                                   match_attr_name,
+                                   value="self",
+                                   enum=["self"] + enum,
+                                   keyable=True)
+        target.attr(match_attr_name).set(keyable=True, lock=False, channelBox=True)
+        cns = self.ins["ctls"][0].getParent().getParent()
+        cons = pm.parentConstraint(ik_ref_ctls + [cns], maintainOffset=True)
+        attrs = pm.parentConstraint(cons, query=True, weightAliasList=True)
+        for index, attr in enumerate(attrs):
+            condition = pm.createNode("condition")
+            pm.connectAttr(target.attr(attr_name), condition.attr("firstTerm"))
+            condition.attr("secondTerm").set(index + 1)
+            condition.attr("colorIfTrueR").set(1)
+            condition.attr("colorIfFalseR").set(0)
+            pm.connectAttr(condition.attr("outColorR"), attr)
+        script_code = f"""import pymel.core as pm
+import maya.api.OpenMaya as om2
+import uuid
+
+oid = '{self.block["oid"]}'
+
+class SpaceSwitch:
+
+    def __init__(self, node):
+        self.node = pm.PyNode(node)
+        namespace = self.node.namespace()
+        split_name = [x for x in '{self.ins['ctls'][0].fullPath()}'.split('|') if x]
+        self.ctl = '|'.join([namespace + x for x in split_name if x])
+
+    def switch(self):
+        destination_value = self.node.attr('{match_attr_name}').get()
+        temp_obj = pm.group(name=str(uuid.uuid4()), empty=True)
+        pm.matchTransform(temp_obj, self.ctl, position=True, rotation=True)
+        self.node.attr('{attr_name}').set(destination_value)
+        pm.matchTransform(self.ctl, temp_obj, position=True, rotation=True)
+        pm.delete(temp_obj)
+
+    def space_switch(self):
+        with pm.UndoChunk():
+            selected = pm.selected()
+            value = self.node.attr('{match_attr_name}').get()
+            if value not in {range(len(enum) + 1)}:
+                return
+            switch_value = self.node.attr('{attr_name}').get()
+            if value != switch_value:
+                self.switch()
+            pm.select(selected)
+
+def cb_run(msg, plug1, plug2, client_data):
+    if msg != 2056:
+        return
+    if plug1.partialName(includeNodeName=False) != '{match_attr_name}':
+        return
+    client_data.space_switch()
+
+def register_cb(node):
+    sel_list = om2.MGlobal.getSelectionListByName(node)
+    node_dag = sel_list.getDagPath(0)
+    node_obj = sel_list.getDependNode(0)
+    node_full_name = node_dag.fullPathName()
+    cb_id = om2.MNodeMessage.addAttributeChangedCallback(node_obj,
+                                                         cb_run,
+                                                         clientData=SpaceSwitch(node))
+    return (node_dag, cb_id)
+
+def run_block_script():
+    global mbox_character_cb_registry
+    global mbox_character_namespace_registry
+
+    all_script_node = [x for x in pm.ls(type='script') if x.hasAttr('oid')]
+    mbox_script_node = [x for x in all_script_node if x.attr('oid').get() == oid]
+
+    check = False
+    for node in mbox_script_node:
+        namespace = node.namespace()
+        if namespace:
+            namespace = namespace[:-1]
+        if namespace not in mbox_character_namespace_registry:
+            check = True
+            break
+    if not check:
+        return
+    target = node.attr('target').inputs(type='transform')
+    if target:
+        target = target[0]
+        try:
+            mbox_character_cb_registry.append(register_cb(target.fullPath()))
+        except:
+            mbox_character_cb_registry = list()
+            mbox_character_cb_registry.append(register_cb(target.fullPath()))
+
+run_block_script()"""
+        pm.scriptNode(script_node, edit=True, beforeScript=script_code)
+        pm.connectAttr(target, script_node.attr("target"), force=True)
+
 
 class AbstractConnection(AbstractRig):
 
@@ -1387,8 +1515,8 @@ class AbstractConnection(AbstractRig):
         assert issubclass(type(block), AbstractBlock)
         super(AbstractConnection, self).__init__(block=block)
 
-    def connect_ik_ref(self, context):
-        pass
+    def process(self, context):
+        super(AbstractConnection, self).process(context=context)
 
 
 class AdditionalFunc:
@@ -1514,7 +1642,7 @@ class AdditionalFunc:
         def _get_script_node(_block):
             _ins = context.instance(_block.ins_name)
             if _ins.get("script_node"):
-                script_nodes.append(_ins.get("script_node"))
+                script_nodes += _ins.get("script_node")
             for __b in _block["blocks"]:
                 _get_script_node(__b)
 
@@ -1522,7 +1650,7 @@ class AdditionalFunc:
 
         if not script_nodes:
             return
-        root_script_node = pm.createNode("script", name="root_sc")
+        root_script_node = pm.createNode("script", name="mbox_sc")
         root_script_node.attr("sourceType").set(1)
         root_script_node.attr("scriptType").set(1)
         attribute.addAttribute(root_script_node, "script_node", "message")
