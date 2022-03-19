@@ -88,8 +88,8 @@ class Operators(AbstractOperators):
     def process(self, context):
         super(Operators, self).process(context=context)
 
-        if self.block["ik_ref_array"] and not self.block["leaf_joint"]:
-            self.space_switch(context=context, ctl=self.ins["ctl"][0], target=self.ins["ui_host"], attr_name="space_switch")
+        if self.block["ik_ref_array"]:
+            self.space_switch(context=context, target=self.ins["ui_host"], attr_name="space_switch")
 
 
 class Connection(AbstractConnection):

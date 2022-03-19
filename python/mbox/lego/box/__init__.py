@@ -62,6 +62,7 @@ class Objects(AbstractObjects):
         attribute.addAttribute(self.ins["root"], "controls_vis", "bool", True)
         attribute.addAttribute(self.ins["root"], "controls_mouseover", "bool", False)
         attribute.addAttribute(self.ins["root"], "controls_on_playback_vis", "bool", False)
+        attribute.addAttribute(self.ins["root"], "controls_x_ray", "bool", False)
         attribute.addEnumAttribute(self.ins["root"], "joints_switch", 0, [" "])
         attribute.addAttribute(self.ins["root"], "joints_vis", "bool", False)
         attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)

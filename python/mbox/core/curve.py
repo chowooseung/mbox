@@ -29,5 +29,6 @@ def add_cns_curve(parent, name, centers, degree=1):
         pm.connectAttr(node.attr("worldInverseMatrix")[0], mult.attr("matrixIn")[1])
         pm.connectAttr(mult.attr("matrixSum"), decompose.attr("inputMatrix"))
         pm.connectAttr(decompose.attr("outputTranslate"), node.attr("controlPoints")[index])
-
+    node.attr("overrideEnabled").set(1)
+    node.attr("overrideDisplayType").set(1)
     return node

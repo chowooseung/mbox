@@ -173,11 +173,8 @@ def guide_blade_icon(parent=None,
     bladeIco = curve.addCurve(parent, name, points, True, 1, m)
     curve.set_color(bladeIco, color)
 
-    attribute.addAttribute(bladeIco, "rollOffset", "float", 0)
-    attribute.setNotKeyableAttributes(bladeIco, attributes=["tx", "ty", "tz",
-                                                            "rx", "ry", "rz",
-                                                            "sx", "sy", "sz",
-                                                            "v", "rollOffset"])
+    attribute.addAttribute(bladeIco, "roll_offset", "float", 0)
+    attribute.setNotKeyableAttributes(bladeIco, attributes=["roll_offset"])
     pm.pointConstraint(parent, bladeIco)
     aim_cons = pm.aimConstraint(aim,
                                 bladeIco,
@@ -187,8 +184,8 @@ def guide_blade_icon(parent=None,
                                 worldUpType="objectrotation",
                                 worldUpVector=(0, 1, 0),
                                 worldUpObject=parent)
-    bladeIco.rollOffset >> aim_cons.offsetX
-    attribute.setNotKeyableAttributes(bladeIco)
+    bladeIco.roll_offset >> aim_cons.offsetX
+    attribute.setKeyableAttributes(bladeIco, [])
     attribute.addAttribute(bladeIco, "is_guide", "bool", keyable=False)
     # bladeIco.scale.set(1, 1, 1)
     # Set the control shapes isHistoricallyInteresting

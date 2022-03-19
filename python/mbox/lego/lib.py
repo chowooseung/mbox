@@ -184,8 +184,9 @@ def draw_specify_component_guide(parent, component):
         parent_network = parent.message.outputs(type="network")[0]
         parent_block = blueprint.find_block_with_oid(parent_network.attr("oid").get())
         block = mod.Block(parent_block)
-        if (parent_block is not blueprint):
+        if parent_block is not blueprint:
             block["comp_side"] = parent_block["comp_side"]
+            parent = parent_network.attr("transforms").inputs(type="transform")[-1]
         comp_index = blueprint.solve_index(mod.NAME, block["comp_side"], 0, block)
         block["comp_index"] = comp_index
 
@@ -428,7 +429,7 @@ class AbstractBlock(dict):
 
     @property
     def negate(self):
-        return True if {self['comp_side']} == "right" else False
+        return True if self['comp_side'] == "right" else False
 
     def from_network(self):
         # recursive
@@ -1242,7 +1243,11 @@ class AbstractObjects(AbstractRig):
             ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
         instance = context.instance(self.block.ins_name)
 
-        joint_name = self.block["joint_names"].split(",")[len(instance["jnts"])]
+        joint_name = None
+        if self.block["joint_names"]:
+            name_list = self.block["joint_names"].split(",")
+            if len(name_list) >= len(instance["jnts"]):
+                joint_name = name_list(len(instance["jnts"] - 1))
         name = joint_name \
                 if joint_name \
                 else self.get_name(True, description=description, extension=self.block.top["joint_name_ext"])
@@ -1353,7 +1358,7 @@ class AbstractAttributes(AbstractRig):
         else:
             attr = attribute.addAttribute(uihost,
                     longName, attType,
-                    value, niceName, None,
+                    value, niceName,
                     minValue=minValue,
                     maxValue=maxValue,
                     keyable=keyable,
@@ -1389,7 +1394,7 @@ class AbstractOperators(AbstractRig):
     def process(self, context):
         super(AbstractOperators, self).process(context=context)
 
-    def space_switch(self, context, target, attr_name):
+    def space_switch(self, context, ctl, target, attr_name):
         script_node = pm.createNode("script", name=f"{self.block.ins_name}_sc")
         self.ins["script_node"].append(script_node)
 
@@ -1418,7 +1423,7 @@ class AbstractOperators(AbstractRig):
                                    enum=["self"] + enum,
                                    keyable=True)
         target.attr(match_attr_name).set(keyable=True, lock=False, channelBox=True)
-        cns = self.ins["ctls"][0].getParent().getParent()
+        cns = ctl.getParent().getParent()
         cons = pm.parentConstraint(ik_ref_ctls + [cns], maintainOffset=True)
         attrs = pm.parentConstraint(cons, query=True, weightAliasList=True)
         for index, attr in enumerate(attrs):
@@ -1439,16 +1444,20 @@ class SpaceSwitch:
     def __init__(self, node):
         self.node = pm.PyNode(node)
         namespace = self.node.namespace()
-        split_name = [x for x in '{self.ins['ctls'][0].fullPath()}'.split('|') if x]
+        split_name = [x for x in '{ctl.fullPath()}'.split('|') if x]
         self.ctl = '|'.join([namespace + x for x in split_name if x])
 
     def switch(self):
+        current_time = pm.currentTime()
         destination_value = self.node.attr('{match_attr_name}').get()
         temp_obj = pm.group(name=str(uuid.uuid4()), empty=True)
         pm.matchTransform(temp_obj, self.ctl, position=True, rotation=True)
+        pm.setKeyframe(self.ctl, attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'], time=current_time - 1)
         self.node.attr('{attr_name}').set(destination_value)
+        pm.setKeyframe(self.node, attribute='{attr_name}')
         pm.matchTransform(self.ctl, temp_obj, position=True, rotation=True)
         pm.delete(temp_obj)
+        pm.setKeyframe(self.ctl, attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'])
 
     def space_switch(self):
         with pm.UndoChunk():
@@ -1506,7 +1515,7 @@ def run_block_script():
 
 run_block_script()"""
         pm.scriptNode(script_node, edit=True, beforeScript=script_code)
-        pm.connectAttr(target, script_node.attr("target"), force=True)
+        pm.connectAttr(target.attr("message"), script_node.attr("target"), force=True)
 
 
 class AbstractConnection(AbstractRig):
@@ -1588,7 +1597,8 @@ class AdditionalFunc:
                         break
                     _parent_block = _parent_block.parent
                 for x in _ins["ctls"]:
-                    node.add_controller_tag(x, _parent_ins["ctls"][-1])
+                    if not pm.controller(x, query=True, parent=True):
+                        node.add_controller_tag(x, _parent_ins["ctls"][-1])
             for _b in _block["blocks"]:
                 _cleanup_controls(_b)
 
@@ -1623,12 +1633,14 @@ class AdditionalFunc:
     def draw_controls_shape(self, context):
         blueprint = context.blueprint
         top_ins = context.instance(blueprint.ins_name)
+        root = top_ins["root"]
         for member in top_ins["controls_set"].members():
             for index, shape in enumerate(member.getShapes()):
                 shape.rename(f"temp{index}")
             for index, shape in enumerate(member.getShapes()):
-                shape.rename(f"{shape.getParent().nodeName()}{index if index else str()}")
+                shape.rename(f"{shape.getParent().nodeName()}{index if index else str()}Shape")
                 shape.attr("isHistoricallyInteresting").set(0)
+                pm.connectAttr(root.attr("controls_x_ray"), shape.attr("alwaysDrawOnTop"))
 
     def script_node(self, context):
         blueprint = context.blueprint
@@ -1640,6 +1652,7 @@ class AdditionalFunc:
         script_nodes = list()
 
         def _get_script_node(_block):
+            nonlocal script_nodes
             _ins = context.instance(_block.ins_name)
             if _ins.get("script_node"):
                 script_nodes += _ins.get("script_node")

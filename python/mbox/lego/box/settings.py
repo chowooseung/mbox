@@ -226,6 +226,16 @@ class HelperSlots:
         if target_attr:
             self.update_list_attr(source_list_widget, target_attr)
 
+    def copy_from_list_widget_m(self, source_list_widget, target_list_widget,
+                              target_attr=None):
+        target_list_widget.clear()
+        items_list = [i.text() for i in source_list_widget.findItems(
+            "", QtCore.Qt.MatchContains)]
+        for item in items_list:
+            target_list_widget.addItem(item)
+        if target_attr:
+            self.update_list_attr_m(source_list_widget, target_attr)
+
     def update_list_attr(self, source_list_widget, target_attr):
         """Update the string attribute with values separated by commas"""
         new_value = ",".join([i.text() for i in source_list_widget.findItems(
