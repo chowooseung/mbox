@@ -27,48 +27,23 @@ class Objects(AbstractObjects):
     def process(self, context):
         super(Objects, self).process(context=context)
 
-        # matrix
-        if self.block["neutral_rotation"]:
-            m = transform.getTransformFromPos(pm.datatypes.Matrix(self.block["transforms"][1]).translate)
-        else:
-            if self.block["mirror_behaviour"] and self.block.negate:
-                scl = [1, 1, -1]
-            else:
-                scl = [1, 1, 1]
-            m = transform.setMatrixScale(pm.datatypes.Matrix(self.block["transforms"][1]), scl)
+        positions = [pm.datatypes.Matrix(x) for x in self.block["transforms"]]
 
-        # get ctl color
-        ik_color = self.get_ctl_color("ik")
+        blade = vector.Blade(pm.datatypes.Matrix(self.block["roll_m"]))
+        normal = blade.z * -1
+        binormal = blade.x
 
-        # create
-        if not self.block["leaf_joint"]:
-            root = self.create_root(context=context, m=m)
-            distance = vector.getDistance(pm.datatypes.Matrix(self.block["transforms"][0]).translate,
-                                          pm.datatypes.Matrix(self.block["transforms"][1]).translate)
-            ctl = self.create_ctl(context=context,
-                                  parent=root,
-                                  m=m,
-                                  parent_ctl=None,
-                                  color=ik_color,
-                                  ctl_attr=self.block["key_able_attrs"],
-                                  shape=self.block["icon"],
-                                  size=self.block["ctl_size"] * distance,
-                                  cns=True if self.block["ik_ref_array"] else False)
-            ref = self.create_ref(context=context,
-                                  parent=ctl,
-                                  description="",
-                                  m=m)
-            if self.block.top["joint_rig"] and self.block["joint_rig"]:
-                jnt = self.create_jnt(context=context,
-                                      parent=None,
-                                      description="",
-                                      ref=ref)
-        else:
-            if self.block.top["joint_rig"] and self.block["joint_rig"]:
-                jnt = self.create_jnt(context=context,
-                                      parent=None,
-                                      description="",
-                                      ref=m)
+        root = self.create_root(context, m=transform.getTransformFromPos(positions[0].translate))
+        parent = root
+        ctl_parent = None
+        jnt_parent = None
+        fk_color = self.get_ctl_color("fk")
+        for index, t in enumerate(transform.getChainTransform([x.translate for x in positions], normal, self.block.negate)):
+            ctl = self.create_ctl(context, root if not ctl_parent else ctl_parent, m=t, parent_ctl=ctl_parent, description=f"fk{index}", color=fk_color, ctl_attr=["rx", "ry", "rz", "ro"])
+            ref = self.create_ref(context, parent=ctl, description=f"fk{index}Ref", m=t)
+            jnt = self.create_jnt(context, parent=jnt_parent, description=f"fk{index}", ref=ref)
+            ctl_parent = ref
+            jnt_parent = jnt
 
 
 class Attributes(AbstractAttributes):
@@ -87,9 +62,6 @@ class Operators(AbstractOperators):
 
     def process(self, context):
         super(Operators, self).process(context=context)
-
-        if self.block["ik_ref_array"]:
-            self.space_switch(context=context, target=self.ins["ui_host"], attr_name="space_switch")
 
 
 class Connection(AbstractConnection):

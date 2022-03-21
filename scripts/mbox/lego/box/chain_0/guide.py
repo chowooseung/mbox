@@ -48,8 +48,8 @@ class Block(SubBlock):
         self["comp_name"] = NAME
         self["transforms"] = list()
         self["ik_ref_array"] = str()
-        self["roll_offset"] = float()
-        self["roll_rotation"] = list()
+        self["roll_offset"] = 0.0
+        self["roll_m"] = pm.datatypes.Matrix().tolist()
 
         # specify attr
 
@@ -63,27 +63,22 @@ class Block(SubBlock):
             self["transforms"].append(trans.tolist())
         self["ik_ref_array"] = self.network.attr("ik_ref_array").get()
         self["roll_offset"] = self.network.attr("roll_offset").get()
-        self["roll_x"] = self.network.attr("roll_x").get()
-        self["roll_y"] = self.network.attr("roll_y").get()
-        self["roll_z"] = self.network.attr("roll_z").get()
+        self["roll_m"] = self.network.attr("roll_m").get().tolist()
 
     def to_network(self):
         # common attr push
         super(Block, self).to_network()
 
         # specify attr push
-        for index, node in enumerate(self.network.attr("transforms").inpus(type="transform")):
+        for index, node in enumerate(self.network.attr("transforms").inputs(type="transform")):
             m = pm.datatypes.Matrix(self["transforms"][index])
             node.setMatrix(m, worldSpace=True)
-        blade = self.network.attr("roll_offset").input(type="transform")
+        blade = self.network.attr("roll_offset").inputs(type="transform")
         if blade:
             roll = blade[0]
         else:
             roll = self.network
         roll.attr("roll_offset").set(self["roll_offset"])
-        roll.attr("roll_x").set(self["roll_x"])
-        roll.attr("roll_y").set(self["roll_y"])
-        roll.attr("roll_z").set(self["roll_z"])
 
     def guide(self):
         if not self["transforms"]:
@@ -116,9 +111,7 @@ class Block(SubBlock):
         super(Block, self).guide()
         attribute.addAttribute(self.network, "ik_ref_array", "string", self["ik_ref_array"])
         attribute.addAttribute(self.network, "roll_offset", "float", self["roll_offset"], keyable=False)
-        attribute.addAttribute(self.network, "roll_x", "doubleAngle", self["roll_x"], keyable=False)
-        attribute.addAttribute(self.network, "roll_y", "doubleAngle", self["roll_y"], keyable=False)
-        attribute.addAttribute(self.network, "roll_z", "doubleAngle", self["roll_z"], keyable=False)
+        attribute.addAttribute(self.network, "roll_m", "matrix")
 
         name_format = f"{self['comp_name']}_{self['comp_side']}{self['comp_index']}_%s"
         if isinstance(self.parent, RootBlock):
@@ -136,9 +129,7 @@ class Block(SubBlock):
         blade = icon.guide_blade_icon(guide, parent[1], name_format % "blade")
         blade.attr("roll_offset").set(self["roll_offset"])
         pm.connectAttr(blade.attr("roll_offset"), self.network.attr("roll_offset"))
-        pm.connectAttr(blade.attr("rx"), self.network.attr("roll_x"))
-        pm.connectAttr(blade.attr("ry"), self.network.attr("roll_y"))
-        pm.connectAttr(blade.attr("rz"), self.network.attr("roll_z"))
+        pm.connectAttr(blade.attr("worldMatrix")[0], self.network.attr("roll_m"))
 
         return guide
 
