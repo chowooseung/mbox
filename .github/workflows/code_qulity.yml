@@ -45,4 +45,4 @@ jobs:
     - name: Code quality with flake8
       run: |
         # Runs code quality check
-        flake8 python --count --exit-zero --max-complexity=10 --max-line-length=300 --statistics
+        flake8 scripts --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
