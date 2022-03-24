@@ -1,3 +1,3 @@
 # mbox
 
-mbox started with the aim of studying mgear. Therefore, most core functions come from mgear. mgear is the best rigging framework. But mgear's inheritance was a bit complicated for me. So I modified it in a way that I think was easier. My programming level is still low, so things I've changed may have gone in the wrong direction.
+mgear에 대한 study 목적으로 만들어졌습니다. 궁극적인 목표는 mgear의 의존성을 없애고 독립적인 rigging framework로 나아가는것입니다.
