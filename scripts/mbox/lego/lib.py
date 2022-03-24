@@ -1311,6 +1311,14 @@ class AbstractObjects(AbstractRig):
         jnt.attr("jointOrientZ").set(jo[2])
 
         m_m2 = node.createMultMatrixNode(m_m.attr("matrixSum"), m_i, jnt, "r")
+        if jnt.attr("sz").get() < 0:
+            plugs = jnt.attr("s").inputs(plugs=True)[0]
+            pm.disconnectAttr(plugs, jnt.attr("s"))
+            node.createMulDivNode(plugs, [1, 1, -1], 1, [jnt.attr("sx"), jnt.attr("sy"), jnt.attr("sz")])
+            plugs = jnt.attr("r").inputs(plugs=True)[0]
+            pm.disconnectAttr(plugs, jnt.attr("r"))
+            m_d = node.createMulDivNode([], [-1, -1, 1], 1, [jnt.attr("rx"), jnt.attr("ry"), jnt.attr("rz")])
+            pm.connectAttr(plugs, m_d.attr("input1"))
 
         attribute.lockAttribute(jnt)
         attribute.setNotKeyableAttributes(jnt, ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"])

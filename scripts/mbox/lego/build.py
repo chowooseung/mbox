@@ -116,7 +116,7 @@ def rig(blueprint: AbstractBlock or None) -> Context:
         if issubclass(mod.CustomStep, PreScript):
             ins = mod.CustomStep()
             pre_scripts.append(ins)
-        elif issubclass(moc.CustomStep, PostScript):
+        elif issubclass(mod.CustomStep, PostScript):
             ins = mod.CustomStep()
             post_scripts.append(ins)
 

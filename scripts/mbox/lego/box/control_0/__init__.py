@@ -30,11 +30,14 @@ class Objects(AbstractObjects):
         # matrix
         if self.block["neutral_rotation"]:
             m = transform.getTransformFromPos(pm.datatypes.Matrix(self.block["transforms"][1]).translate)
+            root = self.create_root(context=context, m=m)
         else:
             if self.block["mirror_behaviour"] and self.block.negate:
                 scl = [1, 1, -1]
             else:
                 scl = [1, 1, 1]
+            m = transform.getTransformFromPos(pm.datatypes.Matrix(self.block["transforms"][1]).translate)
+            root = self.create_root(context=context, m=m)
             m = transform.setMatrixScale(pm.datatypes.Matrix(self.block["transforms"][1]), scl)
 
         # get ctl color
@@ -42,7 +45,6 @@ class Objects(AbstractObjects):
 
         # create
         if not self.block["leaf_joint"]:
-            root = self.create_root(context=context, m=m)
             distance = vector.getDistance(pm.datatypes.Matrix(self.block["transforms"][0]).translate,
                                           pm.datatypes.Matrix(self.block["transforms"][1]).translate)
             ctl = self.create_ctl(context=context,
@@ -89,7 +91,7 @@ class Operators(AbstractOperators):
         super(Operators, self).process(context=context)
 
         if self.block["ik_ref_array"] and not self.block["leaf_joint"]:
-            self.space_switch(context=context, ctl=self.ins["ctl"][0], target=self.ins["ui_host"], attr_name="space_switch")
+            self.space_switch(context=context, ctl=self.ins["ctls"][0], target=self.ins["ui_host"], attr_name="space_switch")
 
 
 class Connection(AbstractConnection):

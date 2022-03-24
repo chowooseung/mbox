@@ -1,16 +1,24 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from . import actions
+from . import actions, common_settings_ui
 
 # qt.py
 from mgear.vendor.Qt import QtWidgets, QtCore, QtGui
+
+
+class CommonSettings(common_settings_ui.Ui_Form):
+
+    def __init__(self, parent=None):
+        super(CommonSettings, self).__init__(parent=parent)
+        self.setupUi(self)
 
 
 class Settings(QtWidgets.QDialog, actions.Actions):
 
     def __init(self, parent=None):
         super(Settings, self).__init__(parent=parent)
+        self.common_settings_ui = CommonSettings()
 
         self.setup_window()
         self.create_widgets()

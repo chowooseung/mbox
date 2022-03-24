@@ -1,16 +1,18 @@
 # -*- coding:utf-8 -*-
 
 #
+import logging
 import os
-
-# mbox
-from mbox import version
-from mbox import menu
 
 # maya
 import pymel.core as pm
 
+from mbox import menu
+# mbox
+from mbox import version
+
 menu_id = "mBox"
+logger = logging.getLogger()
 
 
 def environ():
