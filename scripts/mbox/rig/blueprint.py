@@ -30,6 +30,30 @@ class Component(dict):
     @property
     def chain(self):
         # TODO: guide chain
+        ui = exec_window()
+        if ui:
+            axis = ui.dir_axis
+            offset = ui.spacing
+            number = ui.sections_number
+            if axis == 0:  # X
+                offVec = pm.datatypes.Vector(offset, 0, 0)
+            elif axis == 3:  # -X
+                offVec = pm.datatypes.Vector(offset * -1, 0, 0)
+            elif axis == 1:  # Y
+                offVec = pm.datatypes.Vector(0, offset, 0)
+            elif axis == 4:  # -Y
+                offVec = pm.datatypes.Vector(0, offset * -1, 0)
+            elif axis == 2:  # Z
+                offVec = pm.datatypes.Vector(0, 0, offset)
+            elif axis == 5:  # -Z
+                offVec = pm.datatypes.Vector(0, 0, offset * -1)
+
+            newPosition = pm.datatypes.Vector(0, 0, 0)
+            pos_list = [newPosition]
+            for i in range(number):
+                newPosition = offVec + newPosition
+                pos_list.append(newPosition)
+            self["transforms"] = [transform.getTransformFromPos(x).tolist() for x in pos_list]
         transforms = list()
         return transforms if transforms else "#"
 
@@ -73,11 +97,10 @@ class Component(dict):
         self.update(data) if data else self.__load()
         self._network = network
         self._valid = True
-        if not self.is_assembly:
+        if self["transforms"] == "#":
+            self["transforms"] = self.chain
             if self["transforms"] == "#":
-                self["transforms"] = self.chain
-                if self["transforms"] == "#":
-                    self._valid = False
+                self._valid = False
 
     def __setitem__(self, key, value):
         # TODO: guide __setitem__
@@ -227,7 +250,11 @@ class Blueprint:
                   lambda x: ([y["oid"] for y in x["children"]], import_component_module(x["comp_type"], True).Guide()),
                   lambda x: x["children"],
                   result)
-        child_oid_list, comp_list = [x for x in result]
+        child_oid_list, comp_list = zip(*result)
+        for index, comp in enumerate(comp_list):
+            for child_oid in child_oid_list[index]:
+                pass
+
 
     def find_component(self, oid):
         if not self.blueprint:
@@ -247,7 +274,12 @@ class Blueprint:
             assembly_mod = import_component_module("assembly", True)
             parent_comp = assembly_mod()
         new_comp = mod.Guide(parent_comp)
-        if not new_comp.valid:
+        result = list()
+        traversal(parent_comp,
+                  lambda x: x.valid,
+                  lambda x: x["children"],
+                  result)
+        if False in list(set(result)):
             return
         self._blueprint = parent_comp
         self.set_index(new_comp["comp_name"], new_comp["comp_side"], new_comp["index"], new_comp)

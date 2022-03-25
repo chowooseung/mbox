@@ -2,17 +2,17 @@
 
 # mgear
 from mgear.core import (
-        attribute,
-        primitive,
-        icon,
-        node)
+    attribute,
+    primitive,
+    icon,
+    node)
 
 # mbox
 from mbox.lego.lib import (
-        AbstractObjects,
-        AbstractAttributes,
-        AbstractOperators,
-        AbstractConnection)
+    AbstractObjects,
+    AbstractAttributes,
+    AbstractOperators,
+    AbstractConnection)
 
 # maya
 import pymel.core as pm
@@ -54,8 +54,8 @@ class Objects(AbstractObjects):
         self.ins["controls_set"] = pm.sets(name="controls_set", empty=True)
         self.ins["deformer_set"] = pm.sets(name="deformer_set", empty=True)
         pm.sets(self.ins["root_set"], addElement=(self.ins["geo_set"],
-            self.ins["controls_set"],
-            self.ins["deformer_set"]))
+                                                  self.ins["controls_set"],
+                                                  self.ins["deformer_set"]))
         pm.sets(self.ins["geo_set"], addElement=geo)
 
         attribute.addEnumAttribute(self.ins["root"], "controls_switch", 0, [" "])
@@ -68,7 +68,8 @@ class Objects(AbstractObjects):
         attribute.addAttribute(self.ins["root"], "joints_label_vis", "bool", False)
 
         pm.connectAttr(self.ins["root"].attr("controls_vis"), self.ins["blocks_root"].attr("v"))
-        pm.connectAttr(self.ins["root"].attr("controls_on_playback_vis"), self.ins["blocks_root"].attr("hideOnPlayback"))
+        pm.connectAttr(self.ins["root"].attr("controls_on_playback_vis"),
+                       self.ins["blocks_root"].attr("hideOnPlayback"))
         pm.connectAttr(self.ins["root"].attr("joints_vis"), self.ins["joints_root"].attr("v"))
         condition = pm.createNode("condition")
         pm.connectAttr(self.ins["root"].attr("controls_mouseover"), condition.attr("firstTerm"))
@@ -80,12 +81,13 @@ class Objects(AbstractObjects):
 
         attribute.lockAttribute(self.ins["root"])
         attribute.setNotKeyableAttributes(self.ins["root"], ["controls_switch",
-            "controls_vis",
-            "controls_mouseover",
-            "controls_on_playback_vis",
-            "joints_switch",
-            "joints_vis",
-            "joints_label_vis"])
+                                                             "controls_vis",
+                                                             "controls_mouseover",
+                                                             "controls_on_playback_vis",
+                                                             "controls_x_ray",
+                                                             "joints_switch",
+                                                             "joints_vis",
+                                                             "joints_label_vis"])
         attribute.lockAttribute(self.ins["geo_root"])
         attribute.lockAttribute(self.ins["blocks_root"])
         attribute.lockAttribute(self.ins["joints_root"])
@@ -116,5 +118,3 @@ class Connection(AbstractConnection):
 
     def process(self, context):
         super(Connection, self).process(context=context)
-
-
