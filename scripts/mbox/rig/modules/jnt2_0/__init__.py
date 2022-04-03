@@ -5,11 +5,11 @@ class Contributor:
 
     @property
     def comp_type(self):
-        return ""
+        return "jnt2_0"
 
     @property
     def comp_name(self):
-        return ""
+        return "jnt20"
 
     @property
     def version(self):
@@ -25,4 +25,4 @@ class Contributor:
 
     @property
     def description(self):
-        return "module description"
+        return "2 jnt module"

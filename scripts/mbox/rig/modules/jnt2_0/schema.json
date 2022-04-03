@@ -1,0 +1,14 @@
+{
+  "comp_type": "jnt2_0",
+  "comp_name": "jnt20",
+  "comp_side": "L",
+  "comp_index": 0,
+  "ik_t_r" : false,
+  "blend" : 0.0,
+  "mirror_ik" : true,
+  "mirror_mid" : true,
+  "ik_ref_array" : "",
+  "upv_ref_array" : "",
+  "elbow_ref_array" : "",
+  "div" : 2
+}

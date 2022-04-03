@@ -7,8 +7,8 @@ import maya.api.OpenMaya as om
 # mbox
 import mbox
 from mbox.lego import (
-        utils,
-        naming)
+    utils,
+    naming)
 
 # built-in
 import os
@@ -19,12 +19,12 @@ from collections import OrderedDict
 
 # mgear
 from mgear.core import (
-        pyqt,
-        attribute,
-        primitive,
-        transform,
-        icon,
-        node)
+    pyqt,
+    attribute,
+    primitive,
+    transform,
+    icon,
+    node)
 
 # json
 import json
@@ -205,7 +205,7 @@ def inspect_settings(guide=None, network=None):
         root = selected[0]
     else:
         pm.displayWarning(
-                "please select one object from the component guide")
+            "please select one object from the component guide")
         return
 
     comp_type = False
@@ -245,7 +245,7 @@ def log_window():
         pm.columnLayout(adjustableColumn=True)
         pm.cmdScrollFieldReporter(log_window_field_reporter, width=800, height=500, clear=True)
         pm.button(label="Close",
-                command=("import pymel.core as pm\npm.deleteUI('{logWin}', window=True)".format(logWin=logWin)))
+                  command=("import pymel.core as pm\npm.deleteUI('{logWin}', window=True)".format(logWin=logWin)))
         pm.setParent('..')
         pm.showWindow(logWin)
     else:
@@ -295,9 +295,9 @@ def _file_dialog(path=None, mode=0):
     """from mgear.shifter.io._get_file
     mode [0:save, 1:open]"""
     file_path = pm.fileDialog2(
-            startingDirectory=path if path else pm.workspace(query=True, rootDirectory=True),
-            fileMode=mode,
-            fileFilter='mBox Guide Template .mbox (*%s)' % ".mbox")
+        startingDirectory=path if path else pm.workspace(query=True, rootDirectory=True),
+        fileMode=mode,
+        fileFilter='mBox Guide Template .mbox (*%s)' % ".mbox")
 
     if not file_path:
         return
@@ -590,9 +590,9 @@ class SubBlock(AbstractBlock):
         self.network.attr("RGB_fk").set(self["RGB_fk"])
         self.network.attr("RGB_ik").set(self["RGB_ik"])
         [self.network.attr("transforms")[i].set(t)
-                if not self.network.attr("transforms")[i].inputs()
-                else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
-                for i, t in enumerate(self["transforms"])]
+         if not self.network.attr("transforms")[i].inputs()
+         else self.network.attr("transforms")[i].inputs()[0].setMatrix(pm.datatypes.Matrix(t), worldSpace=True)
+         for i, t in enumerate(self["transforms"])]
         # TODO: control shapes curve info
         shapes_network = self.network.attr("ctls").outputs(type="network")
         pm.delete(shapes_network) if shapes_network else None
@@ -622,7 +622,7 @@ class SubBlock(AbstractBlock):
         attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
         attribute.addAttribute(n, "comp_name", "string", self["comp_name"])
         attribute.addEnumAttribute(n, "comp_side", self["comp_side"],
-                ["center", "left", "right"], keyable=False)
+                                   ["center", "left", "right"], keyable=False)
         attribute.addAttribute(n, "comp_index", "long", self["comp_index"], keyable=False)
         attribute.addAttribute(n, "ui_host", "string", self["ui_host"])
         attribute.addAttribute(n, "joint_names", "string", self["joint_names"])
@@ -800,7 +800,7 @@ class RootBlock(AbstractBlock):
         self["ctl_name_rule"] = self.network.attr("ctl_name_rule").get()
         self["joint_description_letter_case"] = self.network.attr("joint_description_letter_case").get(asString=True)
         self["ctl_description_letter_case"] = \
-                self.network.attr("ctl_description_letter_case").get(asString=True)
+            self.network.attr("ctl_description_letter_case").get(asString=True)
         self["joint_index_padding"] = self.network.attr("joint_index_padding").get()
         self["ctl_index_padding"] = self.network.attr("ctl_index_padding").get()
         self["world_ctl"] = self.network.attr("world_ctl").get()
@@ -890,8 +890,8 @@ class RootBlock(AbstractBlock):
         attribute.addAttribute(n, "schema", "string", self["schema"])
         attribute.addEnumAttribute(n, "process", self["process"], ["WIP", "PUB"], keyable=False)
         attribute.addEnumAttribute(n, "step", self["step"],
-                ["all", "preScripts", "objects", "attributes", "operators", "connection",
-                    "additionalFunc", "postScripts"], keyable=False)
+                                   ["all", "preScripts", "objects", "attributes", "operators", "connection",
+                                    "additionalFunc", "postScripts"], keyable=False)
         attribute.addAttribute(n, "joint_left_name", "string", self["joint_left_name"])
         attribute.addAttribute(n, "joint_right_name", "string", self["joint_right_name"])
         attribute.addAttribute(n, "joint_center_name", "string", self["joint_center_name"])
@@ -903,9 +903,9 @@ class RootBlock(AbstractBlock):
         attribute.addAttribute(n, "joint_name_rule", "string", self["joint_name_rule"])
         attribute.addAttribute(n, "ctl_name_rule", "string", self["ctl_name_rule"])
         attribute.addEnumAttribute(n, "joint_description_letter_case", self["joint_description_letter_case"],
-                ["default", "lower", "upper", "capitalize"], keyable=False)
+                                   ["default", "lower", "upper", "capitalize"], keyable=False)
         attribute.addEnumAttribute(n, "ctl_description_letter_case", self["ctl_description_letter_case"],
-                ["default", "lower", "upper", "capitalize"], keyable=False)
+                                   ["default", "lower", "upper", "capitalize"], keyable=False)
         attribute.addAttribute(n, "joint_index_padding", "long", self["joint_index_padding"], keyable=False)
         attribute.addAttribute(n, "ctl_index_padding", "long", self["ctl_index_padding"], keyable=False)
         attribute.addAttribute(n, "world_ctl", "bool", self["world_ctl"], keyable=False)
@@ -1075,9 +1075,9 @@ class AbstractObjects(AbstractRig):
         super(AbstractObjects, self).__init__(block=block)
 
     def get_name(self,
-            typ: bool,
-            description: str = "",
-            extension: str = "") -> str:
+                 typ: bool,
+                 description: str = "",
+                 extension: str = "") -> str:
         root_block = self.block.top
         if typ:
             rule = root_block["joint_name_rule"]
@@ -1104,10 +1104,10 @@ class AbstractObjects(AbstractRig):
         index_filter = ["left", "right", "center"]
         side = side_set[index_filter.index(self.block["comp_side"])]
         name = rule.format(name=self.block["comp_name"],
-                side=side,
-                index=str(self.block["comp_index"]).zfill(padding),
-                description=description,
-                extension=extension)
+                           side=side,
+                           index=str(self.block["comp_index"]).zfill(padding),
+                           description=description,
+                           extension=extension)
         name = "_".join([x for x in name.split("_") if x])
         return name
 
@@ -1160,8 +1160,8 @@ class AbstractObjects(AbstractRig):
         return color
 
     def create_root(self,
-            context: Context,
-            m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+                    context: Context,
+                    m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
         if self.block["comp_type"] == "mbox":
             parent = None
@@ -1175,8 +1175,8 @@ class AbstractObjects(AbstractRig):
                     break
                 parent_block = parent_block.parent
             parent = parent_instance["refs"][0] \
-                    if isinstance(self.block.parent, RootBlock) \
-                    else parent_instance["refs"][self.block["ref_index"]]
+                if isinstance(self.block.parent, RootBlock) \
+                else parent_instance["refs"][self.block["ref_index"]]
             name = self.get_name(False, extension="root")
             attr_name = "is_rig_component"
         root = primitive.addTransform(parent, name, m=m)
@@ -1187,30 +1187,30 @@ class AbstractObjects(AbstractRig):
         return root
 
     def create_ctl(self,
-            context: Context,
-            parent: None or pm.nodetypes.Transform,
-            m: pm.datatypes.Matrix,
-            parent_ctl: None or pm.nodetypes.Transform,
-            color: list or int,
-            ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
-            npo_attr: list = [],
-            description: str = "",
-            size: float = 1.0,
-            shape: str = "cube",
-            cns: bool = False) -> pm.nodetypes.Transform:
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   m: pm.datatypes.Matrix,
+                   parent_ctl: None or pm.nodetypes.Transform,
+                   color: list or int,
+                   ctl_attr: list = ["tx", "ty", "tz", "ro", "rx", "ry", "rz", "sx", "sy", "sz"],
+                   npo_attr: list = [],
+                   description: str = "",
+                   size: float = 1.0,
+                   shape: str = "cube",
+                   cns: bool = False) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
         if cns:
             cns = primitive.addTransform(parent, self.get_name(False, description=description, extension="cns"), m=m)
             parent = cns
         npo = primitive.addTransform(parent, self.get_name(False, description=description, extension="npo"), m=m)
         ctl = icon.create(npo,
-                self.get_name(False, description=description, extension=self.block.top["ctl_name_ext"]),
-                m=m,
-                color=color,
-                icon=shape,
-                w=size,
-                h=size,
-                d=size)
+                          self.get_name(False, description=description, extension=self.block.top["ctl_name_ext"]),
+                          m=m,
+                          color=color,
+                          icon=shape,
+                          w=size,
+                          h=size,
+                          d=size)
         attribute.setKeyableAttributes(ctl, ctl_attr)
         attribute.setKeyableAttributes(npo, npo_attr)
         attribute.addAttribute(ctl, "is_ctl", "bool", keyable=False)
@@ -1224,10 +1224,10 @@ class AbstractObjects(AbstractRig):
         return ctl
 
     def create_ref(self,
-            context: Context,
-            parent: None or pm.nodetypes.Transform,
-            description: str,
-            m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
+                   context: Context,
+                   parent: None or pm.nodetypes.Transform,
+                   description: str,
+                   m: pm.datatypes.Matrix) -> pm.nodetypes.Transform:
         instance = context.instance(self.block.ins_name)
         ref = primitive.addTransform(parent, self.get_name(False, description=description, extension="ref"), m=m)
         attribute.setKeyableAttributes(ref, [])
@@ -1237,20 +1237,20 @@ class AbstractObjects(AbstractRig):
         return ref
 
     def create_jnt(self,
-            context: Context,
-            parent: None or pm.nodetypes.Joint,
-            description: str,
-            ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
+                   context: Context,
+                   parent: None or pm.nodetypes.Joint,
+                   description: str,
+                   ref: pm.nodetypes.Transform) -> pm.nodetypes.Joint:
         instance = context.instance(self.block.ins_name)
 
         joint_name = None
         if self.block["joint_names"]:
             name_list = self.block["joint_names"].split(",")
             if len(name_list) >= len(instance["jnts"]):
-                joint_name = name_list(len(instance["jnts"] - 1))
+                joint_name = name_list[len(instance["jnts"])]
         name = joint_name \
-                if joint_name \
-                else self.get_name(True, description=description, extension=self.block.top["joint_name_ext"])
+            if joint_name \
+            else self.get_name(True, description=description, extension=self.block.top["joint_name_ext"])
 
         if parent is None:
             index = self.block["ref_index"]
@@ -1357,39 +1357,39 @@ class AbstractAttributes(AbstractRig):
             self.ins["script_node"].attr("oid").set(self.block["oid"])
 
     def create_attr(self, context, longName, attType, \
-            value, niceName=None, minValue=None, maxValue=None, keyable=True, \
-            readable=True, storable=True, writable=True, uihost=None):
+                    value, niceName=None, minValue=None, maxValue=None, keyable=True, \
+                    readable=True, storable=True, writable=True, uihost=None):
         if not uihost:
             uihost = self.ins["ui_host"]
         if uihost.hasAttr(longName):
             attr = uihost.attr(longName)
         else:
             attr = attribute.addAttribute(uihost,
-                    longName, attType,
-                    value, niceName,
-                    minValue=minValue,
-                    maxValue=maxValue,
-                    keyable=keyable,
-                    readable=readable,
-                    storable=storable,
-                    writable=writable)
+                                          longName, attType,
+                                          value, niceName,
+                                          minValue=minValue,
+                                          maxValue=maxValue,
+                                          keyable=keyable,
+                                          readable=readable,
+                                          storable=storable,
+                                          writable=writable)
         return attr
 
     def create_enum_attr(self, context, longName, value, \
-            enum, niceName=None, keyable=True, readable=True, \
-            storable=True, writable=True, uihost=None):
+                         enum, niceName=None, keyable=True, readable=True, \
+                         storable=True, writable=True, uihost=None):
         if not uihost:
             uihost = self.ins["ui_host"]
         if uihost.hasAttr(longName):
             attr = uihost.attr(longName)
         else:
             attr = attribute.addEnumAttribute(uihost,
-                    longName, value,
-                    enum, niceName, None,
-                    keyable=keyable,
-                    readable=readable,
-                    storable=storable,
-                    writable=writable)
+                                              longName, value,
+                                              enum, niceName, None,
+                                              keyable=keyable,
+                                              readable=readable,
+                                              storable=storable,
+                                              writable=writable)
         return attr
 
 
@@ -1565,7 +1565,7 @@ class AdditionalFunc:
                 dfs_list = pm.connectionInfo(_block.parent.network.attr("affects")[0], destinationFromSource=True)
                 if _block.network.attr("affectedBy")[0].name() not in dfs_list:
                     pm.connectAttr(_block.parent.network.attr("affects")[0],
-                            _block.network.attr("affectedBy")[0], force=True)
+                                   _block.network.attr("affectedBy")[0], force=True)
             if _ins.get("ctls"):
                 for index, con in enumerate(_ins["ctls"]):
                     pm.connectAttr(con.attr("message"), _block.network.attr("ctls")[index], force=True)
@@ -1622,8 +1622,8 @@ class AdditionalFunc:
                 if _ins.get("jnts"):
                     for _index, _jnt in enumerate(_ins["jnts"]):
                         _label = f"{_block['comp_name']}_center{_block['comp_index']}_{_index}" \
-                                if _block["comp_side"] == "center" \
-                                else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
+                            if _block["comp_side"] == "center" \
+                            else f"{_block['comp_name']}_side{_block['comp_index']}_{_index}"
 
                         _jnt.attr("side").set(side_set[_block["comp_side"]])
                         _jnt.attr("type").set("Other")

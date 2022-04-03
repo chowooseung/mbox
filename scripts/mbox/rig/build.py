@@ -2,16 +2,17 @@
 
 # build-in
 import importlib
+import itertools
 
 # maya
 from pymel import core as pm
 
 # mbox
 from mbox import logger
-from .utils import traversal, import_component_module
+from .utils import traversal, import_component_module, add_jnt
 
 # mgear
-from mgear.core import attribute, transform
+from mgear.core import attribute, transform, icon, primitive, node, applyop
 
 
 class Context(list):
@@ -29,7 +30,7 @@ class Context(list):
         self._assembly = None
 
     def instance(self, oid):
-        instance = list(filter(lambda ins: ins.oid == oid, self))
+        instance = list(filter(lambda ins: ins.component["oid"] == oid, self))
         return instance[0] if instance else None
 
 
@@ -57,7 +58,59 @@ class Instance:
 
     @property
     def jnts(self):
+        # jnts[0] = [parent, ref, uniform scale,
         return self._jnts
+
+    @property
+    def ui_host(self):
+        if self.component["ui_host"]:
+            _, index, oid = self.component["ui_host"].split(",")
+            ui_host = self.context.instance(oid).ctls[int(index)]
+        else:
+            ui_host = self.context.assembly.ctls[0]
+        div_attr_name = f"{self.component['comp_name']}_{self.component['comp_side']}{self.component['comp_index']}"
+        if not pm.attributeQuery(div_attr_name, node=ui_host, exists=True):
+            attribute.addEnumAttribute(ui_host, div_attr_name, 0, [" "])
+            attribute.setNotKeyableAttributes(ui_host, [div_attr_name])
+        return ui_host
+
+    @property
+    def comp_parent_ref(self):
+        parent_component = self.component.parent
+        parent_instance = None
+        while parent_component:
+            parent_instance = self.context.instance(parent_component["oid"])
+            if parent_instance.refs:
+                break
+            parent_component = parent_component.parent
+        if parent_instance:
+            if self.component["ref_parent_index"] > -1:
+                if int(self.component["ref_parent_index"]) < len(parent_instance.refs):
+                    return parent_instance.refs[int(self.component["ref_parent_index"])]
+            if int(self.component["guide_parent_index"]) < len(parent_instance.comp_ref_parent_dict):
+                return parent_instance.comp_ref_parent_dict[int(self.component["guide_parent_index"])]
+            return parent_instance.refs[-1]
+
+    @property
+    def comp_parent_jnt(self):
+        parent_instance = None
+        component = self.component
+        while component.parent:
+            parent_instance = self.context.instance(component.parent["oid"])
+            if parent_instance.jnts:
+                break
+            component = component.parent
+        if parent_instance.jnts:
+            if self.component["jnt_parent_index"] > -1:
+                if int(self.component["jnt_parent_index"]) < len(parent_instance.jnts):
+                    return parent_instance.jnts[int(self.component["jnt_parent_index"])]
+            if self.component["ref_parent_index"] > -1:
+                if int(self.component["ref_parent_index"]) < len(parent_instance.jnts):
+                    return parent_instance.jnts[int(self.component["ref_parent_index"])]
+            if int(self.component["guide_parent_index"]) < len(parent_instance.comp_jnt_parent_dict):
+                return parent_instance.comp_jnt_parent_dict[int(self.component["guide_parent_index"])]
+            return parent_instance.jnts[-1][2]
+        return None
 
     def __init__(self, context, component=None):
         self._root = None
@@ -69,34 +122,168 @@ class Instance:
         self._context.append(self)
         if self.component.is_assembly:
             self._context.assembly = self
+        self.comp_ref_parent_dict = dict()
+        self.comp_jnt_parent_dict = dict()
 
-    def add_root(self):
-        # TODO: instance add root
-        pass
+    def add_root(self, m=pm.datatypes.Matrix()):
+        naming = self.component.assembly.naming
+        parent = self.comp_parent_ref
+        name = naming.name(self.component, False, extension="root") if self.component.parent else self.component["name"]
+        root = primitive.addTransform(parent, name, m)
+        attribute.addAttribute(root, "is_rig", "bool", keyable=False)
+        attribute.setKeyableAttributes(root, [])
+        self._root = root
+        return root
 
-    def add_loc(self):
-        # TODO: instance add loc
-        pass
+    def add_loc(self, parent, description, m):
+        naming = self.component.assembly.naming
+        loc = primitive.addTransform(parent,
+                                     naming.name(
+                                         self.component,
+                                         False,
+                                         description=description,
+                                         extension="loc"),
+                                     m=m)
+        attribute.setKeyableAttributes(loc, [])
+        return loc
 
-    def add_ctl(self):
-        # TODO: instance add ctl
-        pass
+    def add_ctl(self, parent, parent_ctl, color, ctl_attr, npo_attr, description, cns, m, **kwargs):
+        naming = self.component.assembly.naming
+        ctl_attr = ctl_attr if ctl_attr else ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"]
+        npo_attr = npo_attr if npo_attr else ["v"]
+        if cns:
+            parent = primitive.addTransform(parent,
+                                            f"{kwargs['name']}_cns" if "name" in kwargs else naming.name(
+                                                self.component,
+                                                False,
+                                                description=description,
+                                                extension="cns"),
+                                            m=m)
+        npo = primitive.addTransform(parent,
+                                     f"{kwargs['name']}_npo" if "name" in kwargs else naming.name(
+                                         self.component,
+                                         False,
+                                         description=description,
+                                         extension="npo"),
+                                     m=m)
+        attribute.setKeyableAttributes(npo, npo_attr)
+        ctl = icon.create(npo,
+                          f"{kwargs['name']}_{self.component['ctl_name_ext']}" if "name" in kwargs else naming.name(
+                              self.component,
+                              False,
+                              description=description),
+                          color=color,
+                          icon=kwargs["icon"] if "icon" in kwargs else "cube",
+                          w=kwargs["w"],
+                          h=kwargs["h"],
+                          d=kwargs["d"],
+                          m=m)
+        attribute.addAttribute(ctl, "is_ctl", "bool", keyable=False)
+        attribute.addAttribute(ctl, "ui_host", "message")
+        attribute.setKeyableAttributes(ctl, ctl_attr)
+        pm.connectAttr(ctl.attr("message"), self.component.network.attr("ctls")[len(self.ctls)])
+        tag = node.add_controller_tag(ctl, parent_ctl)
+        tag.attr("visibilityMode").set(1)
+        self._ctls.append(ctl)
+        return ctl
 
-    def add_ref(self):
-        # TODO: instance add ref
-        pass
+    def add_ref(self, parent, description, m):
+        naming = self.component.assembly.naming
+        ref = primitive.addTransform(parent,
+                                     naming.name(self.component, False, description=description, extension="ref"),
+                                     m)
+        self._refs.append(ref)
+        return ref
 
-    def add_jnt(self):
-        # TODO: instance add jnt
-        pass
+    def add_jnt(self, parent, ref, name, uni_scale):
+        parent = parent if parent else self.comp_parent_jnt
+        if not parent:
+            parent = "jnts"
+        rot_off = self.component["jnt_rot_off"] if "jnt_rot_off" in self.component else [0, 0, 0]
+        self._jnts.append([parent, ref, name, uni_scale, rot_off])
+        return name
 
-    def get_ctl_color(self, ikfk='ik'):
-        # TODO: instance get ctl color
-        pass
-
-    def get_name(self, description="", extension=""):
-        # TODO: instance get name
-        pass
+    def get_ctl_color(self, ik_fk='ik'):
+        color = None
+        if not self.component.is_assembly:
+            if self.component["override_color"]:
+                if self.component["use_RGB_color"]:
+                    if ik_fk == "ik":
+                        color = self.component["RGB_ik"]
+                    else:
+                        color = self.component["RGB_fk"]
+                else:
+                    if ik_fk == "ik":
+                        color = self.component["color_ik"]
+                    else:
+                        color = self.component["RGB_fk"]
+            else:
+                if self.component.assembly["use_RGB_color"]:
+                    if self.component["comp_side"] == "L":
+                        if ik_fk == "ik":
+                            color = self.component.assembly["l_RGB_ik"]
+                        else:
+                            color = self.component.assembly["l_RGB_fk"]
+                    elif self.component["comp_side"] == "R":
+                        if ik_fk == "ik":
+                            color = self.component.assembly["r_RGB_ik"]
+                        else:
+                            color = self.component.assembly["r_RGB_fk"]
+                    elif self.component["comp_side"] == "C":
+                        if ik_fk == "ik":
+                            color = self.component.assembly["c_RGB_ik"]
+                        else:
+                            color = self.component.assembly["c_RGB_fk"]
+                else:
+                    if self.component["comp_side"] == "L":
+                        if ik_fk == "ik":
+                            color = self.component.assembly["l_color_ik"]
+                        else:
+                            color = self.component.assembly["l_color_fk"]
+                    elif self.component["comp_side"] == "R":
+                        if ik_fk == "ik":
+                            color = self.component.assembly["r_color_ik"]
+                        else:
+                            color = self.component.assembly["r_color_fk"]
+                    elif self.component["comp_side"] == "C":
+                        if ik_fk == "ik":
+                            color = self.component.assembly["c_color_ik"]
+                        else:
+                            color = self.component.assembly["c_color_fk"]
+        else:
+            if self.component.assembly["use_RGB_color"]:
+                if self.component["comp_side"] == "L":
+                    if ik_fk == "ik":
+                        color = self.component.assembly["l_RGB_ik"]
+                    else:
+                        color = self.component.assembly["l_RGB_fk"]
+                elif self.component["comp_side"] == "R":
+                    if ik_fk == "ik":
+                        color = self.component.assembly["r_RGB_ik"]
+                    else:
+                        color = self.component.assembly["r_RGB_fk"]
+                elif self.component["comp_side"] == "C":
+                    if ik_fk == "ik":
+                        color = self.component.assembly["c_RGB_ik"]
+                    else:
+                        color = self.component.assembly["c_RGB_fk"]
+            else:
+                if self.component["comp_side"] == "L":
+                    if ik_fk == "ik":
+                        color = self.component.assembly["l_color_ik"]
+                    else:
+                        color = self.component.assembly["l_color_fk"]
+                elif self.component["comp_side"] == "R":
+                    if ik_fk == "ik":
+                        color = self.component.assembly["r_color_ik"]
+                    else:
+                        color = self.component.assembly["r_color_fk"]
+                elif self.component["comp_side"] == "C":
+                    if ik_fk == "ik":
+                        color = self.component.assembly["c_color_ik"]
+                    else:
+                        color = self.component.assembly["c_color_fk"]
+        return color
 
 
 class BuildSystem:
@@ -115,30 +302,46 @@ class BuildSystem:
         self._context = Context()
         msgs = list()
         procedure = list()
+        # if self.blueprint["precess"] == 2:
+        #     return
+        objects_msg = list()
+        attributes_msg = list()
+        operators_msg = list()
+        connectors_msg = list()
+        objects = list()
+        attributes = list()
+        operators = list()
+        connectors = list()
         result = list()
         traversal(self.blueprint,
                   lambda x: self.__load(x),
                   lambda x: x["children"],
                   result)
-        objects_msg = list()
-        features_msg = list()
-        connectors_msg = list()
-        objects = list()
-        features = list()
-        connectors = list()
-        for comp, obj, feature, connector in result:
+        for comp, obj, attr, operator, connector in result:
             objects_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} objects")
-            features_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} feature")
+            attributes_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} attributes")
+            operators_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} operators")
             connectors_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} connector")
             objects.append(obj)
-            features.append(feature)
+            attributes.append(attr)
+            operators.append(operator)
             connectors.append(connector)
         msgs += objects_msg
-        msgs += features_msg
-        msgs += connectors_msg
         procedure += objects
-        procedure += features
+        # if self.blueprint["precess"] == 2:
+        #     return
+        msgs += attributes_msg
+        procedure += attributes
+        # if self.blueprint["precess"] == 2:
+        #     return
+        msgs += operators_msg
+        procedure += operators
+        # if self.blueprint["precess"] == 2:
+        #     return
+        msgs += connectors_msg
         procedure += connectors
+        # if self.blueprint["precess"] == 2:
+        #     return
 
         msgs.append("network tree")
         procedure.append(self.network_tree)
@@ -146,6 +349,8 @@ class BuildSystem:
         procedure.append(self.ctl_tree)
         msgs.append("ctl shapes")
         procedure.append(self.ctl_shapes)
+        msgs.append("jnt structure")
+        procedure.append(self.jnt_structure)
         msgs.append("clean jnt")
         procedure.append(self.clean_jnt)
         msgs.append("sets")
@@ -160,16 +365,18 @@ class BuildSystem:
 
     def __load(self, component):
         mod = import_component_module(component["comp_type"], False)
-        comp = mod.Instance(self.context, component)
-        return component, comp.objects, comp.features, comp.connector
+        comp = mod.Rig(self.context, component)
+        return component, comp.objects, comp.attributes, comp.operators, comp.connector
 
     def build(self):
         logger.info("mbox build system")
         order = self.order
         total = len(order)
         count = 0
-        logger.info(f"total process... [{count} / {total}]")
-
+        logger.info(f"total process... ")
+        # logger.info(f"inspect jnt... ")
+        # if self.blueprint.naming.inspect_jnt_names():
+        #     return
         for msg, process in order:
             logger.info(f"{msg}... [{count} / {total}]")
             process()
@@ -191,6 +398,14 @@ class BuildSystem:
         for source, destination in connect_info:
             pm.connectAttr(source, destination.replace(shape.name(), new_shape.name()))
 
+    def jnt_structure(self):
+        connect_jnt = self.blueprint["connect_jnt"]
+        root = self.context.assembly.root
+        for ins in self.context:
+            for jnt in ins.jnts:
+                parent, ref, name, uni_scale, rot_off = jnt
+                add_jnt(parent, ref, name, uni_scale, rot_off=rot_off, connect_jnt=connect_jnt, dag_tree=root)
+
     def clean_jnt(self):
         for instance in self.context:
             comp = instance.component
@@ -202,12 +417,17 @@ class BuildSystem:
                 jnt.attr("type").set("Other")
                 jnt.attr("otherType").set(label)
                 jnt.attr("radius").set(0.5)
-                jnt.attr("segmentScaleCompensate").set(False)
-                pm.connectAttr(self.context.assembly.root.attr("joints_label_vis"), jnt.attr("drawLabel"))
+                pm.connectAttr(self.context.assembly.root.attr("jnt_label_vis"), jnt.attr("drawLabel"))
 
     def sets(self):
-        # TODO: buildsystem create maya sets
-        pass
+        character_set = self.context.assembly.root.attr("character_sets").inputs()[0]
+        ctls_set = [x for x in character_set.members() if "ctls" in x.name()][0]
+        jnts_set = [x for x in character_set.members() if "jnts" in x.name()][0]
+        for ins in self.context:
+            if hasattr(ins, "ctls"):
+                pm.sets(ctls_set, addElement=ins.ctls)
+            if hasattr(ins, "jnts"):
+                pm.sets(jnts_set, addElement=ins.jnts)
 
     def script_node(self):
         # TODO: buildsystem script node

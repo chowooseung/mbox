@@ -5,11 +5,11 @@ class Contributor:
 
     @property
     def comp_type(self):
-        return ""
+        return "ctl_01"
 
     @property
     def comp_name(self):
-        return ""
+        return "ctl01"
 
     @property
     def version(self):
@@ -25,4 +25,4 @@ class Contributor:
 
     @property
     def description(self):
-        return "module description"
+        return "one control, one joint"

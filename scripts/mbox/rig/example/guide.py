@@ -4,17 +4,29 @@
 from mbox.rig import blueprint
 from . import Contributor
 
+# mgear
+from mgear.core import attribute, primitive
+
+# maya
+from pymel import core as pm
+
 
 class Guide(blueprint.Component, Contributor):
 
-    def __init__(self):
+    def __init__(self, network=None, parent=None, data=None, chain_number=0):
+        # if chain self["guide_transforms"] = "#"
+
         # load schema
-        super(Guide, self).__init__()
+        super(Guide, self).__init__(network=network, parent=parent, data=data, chain_number=chain_number)
 
         # specify attribute setup
         # ......
 
     def pull(self):
+        # if no network
+        if not self.network:
+            return
+
         # common attribute pull
         super(Guide, self).pull()
 
@@ -22,6 +34,10 @@ class Guide(blueprint.Component, Contributor):
         # ......
 
     def push(self):
+        # if no network
+        if not self.network:
+            return
+
         # common attribute push
         super(Guide, self).push()
 
@@ -34,11 +50,6 @@ class Guide(blueprint.Component, Contributor):
 
         # specify attribute create
         # ......
-
-        # draw network
-        # n = pm.createNode("network")
-        # ...
-        # self._network = n
 
     def draw_guide(self):
         # If self._network is None, add network

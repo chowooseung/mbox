@@ -1,0 +1,16 @@
+{
+  "comp_type": "ctl_01",
+  "comp_name": "ctl01",
+  "comp_side": "C",
+  "comp_index": 0,
+  "jnt_rig": true,
+  "leaf_jnt": false,
+  "uni_scale": false,
+  "mirror_behaviour": true,
+  "neutral_rotation": false,
+  "icon": "cube",
+  "key_able_attrs": ["tx", "ty", "tz", "rx", "ry", "rz", "ro", "sx", "sy", "sz"],
+  "default_rotate_order": 0,
+  "ik_ref_array": "",
+  "ctl_size": 1
+}

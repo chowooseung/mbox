@@ -1,0 +1,19 @@
+{
+  "guide_parent_index": 0,
+  "ref_parent_index": -1,
+  "jnt_parent_index": -1,
+  "guide_transforms": [],
+  "jnt_names": "",
+  "jnt_rot_off": [0, 0, 0],
+  "ui_host": "",
+  "connector": "",
+  "blend_jnt": "",
+  "support_jnt": "",
+  "override_color": false,
+  "color_fk": 6,
+  "color_ik": 18,
+  "use_RGB_color": false,
+  "RGB_fk": [0, 0, 1],
+  "RGB_ik": [0, 0.25, 0],
+  "children": []
+}

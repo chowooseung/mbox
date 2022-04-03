@@ -5,11 +5,11 @@ class Contributor:
 
     @property
     def comp_type(self):
-        return ""
+        return "assembly"
 
     @property
     def comp_name(self):
-        return ""
+        return "rig"
 
     @property
     def version(self):

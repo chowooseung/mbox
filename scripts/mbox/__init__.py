@@ -18,8 +18,10 @@ logger = logging.getLogger()
 def environ():
     os.environ["MBOX_ROOT"] = os.path.normpath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir))
     os.environ["MBOX_PYTHON"] = os.path.normpath(os.path.dirname(__file__))
+    os.environ["MBOX_MODULES"] = os.path.normpath(os.path.join(os.path.dirname(__file__), "rig", "modules"))
     os.environ["MBOX_BOX"] = os.path.normpath(os.path.join(os.environ["MBOX_PYTHON"], "lego", "box"))
     os.environ["MBOX_CUSTOM_BOX"] = ""
+    os.environ["MBOX_CUSTOM_MODULES"] = ""
     os.environ["MBOX_CUSTOM_STEP_PATH"] = ""
 
 
