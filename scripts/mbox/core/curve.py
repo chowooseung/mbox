@@ -1,10 +1,7 @@
 # -*- coding:utf-8 -*-
 
-# maya
-import pymel.core as pm
-
 # mgear
-from mgear.core.curve import addCurve
+from mgear.core.curve import *
 
 
 def add_cns_curve(parent, name, centers, degree=1):

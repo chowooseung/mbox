@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from mbox.rig.ui import common_settings
+from mbox.box.ui import common_settings
 from . import settings_ui
 
 # maya

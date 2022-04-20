@@ -2,19 +2,13 @@
 
 # maya
 import maya.api.OpenMaya as om
-import pymel.core as pm
-from pymel.core import datatypes
-
-#
-import math
 
 # mgear
-from mgear.core.icon import null, cube, square, sphere
-from mgear.core import attribute
-from mgear.core import curve
+from mgear.core.icon import *
+from . import attribute, curve
 
 
-def guide_root_icon(parent=None,
+def guideRootIcon(parent=None,
                     name="root",
                     width=.5,
                     color=[1, 0, 0],

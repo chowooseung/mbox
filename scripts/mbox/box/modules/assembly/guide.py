@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from mbox.rig import blueprint
+from mbox.box import blueprint
 from . import Contributor
 
 # mgear
@@ -130,8 +130,8 @@ class Guide(blueprint.Component, Contributor):
         attribute.addAttribute(n, "comp_index", "long", self["comp_index"], minValue=0, keyable=False)
         attribute.addEnumAttribute(n, "process", self["process"], ["WIP", "PUB"], keyable=False)
         attribute.addEnumAttribute(n, "step", self["step"],
-                                   ["all", "preCustomStep", "objects", "feature", "connector", "cleanup",
-                                    "postCustomStep"], keyable=False)
+                                   ["all", "preCustomStep", "objects", "attributes", "operators", "connector",
+                                    "cleanup", "postCustomStep"], keyable=False)
         attribute.addAttribute(n, "jnt_L_name", "string", self["jnt_L_name"])
         attribute.addAttribute(n, "jnt_R_name", "string", self["jnt_R_name"])
         attribute.addAttribute(n, "jnt_C_name", "string", self["jnt_C_name"])

@@ -1,5 +1,7 @@
 {
   "name": "rig",
+  "mgear_version": "",
+  "mbox_version": "",
   "comp_type": "assembly",
   "comp_name": "world",
   "comp_side": "C",

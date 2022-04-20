@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from mbox.rig import build
+from mbox.box import build
 from . import Contributor
 
 # mgear
@@ -27,15 +27,15 @@ class Rig(build.Instance, Contributor):
         attribute.addAttribute(root, "character_sets", "message")
 
         self.geo = primitive.addTransform(root, "geo")
-        self.control_rigs = primitive.addTransform(root, "control_rigs")
-        self.jnts_grp = primitive.addTransform(root, "jnts")
-        character_sets = pm.sets(name=f"{self.component['name']}_sets", empty=True)
+        self.control_rigs = primitive.addTransform(root, "controls")
+        self.jnts_grp = primitive.addTransform(root, "deform")
+        self.character_sets = pm.sets(name=f"{self.component['name']}_sets", empty=True)
         geo_sets = pm.sets(name="geo_sets", empty=True)
-        ctls_sets = pm.sets(name="ctls_sets", empty=True)
-        jnts_sets = pm.sets(name="jnts_set", empty=True)
-        pm.sets(character_sets, addElement=(geo_sets,
-                                            ctls_sets,
-                                            jnts_sets))
+        ctls_sets = pm.sets(name="controllers_sets", empty=True)
+        jnts_sets = pm.sets(name="deforms_sets", empty=True)
+        pm.sets(self.character_sets, addElement=jnts_sets)
+        pm.sets(self.character_sets, addElement=ctls_sets)
+        pm.sets(self.character_sets, addElement=geo_sets)
         pm.sets(geo_sets, addElement=self.geo)
         ik_color = self.get_ctl_color("ik")
         kwargs = {"icon": "circle", "w": 1, "h": 1, "d": 1}
@@ -78,6 +78,7 @@ class Rig(build.Instance, Contributor):
         condition.attr("colorIfTrueR").set(2)
         condition.attr("colorIfFalseR").set(0)
         pm.connectAttr(condition.attr("outColorR"), tag.attr("visibilityMode"))
+        pm.connectAttr(self.character_sets.attr("message"), self.root.attr("character_sets"))
 
     def connector(self):
         """ specify parent component connector """

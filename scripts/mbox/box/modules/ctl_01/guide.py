@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from mbox.rig import blueprint
+from mbox.box import blueprint
 from . import Contributor
 
 # maya

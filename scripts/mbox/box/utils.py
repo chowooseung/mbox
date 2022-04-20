@@ -15,7 +15,6 @@ from mbox import logger
 # mgear
 from mgear.core import primitive, transform, attribute, applyop
 
-
 # mbox.__init__.py
 MBOX_ROOT = os.getenv("MBOX_ROOT")
 MBOX_MODULES = os.getenv("MBOX_MODULES")
@@ -185,6 +184,7 @@ def add_jnt(parent, ref, name, uni_scale, **kwargs):
 
         # set not keyable
         attribute.setNotKeyableAttributes(jnt)
+    return jnt
 
 
 class Naming:
@@ -192,8 +192,8 @@ class Naming:
     def __init__(self, component=None):
         self.component = component
 
-    def name(self, comp, ctl=True, description="", extension=""):
-        if not ctl:
+    def name(self, comp, jnt, description="", extension=""):
+        if jnt:
             rule = self.component["jnt_name_rule"]
             padding = self.component["jnt_index_padding"]
             description_letter_case = self.component["jnt_description_letter_case"]

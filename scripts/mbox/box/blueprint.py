@@ -3,19 +3,17 @@
 # built-in
 import json
 import os
-import uuid
 import inspect
+from uuid import uuid4
 
 # maya
 from pymel import core as pm
 
 # mbox
 from mbox import logger
+from mbox.core import uuid, vector, transform, icon, attribute, curve
 from .build import BuildSystem
-from .utils import Selection, Naming, traversal, import_component_module, is_guide, is_rig
-
-# mgear
-from mgear.core import vector, transform, icon, attribute, curve
+from .utils import Selection, Naming, traversal, import_component_module
 
 
 class Component(dict):
@@ -124,11 +122,11 @@ class Component(dict):
 
     def update(self, __m, **kwargs):
         for _K, _V in __m.items():
-            if _K == "children" or _K == "oid":
+            if _K == "children" or _K == "uuid":
                 continue
             self[_K] = _V
         for _K, _V in kwargs.items():
-            if _K == "children" or _K == "oid":
+            if _K == "children" or _K == "uuid":
                 continue
             self[_K] = _V
         if "children" in __m:
@@ -140,7 +138,7 @@ class Component(dict):
 
     def schema(self):
         if not self.is_assembly:
-            schema_path = os.path.join(os.getenv("MBOX_PYTHON"), "rig", "schema.json")
+            schema_path = os.path.join(os.getenv("MBOX_PYTHON"), "box", "modules", "schema.json")
             with open(schema_path, "r") as f:
                 data = json.load(f)
             self.update(data)
@@ -148,11 +146,11 @@ class Component(dict):
         with open(schema_path, "r") as f:
             data = json.load(f)
         self.update(data)
-        if "oid" not in self:
-            self["oid"] = str(uuid.uuid4())
+        if "uuid" not in self:
+            self["uuid"] = str(uuid4())
 
     def pull(self):
-        self["oid"] = self.network.attr("oid").get()
+        self["uuid"] = uuid.get_uuid(self.network)
         self["comp_type"] = self.network.attr("comp_type").get()
         self["comp_name"] = self.network.attr("comp_name").get()
         self["comp_side"] = self.network.attr("comp_side").get(asString=True)
@@ -180,7 +178,7 @@ class Component(dict):
             self["guide_parent_index"] = plug[0].index() if plug else -1
 
     def push(self):
-        self.network.attr("oid").set(self["oid"])
+        uuid.set_uuid(self["uuid"], self.network)
         self.network.attr("comp_type").set(self["comp_type"])
         self.network.attr("comp_name").set(self["comp_name"])
         self.network.attr("comp_side").set(self["comp_side"])
@@ -220,9 +218,11 @@ class Component(dict):
                 guide.rename("_".join(name))
 
     def draw_network(self):
-        self._network = pm.createNode("network")
-        n = self.network
-        attribute.addAttribute(n, "oid", "string", self["oid"])
+        old = uuid.find(self["uuid"])
+        if old:
+            pm.delete(old)
+        n = self._network = pm.createNode("network")
+        uuid.set_uuid(self["uuid"], n)
         attribute.addAttribute(n, "guide", "message")
         attribute.addAttribute(n, "rig", "message")
         attribute.addAttribute(n, "comp_type", "string", self["comp_type"])
@@ -374,25 +374,25 @@ class Blueprint:
         result = list()
         traversal(data,
                   lambda x: (
-                      [y["oid"] for y in x["children"]], import_component_module(x["comp_type"], True).Guide(data=x)),
+                      [y["uuid"] for y in x["children"]], import_component_module(x["comp_type"], True).Guide(data=x)),
                   lambda x: x["children"],
                   result)
-        child_oid_list, comp_list = zip(*result)
+        child_uuid_list, comp_list = zip(*result)
         for index, comp in enumerate(comp_list):
-            for child_oid in child_oid_list[index]:
+            for child_uuid in child_uuid_list[index]:
                 for comp2 in comp_list:
-                    if child_oid == comp2["oid"]:
+                    if child_uuid == comp2["uuid"]:
                         comp2.parent = comp
         self._blueprint = comp_list[0]
 
-    def find_component(self, oid):
+    def find_component(self, uuid):
         if not self.blueprint:
             return
-        if not oid:
+        if not uuid:
             return
         result = list()
         traversal(self.blueprint,
-                  lambda x: x if x["oid"] == oid else None,
+                  lambda x: x if x["uuid"] == uuid else None,
                   lambda x: x["children"],
                   result)
         result = list(filter(lambda x: x, result))
@@ -407,8 +407,8 @@ class Blueprint:
         else:
             if isinstance(parent, pm.PyNode):
                 parent = parent.fullPath()
-            parent_oid = Selection(parent).oid
-            parent_comp = self.find_component(parent_oid)
+            parent_uuid = Selection(parent).uuid
+            parent_comp = self.find_component(parent_uuid)
             new_comp = mod.Guide(parent=parent_comp, **kwargs)
             self.set_index(new_comp["comp_name"], new_comp["comp_side"], new_comp["comp_index"], new_comp)
             offset_t = pm.PyNode(parent).getTranslation(space="world")
@@ -421,8 +421,8 @@ class Blueprint:
                 if pm.selected()[0].getParent() != parent:
                     pm.parent(pm.selected(), parent)
 
-    def duplicate_component(self, oid, mirror=False, draw=False):
-        comp = self.find_component(oid)
+    def duplicate_component(self, uuid, mirror=False, draw=False):
+        comp = self.find_component(uuid)
         if mirror:
             result = list()
             traversal(comp,
@@ -491,6 +491,13 @@ class Blueprint:
                       lambda x: x["children"],
                       [])
 
+    def draw_network(self):
+        with pm.UndoChunk():
+            traversal(self.blueprint,
+                      lambda x: x.draw_network() and x.push() if not x.network else None,
+                      lambda x: x["children"],
+                      [])
+
     def draw_guide(self):
         with pm.UndoChunk():
             result = list()
@@ -503,6 +510,7 @@ class Blueprint:
 
     def draw_rig(self):
         with pm.UndoChunk():
+            self.draw_network()
             build_system = BuildSystem(self.blueprint)
             build_system.build()
 
@@ -537,15 +545,15 @@ def blueprint_from_guide(node):
     result = list()
     traversal(assembly,
               lambda x: (
-                  [Selection(y).oid for y in Selection(x).child_guides],
+                  [Selection(y).uuid for y in Selection(x).child_guides],
                   import_component_module(Selection(x).comp_type, True).Guide(network=Selection(x).network)),
               lambda x: Selection(x).child_guides,
               result)
-    child_oid_list, comp_list = zip(*result)
+    child_uuid_list, comp_list = zip(*result)
     for index, comp in enumerate(comp_list):
-        for child_oid in child_oid_list[index]:
+        for child_uuid in child_uuid_list[index]:
             for comp2 in comp_list:
-                if child_oid == comp2["oid"]:
+                if child_uuid == comp2["uuid"]:
                     comp2.parent = comp
     blueprint = Blueprint(comp_list[0])
     blueprint.pull()
@@ -563,16 +571,16 @@ def blueprint_from_rig(node):
     result = list()
     traversal(network,
               lambda x: (
-                  [Selection(y).oid for y in x.attr("affects")[0].outputs(type="network")],
+                  [Selection(y).uuid for y in x.attr("affects")[0].outputs(type="network")],
                   import_component_module(Selection(x).comp_type, True).Guide(network=x)),
               lambda x: x.attr("affects")[0].outputs(type="network"),
               result)
-    child_oid_list, comp_list = zip(*result)
+    child_uuid_list, comp_list = zip(*result)
     assembly = comp_list[0]
     for index, comp in enumerate(comp_list):
-        for child_oid in child_oid_list[index]:
+        for child_uuid in child_uuid_list[index]:
             for comp2 in comp_list:
-                if child_oid == comp2["oid"]:
+                if child_uuid == comp2["uuid"]:
                     comp2.parent = comp
     if not assembly.is_assembly:
         mod = import_component_module("assembly", True)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # mbox
-from mbox.rig import build
+from mbox.box import build
 from . import Contributor
 
 # mgear

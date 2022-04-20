@@ -132,6 +132,7 @@ class Instance:
         root = primitive.addTransform(parent, name, m)
         attribute.addAttribute(root, "is_rig", "bool", keyable=False)
         attribute.setKeyableAttributes(root, [])
+        pm.connectAttr(root.attr("message"), self.component.network.attr("rig"), force=True)
         self._root = root
         return root
 
@@ -181,7 +182,7 @@ class Instance:
         attribute.addAttribute(ctl, "is_ctl", "bool", keyable=False)
         attribute.addAttribute(ctl, "ui_host", "message")
         attribute.setKeyableAttributes(ctl, ctl_attr)
-        pm.connectAttr(ctl.attr("message"), self.component.network.attr("ctls")[len(self.ctls)])
+        pm.connectAttr(ctl.attr("message"), self.component.network.attr("ctls")[len(self.ctls)], force=True)
         tag = node.add_controller_tag(ctl, parent_ctl)
         tag.attr("visibilityMode").set(1)
         self._ctls.append(ctl)
@@ -198,7 +199,7 @@ class Instance:
     def add_jnt(self, parent, ref, name, uni_scale):
         parent = parent if parent else self.comp_parent_jnt
         if not parent:
-            parent = "jnts"
+            parent = "deform"
         rot_off = self.component["jnt_rot_off"] if "jnt_rot_off" in self.component else [0, 0, 0]
         self._jnts.append([parent, ref, name, uni_scale, rot_off])
         return name
@@ -318,10 +319,10 @@ class BuildSystem:
                   lambda x: x["children"],
                   result)
         for comp, obj, attr, operator, connector in result:
-            objects_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} objects")
-            attributes_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} attributes")
-            operators_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} operators")
-            connectors_msg.append(f"{comp['comp_name']} {comp['comp_side']} {comp['comp_index']} connector")
+            objects_msg.append(f"objects {comp['comp_name']} {comp['comp_side']} {comp['comp_index']}")
+            attributes_msg.append(f"attributes {comp['comp_name']} {comp['comp_side']} {comp['comp_index']}")
+            operators_msg.append(f"operators {comp['comp_name']} {comp['comp_side']} {comp['comp_index']}")
+            connectors_msg.append(f"connector {comp['comp_name']} {comp['comp_side']} {comp['comp_index']}")
             objects.append(obj)
             attributes.append(attr)
             operators.append(operator)
@@ -345,16 +346,10 @@ class BuildSystem:
 
         msgs.append("network tree")
         procedure.append(self.network_tree)
-        msgs.append("ctl tree")
-        procedure.append(self.ctl_tree)
-        msgs.append("ctl shapes")
-        procedure.append(self.ctl_shapes)
+        msgs.append("ctl structure")
+        procedure.append(self.ctl_structure)
         msgs.append("jnt structure")
         procedure.append(self.jnt_structure)
-        msgs.append("clean jnt")
-        procedure.append(self.clean_jnt)
-        msgs.append("sets")
-        procedure.append(self.sets)
         msgs.append("script node")
         procedure.append(self.script_node)
         return list(zip(msgs, procedure))
@@ -385,49 +380,49 @@ class BuildSystem:
         logger.info("build success")
 
     def network_tree(self):
-        # TODO: buildsystem network tree connect
-        pass
+        traversal(self.blueprint,
+                  lambda x: [pm.connectAttr(x.network.attr("affects")[0],
+                                            child.network.attr("affectedBy")[0], force=True)
+                             for child in x["children"]],
+                  lambda x: x["children"],
+                  list())
 
-    def ctl_tree(self):
-        # TODO: buildsystem connect ctl tree and connect ui host
-        pass
+    def ctl_structure(self):
+        character_set = self.context.assembly.root.attr("character_sets").inputs()[0]
+        ctls_set = [x for x in character_set.members() if "control" in x.name()][0]
+        for instance in self.context:
+            for ctl in instance.ctls:
+                for shp in ctl.getShapes():
+                    connect_info = pm.listConnections(shp, connections=True, plugs=True)
+                    for source, destination in connect_info:
+                        pass
+                        # print(source, destination)
+                        # pm.connectAttr(destination.replace(shape.name(), new_shape.name()), source)
+                    shp.attr("isHistoricallyInteresting").set(0)
+            pm.sets(ctls_set, addElement=instance.ctls)
 
-    def ctl_shapes(self):
-        # TODO: buildsystem ctl replace and reconnection and configure
-        connect_info = pm.listConnections(shape, connections=True, plugs=True)
-        for source, destination in connect_info:
-            pm.connectAttr(source, destination.replace(shape.name(), new_shape.name()))
+        # add dag pose
+        # default T, model, Sim
 
     def jnt_structure(self):
         connect_jnt = self.blueprint["connect_jnt"]
         root = self.context.assembly.root
-        for ins in self.context:
-            for jnt in ins.jnts:
-                parent, ref, name, uni_scale, rot_off = jnt
-                add_jnt(parent, ref, name, uni_scale, rot_off=rot_off, connect_jnt=connect_jnt, dag_tree=root)
-
-    def clean_jnt(self):
+        character_set = root.attr("character_sets").inputs()[0]
+        jnts_set = [x for x in character_set.members() if "deform" in x.name()][0]
         for instance in self.context:
             comp = instance.component
             for index, jnt in enumerate(instance.jnts):
+                parent, ref, name, uni_scale, rot_off = jnt
+                j = add_jnt(parent, ref, name, uni_scale, rot_off=rot_off, connect_jnt=connect_jnt, dag_tree=root)
                 side = "C" if comp["comp_side"] == "C" else "S"
                 label = f"{comp['comp_name']}_{side}{comp['comp_index']}_{index}"
                 side_set = ["C", "L", "R"]
-                jnt.attr("side").set(side_set.index(comp["comp_side"]))
-                jnt.attr("type").set("Other")
-                jnt.attr("otherType").set(label)
-                jnt.attr("radius").set(0.5)
-                pm.connectAttr(self.context.assembly.root.attr("jnt_label_vis"), jnt.attr("drawLabel"))
-
-    def sets(self):
-        character_set = self.context.assembly.root.attr("character_sets").inputs()[0]
-        ctls_set = [x for x in character_set.members() if "ctls" in x.name()][0]
-        jnts_set = [x for x in character_set.members() if "jnts" in x.name()][0]
-        for ins in self.context:
-            if hasattr(ins, "ctls"):
-                pm.sets(ctls_set, addElement=ins.ctls)
-            if hasattr(ins, "jnts"):
-                pm.sets(jnts_set, addElement=ins.jnts)
+                j.attr("side").set(side_set.index(comp["comp_side"]))
+                j.attr("type").set("Other")
+                j.attr("otherType").set(label)
+                j.attr("radius").set(0.5)
+                pm.connectAttr(j.attr("message"), comp.network.attr("jnts")[index], force=True)
+                pm.sets(jnts_set, addElement=j)
 
     def script_node(self):
         # TODO: buildsystem script node
